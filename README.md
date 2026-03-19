@@ -17,7 +17,7 @@
 
 ## 1. Project Title and Background
 
-**Project Title:**  
+Project Title:
 **Deep Learning-Based Delta-Neutral Statistical Arbitrage on Perpetual Funding Rates**
 
 Perpetual futures are one of the most important instruments in crypto derivatives markets. Unlike traditional futures, perpetual contracts do not expire; instead, they rely on a **funding rate** mechanism to keep contract prices aligned with the underlying spot price. On dYdX, for example, funding is charged hourly and is explicitly designed to help perpetual prices track the underlying market. ([dYdX Help Center](https://help.dydx.trade/en/articles/166992-default-funding-rates-on-dydx?utm_source=chatgpt.com "Default funding rates on dYdX")) Recent research also shows that perpetual futures are the dominant crypto derivatives product, with daily trading volume regularly exceeding $100 billion. ([arXiv](https://arxiv.org/html/2212.06888v5?utm_source=chatgpt.com "Fundamentals of Perpetual FuturesWe are grateful to Lin ..."))
