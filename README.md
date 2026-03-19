@@ -1,2 +1,0 @@
-# Deep-Learning-Based-Delta-Neutral-Statistical-Arbitrage-on-Perpetual-Funding-Rates
-A hybrid DeFi prototype for delta-neutral arbitrage in crypto perpetual futures. It uses off-chain statistical/deep learning models to detect funding-rate and basis dislocations, and an on-chain Solidity vault to manage deposits, shares, and simulated profit distribution, linking quantitative signals with smart-contract-based asset management.
