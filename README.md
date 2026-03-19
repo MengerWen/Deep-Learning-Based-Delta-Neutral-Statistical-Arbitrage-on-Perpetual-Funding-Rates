@@ -15,10 +15,6 @@
   </div>
 </div>
 
-# 项目标题
-
-# 项目标题
-
 ## 1. Project Title and Background
 
 **Project Title:**  
@@ -255,4 +251,4 @@ Given our team structure of **two Quantitative Finance students and one FinTech 
 
 This division allows the team to leverage both financial modeling and blockchain development skills efficiently.
 
-Github link: 
+Github link: https://github.com/MengerWen/Deep-Learning-Based-Delta-Neutral-Statistical-Arbitrage-on-Perpetual-Funding-Rates
