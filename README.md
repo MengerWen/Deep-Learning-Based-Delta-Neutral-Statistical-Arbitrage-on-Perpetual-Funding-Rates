@@ -20,7 +20,7 @@
 Project Title:
 **Deep Learning-Based Delta-Neutral Statistical Arbitrage on Perpetual Funding Rates**
 
-Perpetual futures are one of the most important instruments in crypto derivatives markets. Unlike traditional futures, perpetual contracts do not expire; instead, they rely on a **funding rate** mechanism to keep contract prices aligned with the underlying spot price. On dYdX, for example, funding is charged hourly and is explicitly designed to help perpetual prices track the underlying market. ([dYdX Help Center](https://help.dydx.trade/en/articles/166992-default-funding-rates-on-dydx?utm_source=chatgpt.com "Default funding rates on dYdX")) Recent research also shows that perpetual futures are the dominant crypto derivatives product, with daily trading volume regularly exceeding $100 billion. ([arXiv](https://arxiv.org/html/2212.06888v5?utm_source=chatgpt.com "Fundamentals of Perpetual FuturesWe are grateful to Lin ..."))
+Perpetual futures are one of the most important instruments in crypto derivatives markets. Unlike traditional futures, perpetual contracts do not expire; instead, they rely on a **funding rate** mechanism to keep contract prices aligned with the underlying spot price. On dYdX, for example, funding is charged hourly and is explicitly designed to help perpetual prices track the underlying market. ([dYdX Help Center](https://help.dydx.trade/en/articles/166992-default-funding-rates-on-dydx)) Recent research also shows that perpetual futures are the dominant crypto derivatives product, with daily trading volume regularly exceeding $100 billion. ([arXiv](https://arxiv.org/html/2212.06888v5))
 
 However, funding rates and basis spreads often fluctuate significantly across time and market conditions. During periods of strong directional sentiment, leverage imbalance, or short-term price dislocation, funding rates may become abnormally high, low, or even switch sign. These dynamics create opportunities for **delta-neutral arbitrage** and **statistical trading strategies**, especially when funding-rate signals are combined with price spread and basis information. At the same time, these opportunities are difficult for ordinary users to capture systematically because they require data analysis, timing decisions, transaction-cost control, and risk management.
 
@@ -36,7 +36,7 @@ First, **funding-rate mispricing is not constant or easy to exploit**. A high fu
 
 Second, **most retail users lack an automated and explainable framework** for identifying such opportunities. Existing discussions of perpetual arbitrage are often strategy-oriented, but do not provide a complete system that links market-data analysis, signal generation, position logic, and on-chain asset management.
 
-Third, **smart contracts cannot directly access external market data or run complex machine learning models**. This is a classic oracle problem: blockchains are isolated from off-chain information, so any system that depends on external prices, funding rates, or computed strategy signals must use some form of oracle or off-chain computation layer. ([Chainlink](https://chain.link/education-hub/oracle-problem?utm_source=chatgpt.com "The Blockchain Oracle Problem"))
+Third, **smart contracts cannot directly access external market data or run complex machine learning models**. This is a classic oracle problem: blockchains are isolated from off-chain information, so any system that depends on external prices, funding rates, or computed strategy signals must use some form of oracle or off-chain computation layer. ([Chainlink](https://chain.link/education-hub/oracle-problem))
 
 Therefore, the core problem of this project is:
 
@@ -106,7 +106,7 @@ Its main features will include:
 - basic access control and emergency pause mechanisms.
     
 
-This design reflects a realistic **hybrid smart contract** architecture: data processing and prediction happen off-chain, while asset accounting and state management happen on-chain. Chainlink’s oracle documentation explicitly frames this type of design as a response to the inability of blockchains to natively access off-chain data and computation. ([Chainlink](https://chain.link/education-hub/oracle-problem?utm_source=chatgpt.com "The Blockchain Oracle Problem"))
+This design reflects a realistic **hybrid smart contract** architecture: data processing and prediction happen off-chain, while asset accounting and state management happen on-chain. Chainlink’s oracle documentation explicitly frames this type of design as a response to the inability of blockchains to natively access off-chain data and computation. ([Chainlink](https://chain.link/education-hub/oracle-problem))
 
 ---
 
@@ -205,7 +205,7 @@ First, it brings together **crypto derivatives research and smart contract imple
 
 Second, it applies **deep learning to a practically meaningful DeFi problem**. Instead of predicting simple price direction, we focus on predicting the behavior of **funding-rate dislocations and basis convergence**, which is closer to how quantitative strategies are designed in real derivative markets.
 
-Third, it demonstrates a **hybrid smart contract architecture** for DeFi strategy systems. Because smart contracts cannot natively access off-chain data, a robust design must combine off-chain computation with on-chain settlement and accounting. Our prototype directly reflects this architecture. ([Chainlink](https://chain.link/education-hub/oracle-problem?utm_source=chatgpt.com "The Blockchain Oracle Problem"))
+Third, it demonstrates a **hybrid smart contract architecture** for DeFi strategy systems. Because smart contracts cannot natively access off-chain data, a robust design must combine off-chain computation with on-chain settlement and accounting. Our prototype directly reflects this architecture. ([Chainlink](https://chain.link/education-hub/oracle-problem))
 
 Fourth, it remains realistic in scope. Rather than overpromising a production-grade arbitrage engine, we focus on delivering a **working prototype** that clearly shows:
 
