@@ -26,8 +26,6 @@ However, funding rates and basis spreads often fluctuate significantly across ti
 
 This project aims to build a **prototype DeFi strategy system** that combines off-chain quantitative modeling with an on-chain smart contract vault. The system will use historical market data to identify and predict funding-rate arbitrage opportunities, then simulate a delta-neutral strategy whose signals are reflected in a Solidity-based vault contract for asset accounting, profit distribution, and parameter management.
 
-This project aims to build a prototype DeFi strategy system that combines off-chain quantitative modeling with an on-chain smart contract vault. The system will use historical market data to identify and predict funding-rate arbitrage opportunities, then simulate a delta-neutral strategy whose signals are reflected in a Solidity-based vault contract for asset accounting, profit distribution, and parameter management.
-
 ---
 
 ## 2. Problem Statement
