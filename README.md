@@ -65,8 +65,6 @@ This module will collect and process historical perpetual market data, including
 - basis spreads and related indicators.
     
 
-Perpetual Protocol’s developer documentation, for instance, exposes market and funding-rate data interfaces that are suitable for this kind of research pipeline. ([Perpetual Protocol](https://docs.perp.com/docs/guides/data-source/?utm_source=chatgpt.com "Data Source"))
-
 Based on these data, we will construct predictive signals such as:
 
 - funding spread,
