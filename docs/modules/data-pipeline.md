@@ -4,7 +4,7 @@
 
 Create a reproducible dataset for one funding-rate arbitrage research workflow, starting with a single symbol and single venue.
 
-## Planned Responsibilities
+## Current Responsibilities
 
 - fetch perpetual funding-rate history
 - fetch perpetual price history
@@ -21,14 +21,15 @@ Create a reproducible dataset for one funding-rate arbitrage research workflow, 
 - use hourly frequency for the first end-to-end prototype
 - use `2021-01-01` to `2026-04-07` UTC as the default main historical window for the first full Binance `BTCUSDT` dataset
 
-## Future Files
+## Current Files
 
-- `src/funding_arb/data/clients.py`
+- `src/funding_arb/data/binance.py`
+- `src/funding_arb/data/cleaning.py`
 - `src/funding_arb/data/pipeline.py`
 - `src/funding_arb/data/schemas.py`
 - `scripts/data/fetch_market_data.py`
 
 ## Caveats
 
-The current scaffold contains only starter utilities and CLI placeholders. Real exchange adapters and schema normalization still need to be implemented.
+The first working implementation is now live for Binance `BTCUSDT` perpetual, spot, and funding history. Remaining work is to add index-price ingestion, optional open-interest validation, stronger retry/rate-limit handling, and additional venues.
 

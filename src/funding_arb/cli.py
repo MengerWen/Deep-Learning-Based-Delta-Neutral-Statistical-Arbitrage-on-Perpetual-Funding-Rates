@@ -15,6 +15,7 @@ from funding_arb.features.pipeline import describe_feature_job
 from funding_arb.labels.generator import describe_labeling_assumption
 from funding_arb.models.baselines import describe_baseline_job
 from funding_arb.models.deep_learning import describe_deep_learning_job
+from funding_arb.reporting.data_quality import describe_data_quality_job, run_data_quality_report
 from funding_arb.utils.logging import configure_logging
 
 LOGGER = logging.getLogger(__name__)
@@ -34,6 +35,19 @@ def _run_fetch_data(config: Any, config_path: Path) -> int:
     LOGGER.info("Interim outputs: %s", ", ".join(artifacts.interim_files))
     LOGGER.info("Processed outputs: %s", ", ".join(artifacts.processed_files))
     LOGGER.info("Manifest: %s", artifacts.manifest_path)
+    return 0
+
+
+def _run_report_data_quality(config: Any, config_path: Path) -> int:
+    _log_config_summary("report-data-quality", config_path, config)
+    LOGGER.info(describe_data_quality_job(config))
+    artifacts = run_data_quality_report(config)
+    LOGGER.info("Report tables: %s", ", ".join(artifacts.table_paths))
+    LOGGER.info("Report figures: %s", ", ".join(artifacts.figure_paths))
+    if artifacts.summary_json_path is not None:
+        LOGGER.info("Summary JSON: %s", artifacts.summary_json_path)
+    if artifacts.markdown_report_path is not None:
+        LOGGER.info("Markdown report: %s", artifacts.markdown_report_path)
     return 0
 
 
@@ -65,6 +79,7 @@ def _run_backtest(config: Any, config_path: Path) -> int:
 
 COMMAND_HANDLERS: dict[str, Callable[[Any, Path], int]] = {
     "fetch-data": _run_fetch_data,
+    "report-data-quality": _run_report_data_quality,
     "build-features": _run_build_features,
     "train-baseline": _run_train_baseline,
     "train-dl": _run_train_dl,

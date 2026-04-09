@@ -3,13 +3,18 @@ from __future__ import annotations
 from funding_arb.cli import build_parser
 
 
-
 def test_cli_parser_accepts_fetch_data_command() -> None:
     parser = build_parser()
     args = parser.parse_args(["fetch-data"])
     assert args.command == "fetch-data"
     assert args.config.endswith("configs\\data\\default.yaml") or args.config.endswith("configs/data/default.yaml")
 
+
+def test_cli_parser_accepts_report_data_quality_command() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["report-data-quality"])
+    assert args.command == "report-data-quality"
+    assert args.config.endswith("configs\\reports\\data_quality.yaml") or args.config.endswith("configs/reports/data_quality.yaml")
 
 
 def test_cli_parser_accepts_train_dl_command_with_log_level() -> None:

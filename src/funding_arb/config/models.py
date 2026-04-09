@@ -39,7 +39,7 @@ class DataCleaningSettings(SettingsBase):
     timezone: str = "UTC"
     drop_duplicates: bool = True
     sort_ascending: bool = True
-    max_forward_fill_hours: int = 3
+    max_forward_fill_hours: int = 6
     fill_price_method: str = "ffill"
     fill_volume_value: float = 0.0
     fill_funding_value: float = 0.0
@@ -166,3 +166,35 @@ class BacktestSettings(SettingsBase):
     costs: CostSettings
     execution: ExecutionSettings
     reporting: ReportingSettings
+
+
+class DataQualityReportInputSettings(SettingsBase):
+    dataset_path: str = "data/processed/binance/btcusdt/1h/hourly_market_data.parquet"
+    manifest_path: str | None = "data/processed/binance/btcusdt/1h/manifest.json"
+    provider: str = "binance"
+    symbol: str = "BTCUSDT"
+    venue: str = "binance"
+    frequency: str = "1h"
+
+
+class DataQualityPlotSettings(SettingsBase):
+    figure_format: str = "png"
+    dpi: int = 180
+    rolling_volatility_window_hours: int = 24
+    funding_smoothing_window_hours: int = 24 * 7
+    spread_smoothing_window_hours: int = 24
+    annualization_factor_hours: int = 24 * 365
+
+
+class DataQualityReportOutputSettings(SettingsBase):
+    output_dir: str = "reports/data_quality"
+    write_csv: bool = True
+    write_markdown: bool = True
+    write_json_summary: bool = True
+
+
+class DataQualityReportSettings(SettingsBase):
+    input: DataQualityReportInputSettings = Field(default_factory=DataQualityReportInputSettings)
+    plots: DataQualityPlotSettings = Field(default_factory=DataQualityPlotSettings)
+    output: DataQualityReportOutputSettings = Field(default_factory=DataQualityReportOutputSettings)
+    notes: dict[str, Any] = Field(default_factory=dict)

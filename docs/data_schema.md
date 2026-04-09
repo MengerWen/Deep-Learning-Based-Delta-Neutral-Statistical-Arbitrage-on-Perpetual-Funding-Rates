@@ -131,6 +131,10 @@ Files are omitted when a source is disabled. For example, the default config dis
 - Fill missing funding rates on non-event hours with the configured value, currently `0.0`.
 - Raise an error if aligned `perp_close` or `spot_close` still contains missing values after allowed filling.
 
+## Downstream Reporting
+
+The canonical hourly dataset is the input to the `report-data-quality` command. That command reads `hourly_market_data.parquet` and writes presentation-friendly tables, figures, and a markdown summary under `reports/data_quality/<provider>/<symbol>/<frequency>/`.
+
 ## Current Data Gaps
 
 - Index-price history is not yet wired into the first working pipeline.

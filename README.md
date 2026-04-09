@@ -65,6 +65,7 @@ The demo frontend uses a lightweight `Vite + TypeScript` scaffold rather than a 
 |   +-- data/
 |   +-- demo/
 |   +-- features/
+|   +-- reports/
 |   `-- models/
 +-- data/
 |   +-- raw/
@@ -78,11 +79,13 @@ The demo frontend uses a lightweight `Vite + TypeScript` scaffold rather than a 
 |   +-- modules/
 |   `-- plans/
 +-- notebooks/
++-- reports/
 +-- scripts/
 |   +-- backtests/
 |   +-- data/
 |   +-- demo/
 |   +-- features/
+|   +-- reports/
 |   `-- models/
 +-- src/
 |   `-- funding_arb/
@@ -110,11 +113,13 @@ Example scaffold commands:
 & 'd:\MG\anaconda3\python.exe' scripts/features/build_features.py --config configs/features/default.yaml
 & 'd:\MG\anaconda3\python.exe' scripts/models/train_baseline.py --config configs/models/baseline.yaml
 & 'd:\MG\anaconda3\python.exe' scripts/backtests/run_backtest.py --config configs/backtests/default.yaml
+& 'd:\MG\anaconda3\python.exe' scripts/reports/report_data_quality.py --config configs/reports/data_quality.yaml
 ```
 Unified CLI commands:
 
 ```bash
 & 'd:\MG\anaconda3\python.exe' -m src.main fetch-data
+& 'd:\MG\anaconda3\python.exe' -m src.main report-data-quality
 & 'd:\MG\anaconda3\python.exe' -m src.main build-features
 & 'd:\MG\anaconda3\python.exe' -m src.main train-baseline
 & 'd:\MG\anaconda3\python.exe' -m src.main train-dl
@@ -129,6 +134,7 @@ Override config or logging when needed:
 
 Legacy `scripts/` entrypoints remain available as thin wrappers around the same command layer.
 The `fetch-data` command now runs the first complete historical data pipeline and writes raw, cleaned, and canonical hourly outputs under `data/raw/`, `data/interim/`, and `data/processed/`.
+The `report-data-quality` command consumes that canonical dataset and writes presentation-ready tables, figures, and a markdown summary under `reports/data_quality/`.
 
 ### Solidity
 
@@ -151,6 +157,7 @@ npm run dev
 - Architecture: [docs/architecture/overview.md](docs/architecture/overview.md)
 - Data pipeline: [docs/modules/data-pipeline.md](docs/modules/data-pipeline.md)
 - Data schema: [docs/data_schema.md](docs/data_schema.md)
+- Data-quality reporting: [docs/modules/data-quality-reporting.md](docs/modules/data-quality-reporting.md)
 - Models and research: [docs/modules/models-and-research.md](docs/modules/models-and-research.md)
 - Backtesting: [docs/modules/backtesting.md](docs/modules/backtesting.md)
 - Vault contract: [docs/contracts/vault.md](docs/contracts/vault.md)
@@ -158,10 +165,10 @@ npm run dev
 - Implementation plan: [docs/plans/2026-04-09-course-project-implementation-plan.md](docs/plans/2026-04-09-course-project-implementation-plan.md)
 ## Immediate Next Steps
 
-1. Implement the real data-ingestion adapters for one exchange and one reference price source.
-2. Build the cleaned canonical dataset schema and feature pipeline.
+1. Expand the data layer beyond the first Binance path, starting with index-price ingestion and optional open-interest validation.
+2. Build the cleaned canonical dataset into the first feature and label pipeline.
 3. Add the first baseline strategy and a cost-aware backtest.
-4. Expand the vault contract tests and connect demo artifacts into the frontend.
+4. Connect report artifacts and backtest summaries into the frontend demo.
 
 ## Minimal No-Install Verification
 

@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from funding_arb.config.models import (
     BacktestSettings,
     BaselineSettings,
+    DataQualityReportSettings,
     DataSettings,
     DeepLearningSettings,
     FeatureSettings,
@@ -36,6 +37,11 @@ COMMAND_SETTINGS: dict[str, CommandSettings] = {
         default_config_path=repo_path("configs", "data", "default.yaml"),
         config_model=DataSettings,
     ),
+    "report-data-quality": CommandSettings(
+        command_name="report-data-quality",
+        default_config_path=repo_path("configs", "reports", "data_quality.yaml"),
+        config_model=DataQualityReportSettings,
+    ),
     "build-features": CommandSettings(
         command_name="build-features",
         default_config_path=repo_path("configs", "features", "default.yaml"),
@@ -59,7 +65,6 @@ COMMAND_SETTINGS: dict[str, CommandSettings] = {
 }
 
 
-
 def get_command_settings(command_name: str) -> CommandSettings:
     """Return metadata for a supported CLI command."""
     try:
@@ -69,12 +74,10 @@ def get_command_settings(command_name: str) -> CommandSettings:
         raise ValueError(f"Unknown command '{command_name}'. Available commands: {available}") from exc
 
 
-
 def load_settings(path: str | Path, model_type: type[SettingsModel]) -> SettingsModel:
     """Load and validate a config file into a typed settings model."""
     raw = load_config(path)
     return model_type.model_validate(raw)
-
 
 
 def load_command_settings(command_name: str, config_path: str | Path | None = None) -> BaseModel:

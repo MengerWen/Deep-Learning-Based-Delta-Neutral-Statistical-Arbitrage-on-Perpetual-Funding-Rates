@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from funding_arb.config.loader import get_command_settings, load_command_settings
-from funding_arb.config.models import BaselineSettings, DataSettings, FeatureSettings
+from funding_arb.config.models import BaselineSettings, DataQualityReportSettings, DataSettings, FeatureSettings
 
 
 def test_fetch_data_default_config_loads_typed_model() -> None:
@@ -10,6 +10,13 @@ def test_fetch_data_default_config_loads_typed_model() -> None:
     assert config.dataset.symbol == "BTCUSDT"
     assert config.source.provider == "binance"
     assert config.sources["funding"].enabled is True
+
+
+def test_report_data_quality_default_config_loads_typed_model() -> None:
+    config = load_command_settings("report-data-quality")
+    assert isinstance(config, DataQualityReportSettings)
+    assert config.input.symbol == "BTCUSDT"
+    assert config.output.output_dir == "reports/data_quality"
 
 
 def test_build_features_default_config_loads_typed_model() -> None:
