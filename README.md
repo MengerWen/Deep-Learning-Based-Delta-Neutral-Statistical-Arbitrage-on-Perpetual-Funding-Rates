@@ -13,7 +13,7 @@ The repository is intentionally scoped as a prototype. We want clear architectur
 
 ## Repository Status
 
-The repository now has a working Binance historical data pipeline, a configurable feature-engineering pipeline, and a presentation-friendly data-quality reporting command. Baseline models, labels, backtests, and richer contract/frontend integration are the main remaining build areas.
+The repository now has a working Binance historical data pipeline, a configurable feature-engineering pipeline, a cost-aware label-generation pipeline, and a presentation-friendly data-quality reporting command. Baseline models, backtests, and richer contract/frontend integration are the main remaining build areas.
 
 ## Architecture Overview
 
@@ -65,6 +65,7 @@ The demo frontend uses a lightweight `Vite + TypeScript` scaffold rather than a 
 |   +-- data/
 |   +-- demo/
 |   +-- features/
+|   +-- labels/
 |   +-- reports/
 |   `-- models/
 +-- data/
@@ -85,6 +86,7 @@ The demo frontend uses a lightweight `Vite + TypeScript` scaffold rather than a 
 |   +-- data/
 |   +-- demo/
 |   +-- features/
+|   +-- labels/
 |   +-- reports/
 |   `-- models/
 +-- src/
@@ -111,6 +113,7 @@ Example scaffold commands:
 ```bash
 & 'd:\MG\anaconda3\python.exe' scripts/data/fetch_market_data.py --config configs/data/default.yaml
 & 'd:\MG\anaconda3\python.exe' scripts/features/build_features.py --config configs/features/default.yaml
+& 'd:\MG\anaconda3\python.exe' scripts/labels/build_labels.py --config configs/labels/default.yaml
 & 'd:\MG\anaconda3\python.exe' scripts/models/train_baseline.py --config configs/models/baseline.yaml
 & 'd:\MG\anaconda3\python.exe' scripts/backtests/run_backtest.py --config configs/backtests/default.yaml
 & 'd:\MG\anaconda3\python.exe' scripts/reports/report_data_quality.py --config configs/reports/data_quality.yaml
@@ -121,6 +124,7 @@ Unified CLI commands:
 & 'd:\MG\anaconda3\python.exe' -m src.main fetch-data
 & 'd:\MG\anaconda3\python.exe' -m src.main report-data-quality
 & 'd:\MG\anaconda3\python.exe' -m src.main build-features
+& 'd:\MG\anaconda3\python.exe' -m src.main build-labels
 & 'd:\MG\anaconda3\python.exe' -m src.main train-baseline
 & 'd:\MG\anaconda3\python.exe' -m src.main train-dl
 & 'd:\MG\anaconda3\python.exe' -m src.main backtest
@@ -136,6 +140,7 @@ Legacy `scripts/` entrypoints remain available as thin wrappers around the same 
 The `fetch-data` command now runs the first complete historical data pipeline and writes raw, cleaned, and canonical hourly outputs under `data/raw/`, `data/interim/`, and `data/processed/`.
 The `report-data-quality` command consumes that canonical dataset and writes presentation-ready tables, figures, and a markdown summary under `reports/data_quality/`.
 The `build-features` command now writes an interpretable feature table and manifest under `data/processed/features/`.
+The `build-labels` command now writes post-cost regression targets, classification targets, and split-ready supervised datasets under `data/processed/supervised/`.
 
 ### Solidity
 
@@ -160,6 +165,7 @@ npm run dev
 - Data schema: [docs/data_schema.md](docs/data_schema.md)
 - Data-quality reporting: [docs/modules/data-quality-reporting.md](docs/modules/data-quality-reporting.md)
 - Feature specification: [docs/features.md](docs/features.md)
+- Label specification: [docs/labels.md](docs/labels.md)
 - Models and research: [docs/modules/models-and-research.md](docs/modules/models-and-research.md)
 - Backtesting: [docs/modules/backtesting.md](docs/modules/backtesting.md)
 - Vault contract: [docs/contracts/vault.md](docs/contracts/vault.md)
@@ -167,10 +173,10 @@ npm run dev
 - Implementation plan: [docs/plans/2026-04-09-course-project-implementation-plan.md](docs/plans/2026-04-09-course-project-implementation-plan.md)
 ## Immediate Next Steps
 
-1. Add the first post-cost label pipeline on top of the new feature table.
-2. Implement the first baseline strategy and a cost-aware backtest over the engineered features.
-3. Expand the data layer with index-price ingestion and optional open-interest validation.
-4. Connect report artifacts and feature summaries into the frontend demo.
+1. Implement the first baseline strategy and a cost-aware backtest over the new supervised dataset.
+2. Expand the data layer with index-price ingestion and optional open-interest validation.
+3. Connect report artifacts, features, and label summaries into the frontend demo.
+4. Add the first deep-learning training loop on top of the time-series split datasets.
 
 ## Minimal No-Install Verification
 

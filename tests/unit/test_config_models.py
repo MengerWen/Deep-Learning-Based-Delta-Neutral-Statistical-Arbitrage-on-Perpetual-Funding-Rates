@@ -1,7 +1,13 @@
 from __future__ import annotations
 
 from funding_arb.config.loader import get_command_settings, load_command_settings
-from funding_arb.config.models import BaselineSettings, DataQualityReportSettings, DataSettings, FeatureSettings
+from funding_arb.config.models import (
+    BaselineSettings,
+    DataQualityReportSettings,
+    DataSettings,
+    FeatureSettings,
+    LabelPipelineSettings,
+)
 
 
 def test_fetch_data_default_config_loads_typed_model() -> None:
@@ -25,6 +31,14 @@ def test_build_features_default_config_loads_typed_model() -> None:
     assert config.input.dataset_path.endswith("hourly_market_data.parquet")
     assert config.feature_set.rolling_windows == [8, 24, 72, 168]
     assert config.labels.forward_horizon_hours == 8
+
+
+def test_build_labels_default_config_loads_typed_model() -> None:
+    config = load_command_settings("build-labels")
+    assert isinstance(config, LabelPipelineSettings)
+    assert config.input.feature_table_path.endswith("btcusdt_feature_set.parquet")
+    assert config.target.holding_windows_hours == [8, 24]
+    assert config.target.primary_horizon_hours == 8
 
 
 def test_train_baseline_metadata_points_to_expected_default_file() -> None:

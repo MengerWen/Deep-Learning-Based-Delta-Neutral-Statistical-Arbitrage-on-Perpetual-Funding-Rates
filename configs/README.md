@@ -3,7 +3,8 @@
 This repository keeps configuration centralized under `configs/` using YAML files.
 
 - `configs/data/`: source selection, symbols, date range, sampling frequency
-- `configs/features/`: rolling windows, normalization, z-score settings, label horizons
+- `configs/features/`: feature windows, transformations, and feature-table output assumptions
+- `configs/labels/`: label horizons, execution alignment, cost assumptions, and time-series splits
 - `configs/models/`: baseline model configs and deep-learning experiment parameters
 - `configs/backtests/`: fees, slippage, execution assumptions, portfolio rules
 - `configs/demo/`: frontend/demo artifact settings

@@ -86,7 +86,7 @@ class FeatureSetSettings(SettingsBase):
     annualization_factor_hours: int = 24 * 365
 
 
-class LabelSettings(SettingsBase):
+class FeatureLabelSettings(SettingsBase):
     forward_horizon_hours: int
     min_expected_edge_bps: float
     use_post_cost_target: bool = True
@@ -102,7 +102,7 @@ class FeatureOutputSettings(SettingsBase):
 class FeatureSettings(SettingsBase):
     input: FeatureInputSettings = Field(default_factory=FeatureInputSettings)
     feature_set: FeatureSetSettings
-    labels: LabelSettings
+    labels: FeatureLabelSettings
     output: FeatureOutputSettings
 
 
@@ -110,6 +110,56 @@ class ModelSplitSettings(SettingsBase):
     train_end: str
     validation_end: str
     test_end: str
+
+
+class LabelInputSettings(SettingsBase):
+    feature_table_path: str = "data/processed/features/binance/btcusdt/1h/btcusdt_feature_set.parquet"
+    feature_manifest_path: str | None = "data/processed/features/binance/btcusdt/1h/btcusdt_feature_manifest.json"
+    market_dataset_path: str = "data/processed/binance/btcusdt/1h/hourly_market_data.parquet"
+    market_manifest_path: str | None = "data/processed/binance/btcusdt/1h/manifest.json"
+    provider: str = "binance"
+    symbol: str = "BTCUSDT"
+    venue: str = "binance"
+    frequency: str = "1h"
+
+
+class LabelTargetSettings(SettingsBase):
+    direction: str = "short_perp_long_spot"
+    holding_windows_hours: list[int] = Field(default_factory=lambda: [8])
+    primary_horizon_hours: int = 8
+    execution_delay_bars: int = 1
+    execution_price_field: str = "open"
+    min_expected_edge_bps: float = 5.0
+    positive_return_threshold_bps: float = 0.0
+    use_post_cost_target: bool = True
+
+
+class LabelCostSettings(SettingsBase):
+    taker_fee_bps: float = 5.0
+    maker_fee_bps: float = 2.0
+    slippage_bps: float = 3.0
+    gas_cost_usd: float = 2.0
+    position_notional_usd: float = 10000.0
+    other_friction_bps: float = 0.0
+    borrow_cost_bps_per_hour: float = 0.0
+
+
+class LabelOutputSettings(SettingsBase):
+    output_dir: str = "data/processed/supervised"
+    artifact_name: str = "supervised_dataset.parquet"
+    label_table_name: str = "label_table.parquet"
+    manifest_name: str = "supervised_manifest.json"
+    write_csv: bool = True
+    save_split_files: bool = True
+
+
+class LabelPipelineSettings(SettingsBase):
+    input: LabelInputSettings = Field(default_factory=LabelInputSettings)
+    target: LabelTargetSettings = Field(default_factory=LabelTargetSettings)
+    costs: LabelCostSettings = Field(default_factory=LabelCostSettings)
+    split: ModelSplitSettings
+    output: LabelOutputSettings = Field(default_factory=LabelOutputSettings)
+    notes: dict[str, Any] = Field(default_factory=dict)
 
 
 class ModelTrainingSettings(SettingsBase):

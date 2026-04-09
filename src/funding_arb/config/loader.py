@@ -15,6 +15,7 @@ from funding_arb.config.models import (
     DataSettings,
     DeepLearningSettings,
     FeatureSettings,
+    LabelPipelineSettings,
 )
 from funding_arb.utils.config import load_config
 from funding_arb.utils.paths import repo_path
@@ -46,6 +47,11 @@ COMMAND_SETTINGS: dict[str, CommandSettings] = {
         command_name="build-features",
         default_config_path=repo_path("configs", "features", "default.yaml"),
         config_model=FeatureSettings,
+    ),
+    "build-labels": CommandSettings(
+        command_name="build-labels",
+        default_config_path=repo_path("configs", "labels", "default.yaml"),
+        config_model=LabelPipelineSettings,
     ),
     "train-baseline": CommandSettings(
         command_name="train-baseline",

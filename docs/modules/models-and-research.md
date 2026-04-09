@@ -8,8 +8,10 @@ Compare simple statistical baselines against sequence models that attempt to pre
 
 - a working canonical hourly market dataset pipeline
 - a configurable feature-engineering pipeline under `src/funding_arb/features/`
-- reproducible feature configs under `configs/features/default.yaml`
+- a cost-aware label-generation and supervised-dataset pipeline under `src/funding_arb/labels/`
+- reproducible feature and label configs under `configs/features/default.yaml` and `configs/labels/default.yaml`
 - documented feature definitions in `docs/features.md`
+- documented target definitions in `docs/labels.md`
 
 ## Planned Model Layers
 
@@ -32,9 +34,10 @@ Compare simple statistical baselines against sequence models that attempt to pre
 - `src/funding_arb/features/builders.py`
 - `src/funding_arb/features/transforms.py`
 - `src/funding_arb/labels/generator.py`
+- `src/funding_arb/labels/pipeline.py`
 - `src/funding_arb/models/baselines.py`
 - `src/funding_arb/models/deep_learning.py`
 
 ## Caveats
 
-The feature pipeline is now implemented, but label generation, baseline training, and experiment tracking are still future work.
+Feature and label pipelines are now implemented, but baseline training, deep-learning training loops, and experiment tracking remain future work.

@@ -13,6 +13,7 @@ from funding_arb.config.loader import COMMAND_SETTINGS, load_command_settings
 from funding_arb.data.pipeline import describe_ingestion_job, run_data_pipeline
 from funding_arb.features.pipeline import describe_feature_job, run_feature_pipeline
 from funding_arb.labels.generator import describe_labeling_assumption
+from funding_arb.labels.pipeline import describe_supervised_dataset_job, run_label_pipeline
 from funding_arb.models.baselines import describe_baseline_job
 from funding_arb.models.deep_learning import describe_deep_learning_job
 from funding_arb.reporting.data_quality import describe_data_quality_job, run_data_quality_report
@@ -63,6 +64,23 @@ def _run_build_features(config: Any, config_path: Path) -> int:
     return 0
 
 
+def _run_build_labels(config: Any, config_path: Path) -> int:
+    _log_config_summary("build-labels", config_path, config)
+    LOGGER.info(describe_supervised_dataset_job(config))
+    LOGGER.info(describe_labeling_assumption(config.model_dump()))
+    artifacts = run_label_pipeline(config)
+    LOGGER.info("Supervised dataset: %s", artifacts.supervised_dataset_path)
+    if artifacts.supervised_dataset_csv_path is not None:
+        LOGGER.info("Supervised dataset CSV: %s", artifacts.supervised_dataset_csv_path)
+    LOGGER.info("Label table: %s", artifacts.label_table_path)
+    if artifacts.label_table_csv_path is not None:
+        LOGGER.info("Label table CSV: %s", artifacts.label_table_csv_path)
+    if artifacts.split_paths:
+        LOGGER.info("Split datasets: %s", ", ".join(f"{name}={path}" for name, path in artifacts.split_paths.items()))
+    LOGGER.info("Supervised manifest: %s", artifacts.manifest_path)
+    return 0
+
+
 def _run_train_baseline(config: Any, config_path: Path) -> int:
     _log_config_summary("train-baseline", config_path, config)
     LOGGER.info(describe_baseline_job(config.model_dump()))
@@ -85,6 +103,7 @@ COMMAND_HANDLERS: dict[str, Callable[[Any, Path], int]] = {
     "fetch-data": _run_fetch_data,
     "report-data-quality": _run_report_data_quality,
     "build-features": _run_build_features,
+    "build-labels": _run_build_labels,
     "train-baseline": _run_train_baseline,
     "train-dl": _run_train_dl,
     "backtest": _run_backtest,

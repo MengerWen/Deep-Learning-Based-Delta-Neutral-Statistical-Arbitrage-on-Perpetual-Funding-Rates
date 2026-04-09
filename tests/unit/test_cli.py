@@ -17,6 +17,13 @@ def test_cli_parser_accepts_report_data_quality_command() -> None:
     assert args.config.endswith("configs\\reports\\data_quality.yaml") or args.config.endswith("configs/reports/data_quality.yaml")
 
 
+def test_cli_parser_accepts_build_labels_command() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["build-labels"])
+    assert args.command == "build-labels"
+    assert args.config.endswith("configs\\labels\\default.yaml") or args.config.endswith("configs/labels/default.yaml")
+
+
 def test_cli_parser_accepts_train_dl_command_with_log_level() -> None:
     parser = build_parser()
     args = parser.parse_args(["train-dl", "--log-level", "DEBUG"])
