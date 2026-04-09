@@ -129,6 +129,7 @@ npm run dev
 
 ## Docs
 
+- Technical design: [docs/architecture.md](docs/architecture.md)
 - Architecture: [docs/architecture/overview.md](docs/architecture/overview.md)
 - Data pipeline: [docs/modules/data-pipeline.md](docs/modules/data-pipeline.md)
 - Models and research: [docs/modules/models-and-research.md](docs/modules/models-and-research.md)
@@ -136,7 +137,6 @@ npm run dev
 - Vault contract: [docs/contracts/vault.md](docs/contracts/vault.md)
 - Frontend demo: [docs/demos/frontend.md](docs/demos/frontend.md)
 - Implementation plan: [docs/plans/2026-04-09-course-project-implementation-plan.md](docs/plans/2026-04-09-course-project-implementation-plan.md)
-
 ## Immediate Next Steps
 
 1. Implement the real data-ingestion adapters for one exchange and one reference price source.
