@@ -1,0 +1,16 @@
+﻿{
+  "demo": {
+    "title": "Funding-Rate Arbitrage Prototype Dashboard",
+    "artifact_dir": "data/artifacts/demo",
+    "use_mock_data": true
+  },
+  "frontend": {
+    "default_symbol": "BTCUSDT",
+    "refresh_seconds": 30
+  },
+  "contract": {
+    "chain_name": "local_foundry",
+    "vault_address": "0x0000000000000000000000000000000000000000",
+    "stablecoin_address": "0x0000000000000000000000000000000000000000"
+  }
+}

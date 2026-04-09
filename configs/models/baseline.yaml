@@ -1,0 +1,18 @@
+﻿{
+  "model": {
+    "name": "zscore_threshold",
+    "entry_threshold": 1.5,
+    "exit_threshold": 0.5,
+    "max_holding_hours": 24
+  },
+  "training": {
+    "split": {
+      "train_end": "2024-03-31",
+      "validation_end": "2024-09-30",
+      "test_end": "2024-12-31"
+    }
+  },
+  "output": {
+    "model_dir": "data/artifacts/models"
+  }
+}

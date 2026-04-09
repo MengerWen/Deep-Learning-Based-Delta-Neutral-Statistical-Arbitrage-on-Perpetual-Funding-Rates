@@ -1,0 +1,31 @@
+﻿{
+  "dataset": {
+    "symbol": "BTCUSDT",
+    "venue": "binance",
+    "reference_source": "binance_index",
+    "frequency": "1h",
+    "start": "2023-01-01",
+    "end": "2024-12-31"
+  },
+  "sources": {
+    "perpetual": {
+      "enabled": true,
+      "endpoint": "funding_rate_history"
+    },
+    "spot": {
+      "enabled": true,
+      "endpoint": "spot_klines"
+    },
+    "index": {
+      "enabled": true,
+      "endpoint": "premium_index_klines"
+    }
+  },
+  "paths": {
+    "raw_dir": "data/raw",
+    "interim_dir": "data/interim"
+  },
+  "notes": {
+    "assumption": "Start with a single-symbol, single-venue prototype before expanding to multi-exchange research."
+  }
+}

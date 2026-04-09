@@ -1,0 +1,21 @@
+﻿{
+  "portfolio": {
+    "initial_capital": 100000.0,
+    "position_notional": 10000.0,
+    "max_open_positions": 1
+  },
+  "costs": {
+    "taker_fee_bps": 5.0,
+    "maker_fee_bps": 2.0,
+    "slippage_bps": 3.0,
+    "gas_cost_usd": 2.0
+  },
+  "execution": {
+    "funding_interval_hours": 8,
+    "rebalance_frequency": "1h",
+    "allow_partial_exit": false
+  },
+  "reporting": {
+    "output_dir": "data/artifacts/backtests"
+  }
+}

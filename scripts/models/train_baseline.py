@@ -1,0 +1,26 @@
+"""CLI entry point for the baseline-model scaffold."""
+
+from __future__ import annotations
+
+import argparse
+
+from funding_arb.models.baselines import describe_baseline_job
+from funding_arb.utils.config import load_yaml_config
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Train a baseline arbitrage model.")
+    parser.add_argument("--config", required=True, help="Path to a YAML config file.")
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+    config = load_yaml_config(args.config)
+    print(describe_baseline_job(config))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
