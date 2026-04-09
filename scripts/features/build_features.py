@@ -1,4 +1,4 @@
-"""CLI entry point for the feature-engineering scaffold."""
+"""Compatibility wrapper for the unified build-features CLI command."""
 
 from __future__ import annotations
 
@@ -8,25 +8,21 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from funding_arb.features.pipeline import describe_feature_job
-from funding_arb.labels.generator import describe_labeling_assumption
-from funding_arb.utils.config import load_yaml_config
+from funding_arb.cli import run_command
 
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build features for the arbitrage pipeline.")
-    parser.add_argument("--config", required=True, help="Path to a YAML config file.")
+    parser.add_argument("--config", default="configs/features/default.yaml", help="Path to a YAML config file.")
+    parser.add_argument("--log-level", default="INFO", help="Logging level, e.g. INFO or DEBUG.")
     return parser.parse_args()
 
 
 
 def main() -> int:
     args = parse_args()
-    config = load_yaml_config(args.config)
-    print(describe_feature_job(config))
-    print(describe_labeling_assumption(config))
-    return 0
+    return run_command("build-features", args.config, args.log_level)
 
 
 

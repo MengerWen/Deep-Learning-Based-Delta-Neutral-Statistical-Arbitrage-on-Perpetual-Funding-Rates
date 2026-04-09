@@ -1,30 +1,38 @@
-"""CLI entry point for exporting a future demo snapshot."""
+"""Compatibility wrapper for exporting a future demo snapshot."""
 
 from __future__ import annotations
 
 import argparse
+import logging
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from funding_arb.utils.config import load_yaml_config
+from funding_arb.utils.logging import configure_logging
+
+LOGGER = logging.getLogger(__name__)
 
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Export demo artifacts for the frontend.")
-    parser.add_argument("--config", required=True, help="Path to a YAML config file.")
+    parser.add_argument("--config", default="configs/demo/default.yaml", help="Path to a YAML config file.")
+    parser.add_argument("--log-level", default="INFO", help="Logging level, e.g. INFO or DEBUG.")
     return parser.parse_args()
 
 
 
 def main() -> int:
     args = parse_args()
+    configure_logging(args.log_level)
     config = load_yaml_config(args.config)
     title = config.get("demo", {}).get("title", "Funding-Rate Arbitrage Prototype Dashboard")
     artifact_dir = config.get("demo", {}).get("artifact_dir", "data/artifacts/demo")
-    print(f"Demo scaffold ready for '{title}' with artifact directory '{artifact_dir}'.")
+    LOGGER.info("Command: export-demo-snapshot")
+    LOGGER.info("Config path: %s", args.config)
+    LOGGER.info("Demo scaffold ready for '%s' with artifact directory '%s'.", title, artifact_dir)
     return 0
 
 

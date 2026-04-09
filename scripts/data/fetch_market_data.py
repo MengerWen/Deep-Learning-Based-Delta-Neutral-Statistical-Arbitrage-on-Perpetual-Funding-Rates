@@ -1,4 +1,4 @@
-"""CLI entry point for the market-data ingestion scaffold."""
+"""Compatibility wrapper for the unified fetch-data CLI command."""
 
 from __future__ import annotations
 
@@ -8,23 +8,21 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from funding_arb.data.pipeline import describe_ingestion_job
-from funding_arb.utils.config import load_yaml_config
+from funding_arb.cli import run_command
 
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Fetch market data for the research pipeline.")
-    parser.add_argument("--config", required=True, help="Path to a YAML config file.")
+    parser.add_argument("--config", default="configs/data/default.yaml", help="Path to a YAML config file.")
+    parser.add_argument("--log-level", default="INFO", help="Logging level, e.g. INFO or DEBUG.")
     return parser.parse_args()
 
 
 
 def main() -> int:
     args = parse_args()
-    config = load_yaml_config(args.config)
-    print(describe_ingestion_job(config))
-    return 0
+    return run_command("fetch-data", args.config, args.log_level)
 
 
 

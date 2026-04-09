@@ -12,6 +12,7 @@ dependencies = [
   "numpy>=1.26,<3",
   "pandas>=2.2,<3",
   "PyYAML>=6.0,<7",
+  "pydantic>=2.12,<3",
   "python-dotenv>=0.21,<2",
 ]
 

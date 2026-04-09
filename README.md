@@ -111,6 +111,23 @@ Example scaffold commands:
 & 'd:\MG\anaconda3\python.exe' scripts/models/train_baseline.py --config configs/models/baseline.yaml
 & 'd:\MG\anaconda3\python.exe' scripts/backtests/run_backtest.py --config configs/backtests/default.yaml
 ```
+Unified CLI commands:
+
+```bash
+& 'd:\MG\anaconda3\python.exe' -m src.main fetch-data
+& 'd:\MG\anaconda3\python.exe' -m src.main build-features
+& 'd:\MG\anaconda3\python.exe' -m src.main train-baseline
+& 'd:\MG\anaconda3\python.exe' -m src.main train-dl
+& 'd:\MG\anaconda3\python.exe' -m src.main backtest
+```
+
+Override config or logging when needed:
+
+```bash
+& 'd:\MG\anaconda3\python.exe' -m src.main fetch-data --config configs/data/default.yaml --log-level DEBUG
+```
+
+Legacy `scripts/` entrypoints remain available as thin wrappers around the same command layer.
 
 ### Solidity
 
