@@ -64,12 +64,26 @@ class DataSettings(SettingsBase):
     notes: dict[str, Any] = Field(default_factory=dict)
 
 
+class FeatureInputSettings(SettingsBase):
+    dataset_path: str = "data/processed/binance/btcusdt/1h/hourly_market_data.parquet"
+    manifest_path: str | None = "data/processed/binance/btcusdt/1h/manifest.json"
+    provider: str = "binance"
+    symbol: str = "BTCUSDT"
+    venue: str = "binance"
+    frequency: str = "1h"
+
+
 class FeatureSetSettings(SettingsBase):
     rolling_windows: list[int] = Field(default_factory=list)
     volatility_window: int
     zscore_window: int
     funding_mean_window: int
     basis_mean_window: int
+    shock_window: int = 24
+    liquidity_window: int = 24
+    regime_window: int = 168
+    funding_interval_hours: int = 8
+    annualization_factor_hours: int = 24 * 365
 
 
 class LabelSettings(SettingsBase):
@@ -79,11 +93,14 @@ class LabelSettings(SettingsBase):
 
 
 class FeatureOutputSettings(SettingsBase):
-    processed_dir: str = "data/processed"
+    processed_dir: str = "data/processed/features"
     artifact_name: str = "feature_set.parquet"
+    manifest_name: str = "feature_manifest.json"
+    write_csv: bool = True
 
 
 class FeatureSettings(SettingsBase):
+    input: FeatureInputSettings = Field(default_factory=FeatureInputSettings)
     feature_set: FeatureSetSettings
     labels: LabelSettings
     output: FeatureOutputSettings

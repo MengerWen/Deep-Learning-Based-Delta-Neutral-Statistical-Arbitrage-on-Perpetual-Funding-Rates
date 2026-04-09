@@ -22,6 +22,8 @@ def test_report_data_quality_default_config_loads_typed_model() -> None:
 def test_build_features_default_config_loads_typed_model() -> None:
     config = load_command_settings("build-features")
     assert isinstance(config, FeatureSettings)
+    assert config.input.dataset_path.endswith("hourly_market_data.parquet")
+    assert config.feature_set.rolling_windows == [8, 24, 72, 168]
     assert config.labels.forward_horizon_hours == 8
 
 

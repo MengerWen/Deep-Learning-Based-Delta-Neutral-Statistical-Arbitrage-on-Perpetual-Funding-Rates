@@ -13,7 +13,7 @@ The repository is intentionally scoped as a prototype. We want clear architectur
 
 ## Repository Status
 
-This is the initial monorepo scaffold. The folder structure, configs, docs, starter Python package, Solidity workspace, and demo frontend skeleton are in place. Most domain-specific logic is still a placeholder and should be implemented incrementally.
+The repository now has a working Binance historical data pipeline, a configurable feature-engineering pipeline, and a presentation-friendly data-quality reporting command. Baseline models, labels, backtests, and richer contract/frontend integration are the main remaining build areas.
 
 ## Architecture Overview
 
@@ -135,6 +135,7 @@ Override config or logging when needed:
 Legacy `scripts/` entrypoints remain available as thin wrappers around the same command layer.
 The `fetch-data` command now runs the first complete historical data pipeline and writes raw, cleaned, and canonical hourly outputs under `data/raw/`, `data/interim/`, and `data/processed/`.
 The `report-data-quality` command consumes that canonical dataset and writes presentation-ready tables, figures, and a markdown summary under `reports/data_quality/`.
+The `build-features` command now writes an interpretable feature table and manifest under `data/processed/features/`.
 
 ### Solidity
 
@@ -158,6 +159,7 @@ npm run dev
 - Data pipeline: [docs/modules/data-pipeline.md](docs/modules/data-pipeline.md)
 - Data schema: [docs/data_schema.md](docs/data_schema.md)
 - Data-quality reporting: [docs/modules/data-quality-reporting.md](docs/modules/data-quality-reporting.md)
+- Feature specification: [docs/features.md](docs/features.md)
 - Models and research: [docs/modules/models-and-research.md](docs/modules/models-and-research.md)
 - Backtesting: [docs/modules/backtesting.md](docs/modules/backtesting.md)
 - Vault contract: [docs/contracts/vault.md](docs/contracts/vault.md)
@@ -165,10 +167,10 @@ npm run dev
 - Implementation plan: [docs/plans/2026-04-09-course-project-implementation-plan.md](docs/plans/2026-04-09-course-project-implementation-plan.md)
 ## Immediate Next Steps
 
-1. Expand the data layer beyond the first Binance path, starting with index-price ingestion and optional open-interest validation.
-2. Build the cleaned canonical dataset into the first feature and label pipeline.
-3. Add the first baseline strategy and a cost-aware backtest.
-4. Connect report artifacts and backtest summaries into the frontend demo.
+1. Add the first post-cost label pipeline on top of the new feature table.
+2. Implement the first baseline strategy and a cost-aware backtest over the engineered features.
+3. Expand the data layer with index-price ingestion and optional open-interest validation.
+4. Connect report artifacts and feature summaries into the frontend demo.
 
 ## Minimal No-Install Verification
 

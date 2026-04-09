@@ -11,7 +11,7 @@ from typing import Any
 from funding_arb.backtest.engine import describe_backtest_job
 from funding_arb.config.loader import COMMAND_SETTINGS, load_command_settings
 from funding_arb.data.pipeline import describe_ingestion_job, run_data_pipeline
-from funding_arb.features.pipeline import describe_feature_job
+from funding_arb.features.pipeline import describe_feature_job, run_feature_pipeline
 from funding_arb.labels.generator import describe_labeling_assumption
 from funding_arb.models.baselines import describe_baseline_job
 from funding_arb.models.deep_learning import describe_deep_learning_job
@@ -52,10 +52,14 @@ def _run_report_data_quality(config: Any, config_path: Path) -> int:
 
 
 def _run_build_features(config: Any, config_path: Path) -> int:
-    payload = config.model_dump()
     _log_config_summary("build-features", config_path, config)
-    LOGGER.info(describe_feature_job(payload))
-    LOGGER.info(describe_labeling_assumption(payload))
+    LOGGER.info(describe_feature_job(config))
+    LOGGER.info(describe_labeling_assumption(config.model_dump()))
+    artifacts = run_feature_pipeline(config)
+    LOGGER.info("Feature table: %s", artifacts.feature_table_path)
+    if artifacts.feature_table_csv_path is not None:
+        LOGGER.info("Feature table CSV: %s", artifacts.feature_table_csv_path)
+    LOGGER.info("Feature manifest: %s", artifacts.manifest_path)
     return 0
 
 
