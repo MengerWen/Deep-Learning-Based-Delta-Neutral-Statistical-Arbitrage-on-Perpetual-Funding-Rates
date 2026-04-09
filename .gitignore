@@ -17,6 +17,7 @@ contracts/cache/
 contracts/out/
 contracts/broadcast/
 
+# Large, reproducible data outputs stay ignored by default.
 data/raw/*
 !data/raw/.gitkeep
 data/interim/*
@@ -26,6 +27,4 @@ data/processed/*
 data/artifacts/*
 !data/artifacts/.gitkeep
 
-
-reports/*
-!reports/.gitkeep
+# Reports are intentionally tracked so they can be reviewed on GitHub.
