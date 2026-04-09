@@ -13,6 +13,12 @@ class SettingsBase(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
+class DataProviderSettings(SettingsBase):
+    provider: str = "binance"
+    timeout_seconds: int = 30
+    limit_per_request: int = 1000
+
+
 class DataDatasetSettings(SettingsBase):
     symbol: str
     venue: str
@@ -20,6 +26,8 @@ class DataDatasetSettings(SettingsBase):
     frequency: str
     start: str
     end: str
+    perpetual_symbol: str | None = None
+    spot_symbol: str | None = None
 
 
 class DataSourceSettings(SettingsBase):
@@ -27,15 +35,32 @@ class DataSourceSettings(SettingsBase):
     endpoint: str
 
 
-class DataPathSettings(SettingsBase):
-    raw_dir: str = "data/raw"
-    interim_dir: str = "data/interim"
+class DataCleaningSettings(SettingsBase):
+    timezone: str = "UTC"
+    drop_duplicates: bool = True
+    sort_ascending: bool = True
+    max_forward_fill_hours: int = 3
+    fill_price_method: str = "ffill"
+    fill_volume_value: float = 0.0
+    fill_funding_value: float = 0.0
+    fill_open_interest_method: str = "ffill"
+    validate_frequency: bool = True
+
+
+class DataOutputSettings(SettingsBase):
+    format: str = "parquet"
+    write_csv: bool = True
+    raw_subdir: str = "data/raw"
+    interim_subdir: str = "data/interim"
+    processed_subdir: str = "data/processed"
 
 
 class DataSettings(SettingsBase):
+    source: DataProviderSettings = Field(default_factory=DataProviderSettings)
     dataset: DataDatasetSettings
     sources: dict[str, DataSourceSettings]
-    paths: DataPathSettings
+    cleaning: DataCleaningSettings = Field(default_factory=DataCleaningSettings)
+    output: DataOutputSettings = Field(default_factory=DataOutputSettings)
     notes: dict[str, Any] = Field(default_factory=dict)
 
 

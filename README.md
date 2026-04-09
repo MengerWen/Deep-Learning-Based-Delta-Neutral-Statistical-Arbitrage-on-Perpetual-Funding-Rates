@@ -128,6 +128,7 @@ Override config or logging when needed:
 ```
 
 Legacy `scripts/` entrypoints remain available as thin wrappers around the same command layer.
+The `fetch-data` command now runs the first complete historical data pipeline and writes raw, cleaned, and canonical hourly outputs under `data/raw/`, `data/interim/`, and `data/processed/`.
 
 ### Solidity
 
@@ -149,6 +150,7 @@ npm run dev
 - Technical design: [docs/architecture.md](docs/architecture.md)
 - Architecture: [docs/architecture/overview.md](docs/architecture/overview.md)
 - Data pipeline: [docs/modules/data-pipeline.md](docs/modules/data-pipeline.md)
+- Data schema: [docs/data_schema.md](docs/data_schema.md)
 - Models and research: [docs/modules/models-and-research.md](docs/modules/models-and-research.md)
 - Backtesting: [docs/modules/backtesting.md](docs/modules/backtesting.md)
 - Vault contract: [docs/contracts/vault.md](docs/contracts/vault.md)

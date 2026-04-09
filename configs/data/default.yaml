@@ -1,25 +1,54 @@
+source:
+  provider: binance
+  timeout_seconds: 30
+  limit_per_request: 1000
+
 dataset:
   symbol: BTCUSDT
+  perpetual_symbol: BTCUSDT
+  spot_symbol: BTCUSDT
   venue: binance
-  reference_source: binance_index
+  reference_source: spot
   frequency: 1h
-  start: "2023-01-01"
-  end: "2024-12-31"
+  start: "2024-01-01"
+  end: "2024-03-31"
 
 sources:
   perpetual:
     enabled: true
-    endpoint: funding_rate_history
+    endpoint: futures_klines
   spot:
     enabled: true
     endpoint: spot_klines
-  index:
+  funding:
     enabled: true
-    endpoint: premium_index_klines
+    endpoint: funding_rate_history
+  open_interest:
+    enabled: false
+    endpoint: open_interest_hist
+  index:
+    enabled: false
+    endpoint: index_price_history
 
-paths:
-  raw_dir: data/raw
-  interim_dir: data/interim
+cleaning:
+  timezone: UTC
+  drop_duplicates: true
+  sort_ascending: true
+  max_forward_fill_hours: 3
+  fill_price_method: ffill
+  fill_volume_value: 0.0
+  fill_funding_value: 0.0
+  fill_open_interest_method: ffill
+  validate_frequency: true
+
+output:
+  format: parquet
+  write_csv: true
+  raw_subdir: data/raw
+  interim_subdir: data/interim
+  processed_subdir: data/processed
 
 notes:
-  assumption: Start with a single-symbol, single-venue prototype before expanding to multi-exchange research.
+  assumption: First working implementation uses Binance public REST endpoints for BTCUSDT hourly perpetual, spot, and funding data.
+  open_interest_note: Binance open interest history is supported by the interface but disabled by default because the public history endpoint is limited and venue-specific.
+  end_date_note: Date-only end values are treated as inclusive UTC dates and expanded to the next day internally for hourly extraction.

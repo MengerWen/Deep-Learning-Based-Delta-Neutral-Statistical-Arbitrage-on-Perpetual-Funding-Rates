@@ -10,7 +10,7 @@ from typing import Any
 
 from funding_arb.backtest.engine import describe_backtest_job
 from funding_arb.config.loader import COMMAND_SETTINGS, load_command_settings
-from funding_arb.data.pipeline import describe_ingestion_job
+from funding_arb.data.pipeline import describe_ingestion_job, run_data_pipeline
 from funding_arb.features.pipeline import describe_feature_job
 from funding_arb.labels.generator import describe_labeling_assumption
 from funding_arb.models.baselines import describe_baseline_job
@@ -20,19 +20,21 @@ from funding_arb.utils.logging import configure_logging
 LOGGER = logging.getLogger(__name__)
 
 
-
 def _log_config_summary(command_name: str, config_path: Path, config: Any) -> None:
     LOGGER.info("Command: %s", command_name)
     LOGGER.info("Config path: %s", config_path)
     LOGGER.info("Config model: %s", type(config).__name__)
 
 
-
 def _run_fetch_data(config: Any, config_path: Path) -> int:
     _log_config_summary("fetch-data", config_path, config)
-    LOGGER.info(describe_ingestion_job(config.model_dump()))
+    LOGGER.info(describe_ingestion_job(config))
+    artifacts = run_data_pipeline(config)
+    LOGGER.info("Raw outputs: %s", ", ".join(artifacts.raw_files))
+    LOGGER.info("Interim outputs: %s", ", ".join(artifacts.interim_files))
+    LOGGER.info("Processed outputs: %s", ", ".join(artifacts.processed_files))
+    LOGGER.info("Manifest: %s", artifacts.manifest_path)
     return 0
-
 
 
 def _run_build_features(config: Any, config_path: Path) -> int:
@@ -43,19 +45,16 @@ def _run_build_features(config: Any, config_path: Path) -> int:
     return 0
 
 
-
 def _run_train_baseline(config: Any, config_path: Path) -> int:
     _log_config_summary("train-baseline", config_path, config)
     LOGGER.info(describe_baseline_job(config.model_dump()))
     return 0
 
 
-
 def _run_train_dl(config: Any, config_path: Path) -> int:
     _log_config_summary("train-dl", config_path, config)
     LOGGER.info(describe_deep_learning_job(config.model_dump()))
     return 0
-
 
 
 def _run_backtest(config: Any, config_path: Path) -> int:
@@ -71,7 +70,6 @@ COMMAND_HANDLERS: dict[str, Callable[[Any, Path], int]] = {
     "train-dl": _run_train_dl,
     "backtest": _run_backtest,
 }
-
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -91,7 +89,6 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-
 def run_command(command_name: str, config_path: str | Path, log_level: str = "INFO") -> int:
     """Run a named CLI command with the provided config path."""
     configure_logging(log_level)
@@ -99,7 +96,6 @@ def run_command(command_name: str, config_path: str | Path, log_level: str = "IN
     config = load_command_settings(command_name, resolved_path)
     handler = COMMAND_HANDLERS[command_name]
     return handler(config, resolved_path)
-
 
 
 def main(argv: Sequence[str] | None = None) -> int:
