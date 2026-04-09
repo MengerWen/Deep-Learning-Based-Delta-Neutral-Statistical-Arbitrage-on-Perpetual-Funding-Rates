@@ -28,3 +28,6 @@ data/artifacts/*
 !data/artifacts/.gitkeep
 
 # Reports are intentionally tracked so they can be reviewed on GitHub.
+
+# Local test scratch space for Windows-safe temporary files.
+tests/.tmp/

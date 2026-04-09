@@ -6,6 +6,7 @@
 - `labels.md`: post-cost target definitions
 - `baselines.md`: rule-based and simple ML benchmark design
 - `models.md`: first LSTM-based sequence-model training pipeline
+- `signals.md`: unified trading-signal schema and adapters
 - `architecture/`: system-level design and data flow
 - `modules/`: module-specific implementation notes
 - `contracts/`: Solidity vault design notes

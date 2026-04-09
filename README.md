@@ -67,6 +67,7 @@ The demo frontend uses a lightweight `Vite + TypeScript` scaffold rather than a 
 |   +-- features/
 |   +-- labels/
 |   +-- reports/
+|   +-- signals/
 |   `-- models/
 +-- data/
 |   +-- raw/
@@ -88,6 +89,7 @@ The demo frontend uses a lightweight `Vite + TypeScript` scaffold rather than a 
 |   +-- features/
 |   +-- labels/
 |   +-- reports/
+|   +-- signals/
 |   `-- models/
 +-- src/
 |   `-- funding_arb/
@@ -130,6 +132,8 @@ Unified CLI commands:
 & 'd:\MG\anaconda3\python.exe' -m src.main train-baseline
 & 'd:\MG\anaconda3\python.exe' -m src.main evaluate-baseline
 & 'd:\MG\anaconda3\python.exe' -m src.main train-dl
+& 'd:\MG\anaconda3\python.exe' -m src.main generate-signals --source baseline
+& 'd:\MG\anaconda3\python.exe' -m src.main generate-signals --source dl
 & 'd:\MG\anaconda3\python.exe' -m src.main backtest
 ```
 
@@ -147,6 +151,7 @@ The `build-labels` command now writes post-cost regression targets, classificati
 The `train-baseline` command now fits rule-based and simple ML baselines, writes reusable prediction/signal artifacts under `data/artifacts/models/baselines/`, and saves evaluation summaries for validation/test benchmarking.
 The `evaluate-baseline` command reloads saved baseline artifacts and regenerates prediction/evaluation outputs without refitting.
 The `train-dl` command now trains the first LSTM sequence model on the supervised dataset, saves the best checkpoint, writes prediction artifacts, and exports a lightweight experiment summary under `data/artifacts/models/dl/`.
+The `generate-signals` command now normalizes rule-based, baseline ML, and deep-learning outputs into one shared signal schema under `data/artifacts/signals/`, ready for backtesting and demo consumption.
 
 ### Solidity
 
@@ -174,6 +179,7 @@ npm run dev
 - Label specification: [docs/labels.md](docs/labels.md)
 - Baseline models: [docs/baselines.md](docs/baselines.md)
 - Deep learning models: [docs/models.md](docs/models.md)
+- Unified signals: [docs/signals.md](docs/signals.md)
 - Models and research: [docs/modules/models-and-research.md](docs/modules/models-and-research.md)
 - Backtesting: [docs/modules/backtesting.md](docs/modules/backtesting.md)
 - Vault contract: [docs/contracts/vault.md](docs/contracts/vault.md)

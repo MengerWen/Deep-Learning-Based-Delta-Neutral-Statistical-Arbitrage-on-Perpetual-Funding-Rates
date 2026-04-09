@@ -16,6 +16,7 @@ from funding_arb.config.models import (
     DeepLearningSettings,
     FeatureSettings,
     LabelPipelineSettings,
+    SignalSettings,
 )
 from funding_arb.utils.config import load_config
 from funding_arb.utils.paths import repo_path
@@ -67,6 +68,11 @@ COMMAND_SETTINGS: dict[str, CommandSettings] = {
         command_name="train-dl",
         default_config_path=repo_path("configs", "models", "lstm.yaml"),
         config_model=DeepLearningSettings,
+    ),
+    "generate-signals": CommandSettings(
+        command_name="generate-signals",
+        default_config_path=repo_path("configs", "signals", "default.yaml"),
+        config_model=SignalSettings,
     ),
     "backtest": CommandSettings(
         command_name="backtest",

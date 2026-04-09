@@ -335,6 +335,37 @@ class DeepLearningSettings(SettingsBase):
     notes: dict[str, Any] = Field(default_factory=dict)
 
 
+class SignalInputSettings(SettingsBase):
+    baseline_predictions_path: str = "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_predictions.parquet"
+    baseline_manifest_path: str | None = "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_manifest.json"
+    dl_predictions_path: str = "data/artifacts/models/dl/binance/btcusdt/1h/lstm_regression_24h_default/dl_predictions.parquet"
+    dl_manifest_path: str | None = "data/artifacts/models/dl/binance/btcusdt/1h/lstm_regression_24h_default/dl_manifest.json"
+    provider: str = "binance"
+    symbol: str = "BTCUSDT"
+    venue: str = "binance"
+    frequency: str = "1h"
+
+
+class SignalSourceSettings(SettingsBase):
+    name: str = "baseline"
+    baseline_mode: str = "all"
+    model_names: list[str] = Field(default_factory=list)
+
+
+class SignalOutputSettings(SettingsBase):
+    output_dir: str = "data/artifacts/signals"
+    artifact_name: str = "signals.parquet"
+    manifest_name: str = "signals_manifest.json"
+    write_csv: bool = True
+
+
+class SignalSettings(SettingsBase):
+    input: SignalInputSettings = Field(default_factory=SignalInputSettings)
+    source: SignalSourceSettings = Field(default_factory=SignalSourceSettings)
+    output: SignalOutputSettings = Field(default_factory=SignalOutputSettings)
+    notes: dict[str, Any] = Field(default_factory=dict)
+
+
 class PortfolioSettings(SettingsBase):
     initial_capital: float
     position_notional: float
