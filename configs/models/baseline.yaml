@@ -1,14 +1,88 @@
-model:
-  name: zscore_threshold
-  entry_threshold: 1.5
-  exit_threshold: 0.5
-  max_holding_hours: 24
+input:
+  dataset_path: data/processed/supervised/binance/btcusdt/1h/btcusdt_supervised_dataset.parquet
+  manifest_path: data/processed/supervised/binance/btcusdt/1h/btcusdt_supervised_manifest.json
+  provider: binance
+  symbol: BTCUSDT
+  venue: binance
+  frequency: 1h
 
-training:
-  split:
-    train_end: "2024-03-31"
-    validation_end: "2024-09-30"
-    test_end: "2024-12-31"
+target:
+  timestamp_column: timestamp
+  split_column: split
+  ready_column: supervised_ready
+  classification_column: target_is_profitable_24h
+  regression_column: target_future_net_return_bps_24h
+
+feature_selection:
+  include_columns: []
+  exclude_columns:
+    - timestamp
+    - symbol
+    - venue
+    - frequency
+    - split
+    - feature_ready
+    - supervised_ready
+  exclude_prefixes:
+    - target_
+  max_missing_fraction: 0.25
+  drop_constant_features: true
+
+rules:
+  - name: funding_threshold_2bps
+    kind: funding_threshold
+    funding_column: funding_rate_bps
+    funding_threshold_bps: 2.0
+  - name: spread_zscore_1p5
+    kind: spread_zscore_threshold
+    spread_column: spread_zscore_72h
+    spread_threshold: 1.5
+  - name: combined_funding_spread
+    kind: combined_threshold
+    funding_column: funding_rate_bps
+    funding_threshold_bps: 1.0
+    spread_column: spread_zscore_72h
+    spread_threshold: 1.5
+    regime_column: positive_funding_regime
+    regime_value: 1
+
+predictive:
+  classification:
+    enabled: true
+    name: logistic_regression
+    estimator: logistic_regression
+    probability_threshold: 0.5
+    standardize: true
+    max_iter: 2000
+    c: 1.0
+    class_weight: balanced
+    random_state: 42
+  regression:
+    enabled: true
+    name: ridge_regression
+    estimator: ridge
+    standardize: true
+    alpha: 1.0
+    trade_threshold_bps: 0.0
+    random_state: 42
+  tree:
+    enabled: false
+    classifier_name: random_forest_classifier
+    regressor_name: random_forest_regressor
+    n_estimators: 200
+    max_depth: 6
+    min_samples_leaf: 50
+    classification_probability_threshold: 0.5
+    regression_trade_threshold_bps: 0.0
+    random_state: 42
 
 output:
-  model_dir: data/artifacts/models
+  model_dir: data/artifacts/models/baselines
+  run_name: btcusdt_24h_default
+  write_csv: true
+  write_markdown_report: true
+
+notes:
+  rationale: >-
+    Default baselines use the 24-hour post-cost target because it is slightly less sparse than the 8-hour label,
+    while remaining aligned with tradable net-return quality.

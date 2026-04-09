@@ -162,6 +162,110 @@ class LabelPipelineSettings(SettingsBase):
     notes: dict[str, Any] = Field(default_factory=dict)
 
 
+class BaselineInputSettings(SettingsBase):
+    dataset_path: str = "data/processed/supervised/binance/btcusdt/1h/btcusdt_supervised_dataset.parquet"
+    manifest_path: str | None = "data/processed/supervised/binance/btcusdt/1h/btcusdt_supervised_manifest.json"
+    provider: str = "binance"
+    symbol: str = "BTCUSDT"
+    venue: str = "binance"
+    frequency: str = "1h"
+
+
+class BaselineTargetSettings(SettingsBase):
+    timestamp_column: str = "timestamp"
+    split_column: str = "split"
+    ready_column: str = "supervised_ready"
+    classification_column: str = "target_is_profitable_24h"
+    regression_column: str = "target_future_net_return_bps_24h"
+
+
+class BaselineFeatureSelectionSettings(SettingsBase):
+    include_columns: list[str] = Field(default_factory=list)
+    exclude_columns: list[str] = Field(
+        default_factory=lambda: [
+            "timestamp",
+            "symbol",
+            "venue",
+            "frequency",
+            "split",
+            "feature_ready",
+            "supervised_ready",
+        ]
+    )
+    exclude_prefixes: list[str] = Field(default_factory=lambda: ["target_"])
+    max_missing_fraction: float = 0.25
+    drop_constant_features: bool = True
+
+
+class RuleBaselineSpec(SettingsBase):
+    name: str
+    kind: str
+    enabled: bool = True
+    funding_column: str = "funding_rate_bps"
+    funding_threshold_bps: float = 0.0
+    spread_column: str = "spread_zscore_72h"
+    spread_threshold: float = 0.0
+    regime_column: str | None = None
+    regime_value: float | int | None = 1
+
+
+class ClassificationBaselineSettings(SettingsBase):
+    enabled: bool = True
+    name: str = "logistic_regression"
+    estimator: str = "logistic_regression"
+    probability_threshold: float = 0.5
+    standardize: bool = True
+    max_iter: int = 1500
+    c: float = 1.0
+    class_weight: str | None = "balanced"
+    random_state: int = 42
+
+
+class RegressionBaselineSettings(SettingsBase):
+    enabled: bool = True
+    name: str = "ridge_regression"
+    estimator: str = "ridge"
+    standardize: bool = True
+    alpha: float = 1.0
+    trade_threshold_bps: float = 0.0
+    random_state: int = 42
+
+
+class TreeBaselineSettings(SettingsBase):
+    enabled: bool = False
+    classifier_name: str = "random_forest_classifier"
+    regressor_name: str = "random_forest_regressor"
+    n_estimators: int = 200
+    max_depth: int | None = 6
+    min_samples_leaf: int = 50
+    classification_probability_threshold: float = 0.5
+    regression_trade_threshold_bps: float = 0.0
+    random_state: int = 42
+
+
+class BaselinePredictiveSettings(SettingsBase):
+    classification: ClassificationBaselineSettings = Field(default_factory=ClassificationBaselineSettings)
+    regression: RegressionBaselineSettings = Field(default_factory=RegressionBaselineSettings)
+    tree: TreeBaselineSettings = Field(default_factory=TreeBaselineSettings)
+
+
+class BaselineOutputSettings(SettingsBase):
+    model_dir: str = "data/artifacts/models/baselines"
+    run_name: str = "default"
+    write_csv: bool = True
+    write_markdown_report: bool = True
+
+
+class BaselineSettings(SettingsBase):
+    input: BaselineInputSettings = Field(default_factory=BaselineInputSettings)
+    target: BaselineTargetSettings = Field(default_factory=BaselineTargetSettings)
+    feature_selection: BaselineFeatureSelectionSettings = Field(default_factory=BaselineFeatureSelectionSettings)
+    rules: list[RuleBaselineSpec] = Field(default_factory=list)
+    predictive: BaselinePredictiveSettings = Field(default_factory=BaselinePredictiveSettings)
+    output: BaselineOutputSettings = Field(default_factory=BaselineOutputSettings)
+    notes: dict[str, Any] = Field(default_factory=dict)
+
+
 class ModelTrainingSettings(SettingsBase):
     split: ModelSplitSettings | None = None
     batch_size: int | None = None
@@ -172,23 +276,6 @@ class ModelTrainingSettings(SettingsBase):
 
 class ModelOutputSettings(SettingsBase):
     model_dir: str = "data/artifacts/models"
-
-
-class BaselineModelSettings(SettingsBase):
-    name: str
-    entry_threshold: float | None = None
-    exit_threshold: float | None = None
-    max_holding_hours: int | None = None
-
-
-class BaselineTrainingSettings(SettingsBase):
-    split: ModelSplitSettings
-
-
-class BaselineSettings(SettingsBase):
-    model: BaselineModelSettings
-    training: BaselineTrainingSettings
-    output: ModelOutputSettings
 
 
 class DeepLearningModelSettings(SettingsBase):

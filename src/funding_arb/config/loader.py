@@ -58,6 +58,11 @@ COMMAND_SETTINGS: dict[str, CommandSettings] = {
         default_config_path=repo_path("configs", "models", "baseline.yaml"),
         config_model=BaselineSettings,
     ),
+    "evaluate-baseline": CommandSettings(
+        command_name="evaluate-baseline",
+        default_config_path=repo_path("configs", "models", "baseline.yaml"),
+        config_model=BaselineSettings,
+    ),
     "train-dl": CommandSettings(
         command_name="train-dl",
         default_config_path=repo_path("configs", "models", "lstm.yaml"),

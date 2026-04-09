@@ -14,7 +14,11 @@ from funding_arb.data.pipeline import describe_ingestion_job, run_data_pipeline
 from funding_arb.features.pipeline import describe_feature_job, run_feature_pipeline
 from funding_arb.labels.generator import describe_labeling_assumption
 from funding_arb.labels.pipeline import describe_supervised_dataset_job, run_label_pipeline
-from funding_arb.models.baselines import describe_baseline_job
+from funding_arb.models.baselines import (
+    describe_baseline_evaluation_job,
+    describe_baseline_job,
+    run_baseline_pipeline,
+)
 from funding_arb.models.deep_learning import describe_deep_learning_job
 from funding_arb.reporting.data_quality import describe_data_quality_job, run_data_quality_report
 from funding_arb.utils.logging import configure_logging
@@ -83,7 +87,45 @@ def _run_build_labels(config: Any, config_path: Path) -> int:
 
 def _run_train_baseline(config: Any, config_path: Path) -> int:
     _log_config_summary("train-baseline", config_path, config)
-    LOGGER.info(describe_baseline_job(config.model_dump()))
+    LOGGER.info(describe_baseline_job(config))
+    artifacts = run_baseline_pipeline(config, train_models=True)
+    LOGGER.info("Predictions: %s", artifacts.predictions_path)
+    if artifacts.predictions_csv_path is not None:
+        LOGGER.info("Predictions CSV: %s", artifacts.predictions_csv_path)
+    LOGGER.info("Metrics: %s", artifacts.metrics_path)
+    if artifacts.metrics_csv_path is not None:
+        LOGGER.info("Metrics CSV: %s", artifacts.metrics_csv_path)
+    LOGGER.info("Leaderboard: %s", artifacts.leaderboard_path)
+    if artifacts.leaderboard_csv_path is not None:
+        LOGGER.info("Leaderboard CSV: %s", artifacts.leaderboard_csv_path)
+    if artifacts.report_path is not None:
+        LOGGER.info("Markdown report: %s", artifacts.report_path)
+    LOGGER.info("Feature columns: %s", artifacts.feature_columns_path)
+    LOGGER.info("Model manifest: %s", artifacts.manifest_path)
+    if artifacts.model_paths:
+        LOGGER.info("Model artifacts: %s", ", ".join(f"{name}={path}" for name, path in artifacts.model_paths.items()))
+    if artifacts.diagnostic_paths:
+        LOGGER.info("Diagnostics: %s", ", ".join(f"{name}={path}" for name, path in artifacts.diagnostic_paths.items()))
+    return 0
+
+
+def _run_evaluate_baseline(config: Any, config_path: Path) -> int:
+    _log_config_summary("evaluate-baseline", config_path, config)
+    LOGGER.info(describe_baseline_evaluation_job(config))
+    artifacts = run_baseline_pipeline(config, train_models=False)
+    LOGGER.info("Predictions: %s", artifacts.predictions_path)
+    if artifacts.predictions_csv_path is not None:
+        LOGGER.info("Predictions CSV: %s", artifacts.predictions_csv_path)
+    LOGGER.info("Metrics: %s", artifacts.metrics_path)
+    if artifacts.metrics_csv_path is not None:
+        LOGGER.info("Metrics CSV: %s", artifacts.metrics_csv_path)
+    LOGGER.info("Leaderboard: %s", artifacts.leaderboard_path)
+    if artifacts.leaderboard_csv_path is not None:
+        LOGGER.info("Leaderboard CSV: %s", artifacts.leaderboard_csv_path)
+    if artifacts.report_path is not None:
+        LOGGER.info("Markdown report: %s", artifacts.report_path)
+    LOGGER.info("Feature columns: %s", artifacts.feature_columns_path)
+    LOGGER.info("Model manifest: %s", artifacts.manifest_path)
     return 0
 
 
@@ -105,6 +147,7 @@ COMMAND_HANDLERS: dict[str, Callable[[Any, Path], int]] = {
     "build-features": _run_build_features,
     "build-labels": _run_build_labels,
     "train-baseline": _run_train_baseline,
+    "evaluate-baseline": _run_evaluate_baseline,
     "train-dl": _run_train_dl,
     "backtest": _run_backtest,
 }

@@ -17,6 +17,8 @@ dependencies = [
   "pyarrow>=16,<17",
   "requests>=2.32,<3",
   "matplotlib>=3.9,<4",
+  "scikit-learn>=1.5,<2",
+  "joblib>=1.4,<2",
 ]
 
 [project.optional-dependencies]
@@ -25,7 +27,6 @@ dev = [
   "ruff>=0.4,<0.6",
 ]
 ml = [
-  "scikit-learn>=1.5,<2",
   "torch>=2.11,<3",
 ]
 viz = [

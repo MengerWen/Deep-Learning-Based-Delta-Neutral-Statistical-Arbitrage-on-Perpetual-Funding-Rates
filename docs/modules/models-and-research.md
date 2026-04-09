@@ -9,9 +9,11 @@ Compare simple statistical baselines against sequence models that attempt to pre
 - a working canonical hourly market dataset pipeline
 - a configurable feature-engineering pipeline under `src/funding_arb/features/`
 - a cost-aware label-generation and supervised-dataset pipeline under `src/funding_arb/labels/`
-- reproducible feature and label configs under `configs/features/default.yaml` and `configs/labels/default.yaml`
+- a baseline training/evaluation pipeline under `src/funding_arb/models/baselines.py`
+- reproducible feature, label, and baseline configs under `configs/features/default.yaml`, `configs/labels/default.yaml`, and `configs/models/baseline.yaml`
 - documented feature definitions in `docs/features.md`
 - documented target definitions in `docs/labels.md`
+- documented baseline definitions in `docs/baselines.md`
 
 ## Planned Model Layers
 
@@ -40,4 +42,4 @@ Compare simple statistical baselines against sequence models that attempt to pre
 
 ## Caveats
 
-Feature and label pipelines are now implemented, but baseline training, deep-learning training loops, and experiment tracking remain future work.
+Baseline training is now implemented, but post-cost positive labels are intentionally sparse under the current assumptions, so benchmark interpretation should emphasize signal-return diagnostics in addition to standard classification metrics. Deep-learning training loops and richer experiment tracking remain future work.

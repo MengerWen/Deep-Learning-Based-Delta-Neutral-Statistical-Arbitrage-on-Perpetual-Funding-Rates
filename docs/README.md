@@ -1,8 +1,12 @@
 # Documentation Map
 
 - `architecture.md`: main implementation-oriented technical design
+- `data_schema.md`: canonical market dataset schema
+- `features.md`: engineered feature definitions
+- `labels.md`: post-cost target definitions
+- `baselines.md`: rule-based and simple ML benchmark design
 - `architecture/`: system-level design and data flow
-- `modules/`: placeholder docs for pipeline, modeling, and backtesting modules
+- `modules/`: module-specific implementation notes
 - `contracts/`: Solidity vault design notes
 - `demos/`: frontend/dashboard notes
 - `plans/`: implementation plans and execution roadmaps

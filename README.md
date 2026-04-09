@@ -13,7 +13,7 @@ The repository is intentionally scoped as a prototype. We want clear architectur
 
 ## Repository Status
 
-The repository now has a working Binance historical data pipeline, a configurable feature-engineering pipeline, a cost-aware label-generation pipeline, and a presentation-friendly data-quality reporting command. Baseline models, backtests, and richer contract/frontend integration are the main remaining build areas.
+The repository now has a working Binance historical data pipeline, a configurable feature-engineering pipeline, a cost-aware label-generation pipeline, a presentation-friendly data-quality reporting command, and the first baseline strategy/model benchmarking pipeline. Backtests, deep-learning experiments, and richer contract/frontend integration are the main remaining build areas.
 
 ## Architecture Overview
 
@@ -115,6 +115,7 @@ Example scaffold commands:
 & 'd:\MG\anaconda3\python.exe' scripts/features/build_features.py --config configs/features/default.yaml
 & 'd:\MG\anaconda3\python.exe' scripts/labels/build_labels.py --config configs/labels/default.yaml
 & 'd:\MG\anaconda3\python.exe' scripts/models/train_baseline.py --config configs/models/baseline.yaml
+& 'd:\MG\anaconda3\python.exe' scripts/models/evaluate_baseline.py --config configs/models/baseline.yaml
 & 'd:\MG\anaconda3\python.exe' scripts/backtests/run_backtest.py --config configs/backtests/default.yaml
 & 'd:\MG\anaconda3\python.exe' scripts/reports/report_data_quality.py --config configs/reports/data_quality.yaml
 ```
@@ -126,6 +127,7 @@ Unified CLI commands:
 & 'd:\MG\anaconda3\python.exe' -m src.main build-features
 & 'd:\MG\anaconda3\python.exe' -m src.main build-labels
 & 'd:\MG\anaconda3\python.exe' -m src.main train-baseline
+& 'd:\MG\anaconda3\python.exe' -m src.main evaluate-baseline
 & 'd:\MG\anaconda3\python.exe' -m src.main train-dl
 & 'd:\MG\anaconda3\python.exe' -m src.main backtest
 ```
@@ -141,6 +143,8 @@ The `fetch-data` command now runs the first complete historical data pipeline an
 The `report-data-quality` command consumes that canonical dataset and writes presentation-ready tables, figures, and a markdown summary under `reports/data_quality/`.
 The `build-features` command now writes an interpretable feature table and manifest under `data/processed/features/`.
 The `build-labels` command now writes post-cost regression targets, classification targets, and split-ready supervised datasets under `data/processed/supervised/`.
+The `train-baseline` command now fits rule-based and simple ML baselines, writes reusable prediction/signal artifacts under `data/artifacts/models/baselines/`, and saves evaluation summaries for validation/test benchmarking.
+The `evaluate-baseline` command reloads saved baseline artifacts and regenerates prediction/evaluation outputs without refitting.
 
 ### Solidity
 
@@ -166,6 +170,7 @@ npm run dev
 - Data-quality reporting: [docs/modules/data-quality-reporting.md](docs/modules/data-quality-reporting.md)
 - Feature specification: [docs/features.md](docs/features.md)
 - Label specification: [docs/labels.md](docs/labels.md)
+- Baseline models: [docs/baselines.md](docs/baselines.md)
 - Models and research: [docs/modules/models-and-research.md](docs/modules/models-and-research.md)
 - Backtesting: [docs/modules/backtesting.md](docs/modules/backtesting.md)
 - Vault contract: [docs/contracts/vault.md](docs/contracts/vault.md)
@@ -173,9 +178,9 @@ npm run dev
 - Implementation plan: [docs/plans/2026-04-09-course-project-implementation-plan.md](docs/plans/2026-04-09-course-project-implementation-plan.md)
 ## Immediate Next Steps
 
-1. Implement the first baseline strategy and a cost-aware backtest over the new supervised dataset.
+1. Feed the saved baseline prediction artifacts into the first cost-aware backtest engine.
 2. Expand the data layer with index-price ingestion and optional open-interest validation.
-3. Connect report artifacts, features, and label summaries into the frontend demo.
+3. Connect report artifacts, baseline outputs, and label summaries into the frontend demo.
 4. Add the first deep-learning training loop on top of the time-series split datasets.
 
 ## Minimal No-Install Verification

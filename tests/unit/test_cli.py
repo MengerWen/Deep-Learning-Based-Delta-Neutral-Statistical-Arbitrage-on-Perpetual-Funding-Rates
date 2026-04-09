@@ -24,6 +24,13 @@ def test_cli_parser_accepts_build_labels_command() -> None:
     assert args.config.endswith("configs\\labels\\default.yaml") or args.config.endswith("configs/labels/default.yaml")
 
 
+def test_cli_parser_accepts_evaluate_baseline_command() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["evaluate-baseline"])
+    assert args.command == "evaluate-baseline"
+    assert args.config.endswith("configs\\models\\baseline.yaml") or args.config.endswith("configs/models/baseline.yaml")
+
+
 def test_cli_parser_accepts_train_dl_command_with_log_level() -> None:
     parser = build_parser()
     args = parser.parse_args(["train-dl", "--log-level", "DEBUG"])

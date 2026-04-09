@@ -41,7 +41,16 @@ def test_build_labels_default_config_loads_typed_model() -> None:
     assert config.target.primary_horizon_hours == 8
 
 
-def test_train_baseline_metadata_points_to_expected_default_file() -> None:
-    settings = get_command_settings("train-baseline")
+def test_train_baseline_default_config_loads_typed_model() -> None:
+    config = load_command_settings("train-baseline")
+    assert isinstance(config, BaselineSettings)
+    assert config.input.dataset_path.endswith("btcusdt_supervised_dataset.parquet")
+    assert config.target.classification_column == "target_is_profitable_24h"
+    assert config.predictive.classification.enabled is True
+    assert len(config.rules) >= 1
+
+
+def test_evaluate_baseline_metadata_points_to_expected_default_file() -> None:
+    settings = get_command_settings("evaluate-baseline")
     assert settings.default_config_path.name == "baseline.yaml"
     assert settings.config_model is BaselineSettings
