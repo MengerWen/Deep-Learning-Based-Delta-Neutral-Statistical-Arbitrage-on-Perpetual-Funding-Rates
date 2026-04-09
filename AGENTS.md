@@ -22,11 +22,13 @@ Future Codex runs should optimize for a clean, credible, end-to-end prototype ra
 11. Keep configuration centralized in config files rather than scattering constants across scripts.
 12. Make scripts runnable from the command line.
 13. Prefer reproducibility: deterministic configs, pinned dependencies when reasonable, explicit seeds, and documented data sources.
+14. Use d:\MG\anaconda3\python.exe for all Python commands in this repository unless the task explicitly requires a different interpreter.
 
 ## Project Scope Guardrails
 
 - This is a hybrid quant + smart-contract + demo system.
 - The quantitative pipeline should be implemented in Python.
+- Prefer the libraries already available in d:\MG\anaconda3\python.exe such as pandas, NumPy, PyYAML, pytest, scikit-learn, torch, ccxt, and web3 instead of adding lower-level fallback implementations without a clear need.
 - The smart contract layer should be implemented in Solidity.
 - The frontend should stay lightweight unless the repository already establishes a different stack.
 - Favor simple local workflows over distributed systems, microservices, or heavy cloud infrastructure.

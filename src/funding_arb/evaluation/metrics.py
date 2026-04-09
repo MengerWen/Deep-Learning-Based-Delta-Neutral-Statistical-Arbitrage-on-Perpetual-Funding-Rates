@@ -1,24 +1,28 @@
-﻿"""Small, reusable performance metrics for the initial scaffold."""
+"""Small, reusable performance metrics for the initial scaffold."""
 
 from __future__ import annotations
 
 import math
 from typing import Iterable
 
+import numpy as np
+import pandas as pd
 
-def _to_list(values: Iterable[float]) -> list[float]:
-    numbers = [float(value) for value in values]
-    if not numbers:
+
+
+def _to_series(values: Iterable[float]) -> pd.Series:
+    series = pd.Series(list(values), dtype="float64")
+    if series.empty:
         raise ValueError("Metric input cannot be empty.")
-    return numbers
+    return series
+
 
 
 def calculate_total_return(returns: Iterable[float]) -> float:
     """Calculate compounded total return from periodic simple returns."""
-    compounded = 1.0
-    for value in _to_list(returns):
-        compounded *= 1.0 + value
-    return compounded - 1.0
+    series = _to_series(returns)
+    return float((1.0 + series).prod() - 1.0)
+
 
 
 def calculate_sharpe_ratio(
@@ -27,24 +31,19 @@ def calculate_sharpe_ratio(
     risk_free_rate: float = 0.0,
 ) -> float:
     """Calculate a simple annualized Sharpe ratio."""
-    values = _to_list(returns)
-    adjustment = risk_free_rate / periods_per_year
-    excess = [value - adjustment for value in values]
-    mean = sum(excess) / len(excess)
-    variance = sum((value - mean) ** 2 for value in excess) / len(excess)
-    std = math.sqrt(variance)
-    if math.isclose(std, 0.0):
+    series = _to_series(returns)
+    excess = series - (risk_free_rate / periods_per_year)
+    volatility = float(excess.std(ddof=0))
+    if math.isclose(volatility, 0.0):
         return 0.0
-    return float((mean / std) * math.sqrt(periods_per_year))
+    annualization = math.sqrt(periods_per_year)
+    return float((excess.mean() / volatility) * annualization)
+
 
 
 def calculate_max_drawdown(equity_curve: Iterable[float]) -> float:
     """Calculate maximum drawdown from a sequence of equity values."""
-    values = _to_list(equity_curve)
-    peak = values[0]
-    max_drawdown = 0.0
-    for value in values:
-        peak = max(peak, value)
-        drawdown = (value / peak) - 1.0
-        max_drawdown = min(max_drawdown, drawdown)
-    return max_drawdown
+    series = _to_series(equity_curve)
+    running_max = series.cummax()
+    drawdown = (series / running_max) - 1.0
+    return float(np.min(drawdown))

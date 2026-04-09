@@ -1,18 +1,18 @@
-﻿{
-  "feature_set": {
-    "rolling_windows": [8, 24, 72],
-    "volatility_window": 24,
-    "zscore_window": 72,
-    "funding_mean_window": 24,
-    "basis_mean_window": 24
-  },
-  "labels": {
-    "forward_horizon_hours": 8,
-    "min_expected_edge_bps": 5,
-    "use_post_cost_target": true
-  },
-  "output": {
-    "processed_dir": "data/processed",
-    "artifact_name": "btcusdt_feature_set.parquet"
-  }
-}
+feature_set:
+  rolling_windows:
+    - 8
+    - 24
+    - 72
+  volatility_window: 24
+  zscore_window: 72
+  funding_mean_window: 24
+  basis_mean_window: 24
+
+labels:
+  forward_horizon_hours: 8
+  min_expected_edge_bps: 5
+  use_post_cost_target: true
+
+output:
+  processed_dir: data/processed
+  artifact_name: btcusdt_feature_set.parquet

@@ -1,6 +1,6 @@
-﻿# Config Conventions
+# Config Conventions
 
-This repository keeps configuration centralized under `configs/`.
+This repository keeps configuration centralized under `configs/` using YAML files.
 
 - `configs/data/`: source selection, symbols, date range, sampling frequency
 - `configs/features/`: rolling windows, normalization, z-score settings, label horizons
@@ -8,4 +8,4 @@ This repository keeps configuration centralized under `configs/`.
 - `configs/backtests/`: fees, slippage, execution assumptions, portfolio rules
 - `configs/demo/`: frontend/demo artifact settings
 
-The initial scaffold uses JSON-compatible config files with `.yaml` filenames so the repo can be smoke-tested without extra parser dependencies. Assumptions that materially affect outputs should live in config before they are hardcoded into scripts or notebooks.
+Use the existing Python environment at `d:\MG\anaconda3\python.exe`, which already includes `PyYAML`, when running scripts that load these configs. Assumptions that materially affect outputs should live in config before they are hardcoded into scripts or notebooks.

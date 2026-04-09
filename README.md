@@ -1,4 +1,4 @@
-﻿# Deep Learning-Based Delta-Neutral Statistical Arbitrage on Perpetual Funding Rates
+# Deep Learning-Based Delta-Neutral Statistical Arbitrage on Perpetual Funding Rates
 
 This repository is a course-project prototype for a hybrid DeFi + quantitative research system. The goal is to build a clean end-to-end demonstration of:
 
@@ -99,19 +99,17 @@ The demo frontend uses a lightweight `Vite + TypeScript` scaffold rather than a 
 ### Python
 
 ```bash
-python -m venv .venv
-.venv\Scripts\activate
-python -m pip install -e .[dev]
-python -m pytest
+& 'd:\MG\anaconda3\python.exe' -m pip install -e .[dev]
+& 'd:\MG\anaconda3\python.exe' -m pytest
 ```
 
 Example scaffold commands:
 
 ```bash
-python scripts/data/fetch_market_data.py --config configs/data/default.toml
-python scripts/features/build_features.py --config configs/features/default.toml
-python scripts/models/train_baseline.py --config configs/models/baseline.toml
-python scripts/backtests/run_backtest.py --config configs/backtests/default.toml
+& 'd:\MG\anaconda3\python.exe' scripts/data/fetch_market_data.py --config configs/data/default.yaml
+& 'd:\MG\anaconda3\python.exe' scripts/features/build_features.py --config configs/features/default.yaml
+& 'd:\MG\anaconda3\python.exe' scripts/models/train_baseline.py --config configs/models/baseline.yaml
+& 'd:\MG\anaconda3\python.exe' scripts/backtests/run_backtest.py --config configs/backtests/default.yaml
 ```
 
 ### Solidity
@@ -148,9 +146,9 @@ npm run dev
 
 ## Minimal No-Install Verification
 
-If you have Python 3.11+ but have not installed project dependencies yet, the starter tests can still be run with the standard library:
+All Python commands for this repository should use the designated Anaconda interpreter: `d:\MG\anaconda3\python.exe`.
 
 ```bash
-python -m unittest discover -s tests/unit -p "test_*.py"
+& 'd:\MG\anaconda3\python.exe' -m pytest tests/unit -q
 ```
 

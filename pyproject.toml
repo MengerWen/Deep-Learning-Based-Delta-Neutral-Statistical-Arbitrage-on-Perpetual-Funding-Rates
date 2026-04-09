@@ -11,21 +11,22 @@ requires-python = ">=3.11"
 dependencies = [
   "numpy>=1.26,<3",
   "pandas>=2.2,<3",
-  "python-dotenv>=1.0,<2",
+  "PyYAML>=6.0,<7",
+  "python-dotenv>=0.21,<2",
 ]
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=8.0,<9",
+  "pytest>=7.4,<9",
   "ruff>=0.4,<0.6",
 ]
 ml = [
   "scikit-learn>=1.5,<2",
-  "torch>=2.3,<3",
+  "torch>=2.11,<3",
 ]
 viz = [
-  "matplotlib>=3.8,<4",
-  "plotly>=5.20,<6",
+  "matplotlib>=3.9,<4",
+  "plotly>=5.24,<6",
 ]
 
 [tool.setuptools]

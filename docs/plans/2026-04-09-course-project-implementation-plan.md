@@ -1,4 +1,4 @@
-﻿# Course Project Implementation Plan
+# Course Project Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
@@ -6,7 +6,7 @@
 
 **Architecture:** The project will stay monorepo-style with one Python package for research and backtesting, one Foundry workspace for Solidity contracts, and one lightweight Vite frontend for presentation. The first milestone is a usable scaffold with configs, docs, CLI entry points, and placeholder implementations; later milestones fill in each module incrementally without introducing backend-heavy infrastructure.
 
-**Tech Stack:** Python 3.11+, pandas, numpy, JSON-compatible configs, pytest, Foundry, Solidity 0.8.x, Vite, TypeScript
+**Tech Stack:** Python 3.11+, pandas, numpy, PyYAML, pytest, Foundry, Solidity 0.8.x, Vite, TypeScript
 
 ---
 
@@ -36,12 +36,12 @@ Document:
 
 **Step 3: Verify local Python workflow**
 
-Run: `python -m pip install -e .[dev]`
+Run: `d:\MG\anaconda3\python.exe -m pip install -e .[dev]`
 Expected: local package installs successfully
 
 **Step 4: Smoke-test the Python scaffold**
 
-Run: `python -m pytest`
+Run: `d:\MG\anaconda3\python.exe -m pytest`
 Expected: tests pass once the starter package and tests are added
 
 ### Task 2: Build the Python package foundation
@@ -77,7 +77,7 @@ def calculate_max_drawdown(equity_curve): ...
 
 **Step 4: Run unit tests**
 
-Run: `python -m pytest tests/unit -v`
+Run: `d:\MG\anaconda3\python.exe -m pytest tests/unit -v`
 Expected: basic config, path, and metric tests pass
 
 ### Task 3: Add CLI scripts and baseline configs
@@ -106,10 +106,10 @@ Put symbol selection, window sizes, fees, slippage, and split dates in config fi
 
 Run:
 
-- `python scripts/data/fetch_market_data.py --config configs/data/default.yaml`
-- `python scripts/features/build_features.py --config configs/features/default.yaml`
-- `python scripts/models/train_baseline.py --config configs/models/baseline.yaml`
-- `python scripts/backtests/run_backtest.py --config configs/backtests/default.yaml`
+- `d:\MG\anaconda3\python.exe scripts/data/fetch_market_data.py --config configs/data/default.yaml`
+- `d:\MG\anaconda3\python.exe scripts/features/build_features.py --config configs/features/default.yaml`
+- `d:\MG\anaconda3\python.exe scripts/models/train_baseline.py --config configs/models/baseline.yaml`
+- `d:\MG\anaconda3\python.exe scripts/backtests/run_backtest.py --config configs/backtests/default.yaml`
 
 Expected: each script prints a scaffold summary without crashing
 
@@ -204,7 +204,7 @@ Cover:
 
 **Step 2: Run tests**
 
-Run: `python -m pytest`
+Run: `d:\MG\anaconda3\python.exe -m pytest`
 Expected: green test suite for scaffold-level coverage
 
 ### Task 8: Expand documentation for future module work

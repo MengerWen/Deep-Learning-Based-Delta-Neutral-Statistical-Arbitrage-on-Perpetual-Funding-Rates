@@ -1,18 +1,15 @@
-﻿{
-  "model": {
-    "name": "lstm_sequence_classifier",
-    "lookback_steps": 48,
-    "hidden_size": 64,
-    "num_layers": 2,
-    "dropout": 0.1
-  },
-  "training": {
-    "batch_size": 64,
-    "epochs": 20,
-    "learning_rate": 0.001,
-    "seed": 42
-  },
-  "output": {
-    "model_dir": "data/artifacts/models"
-  }
-}
+model:
+  name: lstm_sequence_classifier
+  lookback_steps: 48
+  hidden_size: 64
+  num_layers: 2
+  dropout: 0.1
+
+training:
+  batch_size: 64
+  epochs: 20
+  learning_rate: 0.001
+  seed: 42
+
+output:
+  model_dir: data/artifacts/models
