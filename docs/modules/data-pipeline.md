@@ -19,6 +19,7 @@ Create a reproducible dataset for one funding-rate arbitrage research workflow, 
 - start with `BTCUSDT`
 - begin with one exchange and one reference source
 - use hourly frequency for the first end-to-end prototype
+- use `2021-01-01` to `2026-04-07` UTC as the default main historical window for the first full Binance `BTCUSDT` dataset
 
 ## Future Files
 

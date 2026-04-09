@@ -10,8 +10,8 @@ dataset:
   venue: binance
   reference_source: spot
   frequency: 1h
-  start: "2024-01-01"
-  end: "2024-03-31"
+  start: "2021-01-01"
+  end: "2026-04-07"
 
 sources:
   perpetual:
@@ -34,7 +34,7 @@ cleaning:
   timezone: UTC
   drop_duplicates: true
   sort_ascending: true
-  max_forward_fill_hours: 3
+  max_forward_fill_hours: 6
   fill_price_method: ffill
   fill_volume_value: 0.0
   fill_funding_value: 0.0
@@ -49,6 +49,8 @@ output:
   processed_subdir: data/processed
 
 notes:
-  assumption: First working implementation uses Binance public REST endpoints for BTCUSDT hourly perpetual, spot, and funding data.
+  assumption: The primary historical dataset uses Binance public REST endpoints for BTCUSDT hourly perpetual, spot, and funding data over 2021-01-01 to 2026-04-07 UTC.
+  range_rationale: This default window is long enough to cover multiple market regimes while keeping hourly ingestion and cleaning practical for a course-project prototype.
+  gap_handling_note: The default fill window is 6 hours because Binance spot history over the primary sample contains a few rare multi-hour gaps, and the canonical dataset keeps missingness flags for auditability.
   open_interest_note: Binance open interest history is supported by the interface but disabled by default because the public history endpoint is limited and venue-specific.
   end_date_note: Date-only end values are treated as inclusive UTC dates and expanded to the next day internally for hourly extraction.

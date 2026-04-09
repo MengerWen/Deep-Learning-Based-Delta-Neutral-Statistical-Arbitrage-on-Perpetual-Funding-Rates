@@ -239,6 +239,7 @@ The recommended first demo architecture is static artifact consumption rather th
   - Binance spot klines
   - Binance mark/index or premium index endpoints
 - base research frequency: `1h`
+- default primary history window: `2021-01-01` to `2026-04-07` UTC
 - funding settlement awareness: `8h`
 
 ### Required datasets

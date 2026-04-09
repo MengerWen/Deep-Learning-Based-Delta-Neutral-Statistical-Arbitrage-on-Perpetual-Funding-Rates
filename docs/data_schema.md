@@ -14,6 +14,7 @@ The primary research frequency is `1h`.
 
 - The first source path uses Binance public REST endpoints.
 - The default market is `BTCUSDT`, but the code is structured so `ETHUSDT` and other symbols can be added by config.
+- The default primary extraction window is `2021-01-01` to `2026-04-07` UTC for the main Binance `BTCUSDT` research dataset.
 - The canonical table aligns perpetual bars, spot bars, funding events, and optional open interest onto a shared hourly UTC grid.
 - Date-only `end` values in config are treated as inclusive UTC dates and expanded to the next day internally.
 - Funding events are sparse; non-event hours are stored with `funding_rate = 0.0` and `funding_event = 0`.
@@ -125,7 +126,7 @@ Files are omitted when a source is disabled. For example, the default config dis
 - Normalize all timestamps to UTC.
 - Drop duplicate timestamps and keep the last observation from the source extract.
 - Sort ascending by timestamp.
-- Forward-fill price columns up to the configured maximum gap.
+- Forward-fill price columns up to the configured maximum gap. The current default is `6` hours for the main Binance sample because the long spot history contains a few rare multi-hour outages.
 - Fill missing volume with the configured numeric default, currently `0.0`.
 - Fill missing funding rates on non-event hours with the configured value, currently `0.0`.
 - Raise an error if aligned `perp_close` or `spot_close` still contains missing values after allowed filling.
