@@ -5,6 +5,7 @@ from funding_arb.config.models import (
     BaselineSettings,
     DataQualityReportSettings,
     DataSettings,
+    DeepLearningSettings,
     FeatureSettings,
     LabelPipelineSettings,
 )
@@ -48,6 +49,15 @@ def test_train_baseline_default_config_loads_typed_model() -> None:
     assert config.target.classification_column == "target_is_profitable_24h"
     assert config.predictive.classification.enabled is True
     assert len(config.rules) >= 1
+
+
+def test_train_dl_default_config_loads_typed_model() -> None:
+    config = load_command_settings("train-dl")
+    assert isinstance(config, DeepLearningSettings)
+    assert config.input.dataset_path.endswith("btcusdt_supervised_dataset.parquet")
+    assert config.target.task == "regression"
+    assert config.sequence.lookback_steps == 48
+    assert config.model.name == "lstm"
 
 
 def test_evaluate_baseline_metadata_points_to_expected_default_file() -> None:

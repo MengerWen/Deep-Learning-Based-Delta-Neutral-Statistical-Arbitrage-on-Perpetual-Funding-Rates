@@ -10,10 +10,12 @@ Compare simple statistical baselines against sequence models that attempt to pre
 - a configurable feature-engineering pipeline under `src/funding_arb/features/`
 - a cost-aware label-generation and supervised-dataset pipeline under `src/funding_arb/labels/`
 - a baseline training/evaluation pipeline under `src/funding_arb/models/baselines.py`
-- reproducible feature, label, and baseline configs under `configs/features/default.yaml`, `configs/labels/default.yaml`, and `configs/models/baseline.yaml`
+- a first LSTM-based sequence-model training pipeline under `src/funding_arb/models/deep_learning.py`
+- reproducible feature, label, baseline, and deep-learning configs under `configs/features/default.yaml`, `configs/labels/default.yaml`, `configs/models/baseline.yaml`, and `configs/models/lstm.yaml`
 - documented feature definitions in `docs/features.md`
 - documented target definitions in `docs/labels.md`
 - documented baseline definitions in `docs/baselines.md`
+- documented deep-learning design in `docs/models.md`
 
 ## Planned Model Layers
 
@@ -42,4 +44,4 @@ Compare simple statistical baselines against sequence models that attempt to pre
 
 ## Caveats
 
-Baseline training is now implemented, but post-cost positive labels are intentionally sparse under the current assumptions, so benchmark interpretation should emphasize signal-return diagnostics in addition to standard classification metrics. Deep-learning training loops and richer experiment tracking remain future work.
+Baseline training and the first LSTM training loop are now implemented, but post-cost positive labels are intentionally sparse under the current assumptions, so benchmark interpretation should emphasize signal-return diagnostics in addition to standard classification metrics. Transformer-style models and richer experiment tracking remain future work.

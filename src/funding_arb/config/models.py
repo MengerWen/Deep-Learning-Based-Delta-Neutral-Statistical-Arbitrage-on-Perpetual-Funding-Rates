@@ -278,18 +278,61 @@ class ModelOutputSettings(SettingsBase):
     model_dir: str = "data/artifacts/models"
 
 
+class DeepLearningTargetSettings(SettingsBase):
+    task: str = "regression"
+    column: str = "target_future_net_return_bps_24h"
+    classification_column: str = "target_is_profitable_24h"
+    regression_column: str = "target_future_net_return_bps_24h"
+    timestamp_column: str = "timestamp"
+    split_column: str = "split"
+    ready_column: str = "supervised_ready"
+    probability_threshold: float = 0.5
+    trade_threshold_bps: float = 0.0
+
+
+class SequenceSettings(SettingsBase):
+    lookback_steps: int = 48
+    allow_cross_split_context: bool = True
+
+
 class DeepLearningModelSettings(SettingsBase):
-    name: str
-    lookback_steps: int
-    hidden_size: int
-    num_layers: int
-    dropout: float = 0.0
+    name: str = "lstm"
+    hidden_size: int = 64
+    num_layers: int = 2
+    dropout: float = 0.1
+    bidirectional: bool = False
+
+
+class DeepLearningTrainingSettings(SettingsBase):
+    batch_size: int = 256
+    epochs: int = 5
+    learning_rate: float = 0.001
+    weight_decay: float = 0.00001
+    seed: int = 42
+    device: str = "auto"
+    num_workers: int = 0
+    clip_grad_norm: float | None = 1.0
+    early_stopping_patience: int = 3
+    deterministic: bool = True
+    use_balanced_classification_loss: bool = True
+
+
+class DeepLearningOutputSettings(SettingsBase):
+    model_dir: str = "data/artifacts/models/dl"
+    run_name: str = "default"
+    write_csv: bool = True
+    write_markdown_report: bool = True
 
 
 class DeepLearningSettings(SettingsBase):
-    model: DeepLearningModelSettings
-    training: ModelTrainingSettings
-    output: ModelOutputSettings
+    input: BaselineInputSettings = Field(default_factory=BaselineInputSettings)
+    target: DeepLearningTargetSettings = Field(default_factory=DeepLearningTargetSettings)
+    feature_selection: BaselineFeatureSelectionSettings = Field(default_factory=BaselineFeatureSelectionSettings)
+    sequence: SequenceSettings = Field(default_factory=SequenceSettings)
+    model: DeepLearningModelSettings = Field(default_factory=DeepLearningModelSettings)
+    training: DeepLearningTrainingSettings = Field(default_factory=DeepLearningTrainingSettings)
+    output: DeepLearningOutputSettings = Field(default_factory=DeepLearningOutputSettings)
+    notes: dict[str, Any] = Field(default_factory=dict)
 
 
 class PortfolioSettings(SettingsBase):
