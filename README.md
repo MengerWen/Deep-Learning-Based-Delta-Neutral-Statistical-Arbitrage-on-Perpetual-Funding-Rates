@@ -13,7 +13,7 @@ The repository is intentionally scoped as a prototype. We want clear architectur
 
 ## Repository Status
 
-The repository now has a working Binance historical data pipeline, a configurable feature-engineering pipeline, a cost-aware label-generation pipeline, a presentation-friendly data-quality reporting command, a baseline strategy/model benchmarking pipeline, and a first LSTM-based deep-learning training pipeline. Backtests and richer contract/frontend integration are the main remaining build areas.
+The repository now has a working Binance historical data pipeline, a configurable feature-engineering pipeline, a cost-aware label-generation pipeline, a presentation-friendly data-quality reporting command, a baseline strategy/model benchmarking pipeline, a first LSTM-based deep-learning training pipeline, a unified signal layer, and a first explicit delta-neutral backtesting engine. Richer contract/frontend integration and deeper model iteration are the main remaining build areas.
 
 ## Architecture Overview
 
@@ -152,6 +152,7 @@ The `train-baseline` command now fits rule-based and simple ML baselines, writes
 The `evaluate-baseline` command reloads saved baseline artifacts and regenerates prediction/evaluation outputs without refitting.
 The `train-dl` command now trains the first LSTM sequence model on the supervised dataset, saves the best checkpoint, writes prediction artifacts, and exports a lightweight experiment summary under `data/artifacts/models/dl/`.
 The `generate-signals` command now normalizes rule-based, baseline ML, and deep-learning outputs into one shared signal schema under `data/artifacts/signals/`, ready for backtesting and demo consumption.
+The `backtest` command now consumes standardized signals plus the canonical market dataset, writes trade logs, realized equity curves, summary metrics, report figures, and a markdown backtest report under `data/artifacts/backtests/`.
 
 ### Solidity
 
@@ -180,6 +181,7 @@ npm run dev
 - Baseline models: [docs/baselines.md](docs/baselines.md)
 - Deep learning models: [docs/models.md](docs/models.md)
 - Unified signals: [docs/signals.md](docs/signals.md)
+- Backtest engine: [docs/backtest.md](docs/backtest.md)
 - Models and research: [docs/modules/models-and-research.md](docs/modules/models-and-research.md)
 - Backtesting: [docs/modules/backtesting.md](docs/modules/backtesting.md)
 - Vault contract: [docs/contracts/vault.md](docs/contracts/vault.md)
@@ -187,9 +189,9 @@ npm run dev
 - Implementation plan: [docs/plans/2026-04-09-course-project-implementation-plan.md](docs/plans/2026-04-09-course-project-implementation-plan.md)
 ## Immediate Next Steps
 
-1. Feed both baseline and deep-learning prediction artifacts into the first cost-aware backtest engine.
+1. Add mark-to-market intratrade equity and drawdown to the backtesting engine.
 2. Expand the data layer with index-price ingestion and optional open-interest validation.
-3. Connect report artifacts, model outputs, and label summaries into the frontend demo.
+3. Connect report artifacts, model outputs, signal artifacts, and backtest summaries into the frontend demo.
 4. Add a second sequence architecture, such as a Transformer encoder, only after the LSTM benchmark is stable.
 
 ## Minimal No-Install Verification

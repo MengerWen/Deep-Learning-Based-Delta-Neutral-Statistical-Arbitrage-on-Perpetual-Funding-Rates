@@ -366,10 +366,31 @@ class SignalSettings(SettingsBase):
     notes: dict[str, Any] = Field(default_factory=dict)
 
 
+class BacktestInputSettings(SettingsBase):
+    signal_path: str = "data/artifacts/signals/binance/btcusdt/1h/baseline/signals.parquet"
+    signal_manifest_path: str | None = "data/artifacts/signals/binance/btcusdt/1h/baseline/signals_manifest.json"
+    market_dataset_path: str = "data/processed/binance/btcusdt/1h/hourly_market_data.parquet"
+    market_manifest_path: str | None = "data/processed/binance/btcusdt/1h/manifest.json"
+    provider: str = "binance"
+    symbol: str = "BTCUSDT"
+    venue: str = "binance"
+    frequency: str = "1h"
+
+
+class BacktestSelectionSettings(SettingsBase):
+    strategy_names: list[str] = Field(default_factory=list)
+    split_filter: list[str] = Field(default_factory=lambda: ["train", "validation", "test"])
+    direction: str = "short_perp_long_spot"
+    require_should_trade: bool = True
+    min_signal_score: float | None = None
+    min_confidence: float | None = None
+    min_expected_return_bps: float | None = None
+
+
 class PortfolioSettings(SettingsBase):
     initial_capital: float
     position_notional: float
-    max_open_positions: int
+    max_open_positions: int = 1
 
 
 class CostSettings(SettingsBase):
@@ -377,23 +398,40 @@ class CostSettings(SettingsBase):
     maker_fee_bps: float
     slippage_bps: float
     gas_cost_usd: float
+    other_friction_bps: float = 0.0
 
 
 class ExecutionSettings(SettingsBase):
-    funding_interval_hours: int
-    rebalance_frequency: str
+    entry_delay_bars: int = 1
+    execution_price_field: str = "open"
+    holding_window_hours: int = 24
+    maximum_holding_hours: int = 48
+    funding_interval_hours: int = 8
+    rebalance_frequency: str = "1h"
+    exit_on_signal_off: bool = True
+    stop_loss_bps: float | None = None
+    take_profit_bps: float | None = None
     allow_partial_exit: bool = False
 
 
 class ReportingSettings(SettingsBase):
     output_dir: str = "data/artifacts/backtests"
+    run_name: str = "baseline_signals_default"
+    write_csv: bool = True
+    write_markdown_report: bool = True
+    figure_format: str = "png"
+    dpi: int = 180
+    top_n_strategies_for_plots: int = 5
 
 
 class BacktestSettings(SettingsBase):
+    input: BacktestInputSettings = Field(default_factory=BacktestInputSettings)
+    selection: BacktestSelectionSettings = Field(default_factory=BacktestSelectionSettings)
     portfolio: PortfolioSettings
     costs: CostSettings
     execution: ExecutionSettings
-    reporting: ReportingSettings
+    reporting: ReportingSettings = Field(default_factory=ReportingSettings)
+    notes: dict[str, Any] = Field(default_factory=dict)
 
 
 class DataQualityReportInputSettings(SettingsBase):

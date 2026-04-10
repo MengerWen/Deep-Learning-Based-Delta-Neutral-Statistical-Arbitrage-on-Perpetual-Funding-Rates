@@ -1,3 +1,25 @@
+input:
+  signal_path: data/artifacts/signals/binance/btcusdt/1h/baseline/signals.parquet
+  signal_manifest_path: data/artifacts/signals/binance/btcusdt/1h/baseline/signals_manifest.json
+  market_dataset_path: data/processed/binance/btcusdt/1h/hourly_market_data.parquet
+  market_manifest_path: data/processed/binance/btcusdt/1h/manifest.json
+  provider: binance
+  symbol: BTCUSDT
+  venue: binance
+  frequency: 1h
+
+selection:
+  strategy_names: []
+  split_filter:
+    - train
+    - validation
+    - test
+  direction: short_perp_long_spot
+  require_should_trade: true
+  min_signal_score: null
+  min_confidence: null
+  min_expected_return_bps: null
+
 portfolio:
   initial_capital: 100000.0
   position_notional: 10000.0
@@ -8,11 +30,31 @@ costs:
   maker_fee_bps: 2.0
   slippage_bps: 3.0
   gas_cost_usd: 2.0
+  other_friction_bps: 0.0
 
 execution:
+  entry_delay_bars: 1
+  execution_price_field: open
+  holding_window_hours: 24
+  maximum_holding_hours: 48
   funding_interval_hours: 8
   rebalance_frequency: 1h
+  exit_on_signal_off: true
+  stop_loss_bps: null
+  take_profit_bps: null
   allow_partial_exit: false
 
 reporting:
   output_dir: data/artifacts/backtests
+  run_name: baseline_signals_default
+  write_csv: true
+  write_markdown_report: true
+  figure_format: png
+  dpi: 180
+  top_n_strategies_for_plots: 5
+
+notes:
+  rationale: >-
+    The first backtest version is a single-asset, delta-neutral prototype that evaluates one strategy at a time
+    from standardized signals. Equity is tracked on a realized-PnL basis, and all simplifying assumptions are
+    documented in docs/backtest.md and the run manifest.

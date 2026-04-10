@@ -8,7 +8,7 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
 
-from funding_arb.backtest.engine import describe_backtest_job
+from funding_arb.backtest.engine import describe_backtest_job, run_backtest_pipeline
 from funding_arb.config.loader import COMMAND_SETTINGS, load_command_settings
 from funding_arb.data.pipeline import describe_ingestion_job, run_data_pipeline
 from funding_arb.features.pipeline import describe_feature_job, run_feature_pipeline
@@ -176,7 +176,28 @@ def _run_generate_signals(config: Any, config_path: Path) -> int:
 
 def _run_backtest(config: Any, config_path: Path) -> int:
     _log_config_summary("backtest", config_path, config)
-    LOGGER.info(describe_backtest_job(config.model_dump()))
+    LOGGER.info(describe_backtest_job(config))
+    artifacts = run_backtest_pipeline(config)
+    LOGGER.info("Trade log: %s", artifacts.trade_log_path)
+    if artifacts.trade_log_csv_path is not None:
+        LOGGER.info("Trade log CSV: %s", artifacts.trade_log_csv_path)
+    LOGGER.info("Equity curve: %s", artifacts.equity_curve_path)
+    if artifacts.equity_curve_csv_path is not None:
+        LOGGER.info("Equity curve CSV: %s", artifacts.equity_curve_csv_path)
+    LOGGER.info("Strategy metrics: %s", artifacts.strategy_metrics_path)
+    if artifacts.strategy_metrics_csv_path is not None:
+        LOGGER.info("Strategy metrics CSV: %s", artifacts.strategy_metrics_csv_path)
+    LOGGER.info("Split summary: %s", artifacts.split_summary_path)
+    if artifacts.split_summary_csv_path is not None:
+        LOGGER.info("Split summary CSV: %s", artifacts.split_summary_csv_path)
+    LOGGER.info("Leaderboard: %s", artifacts.leaderboard_path)
+    if artifacts.leaderboard_csv_path is not None:
+        LOGGER.info("Leaderboard CSV: %s", artifacts.leaderboard_csv_path)
+    if artifacts.report_path is not None:
+        LOGGER.info("Markdown report: %s", artifacts.report_path)
+    if artifacts.figure_paths:
+        LOGGER.info("Figures: %s", ", ".join(artifacts.figure_paths))
+    LOGGER.info("Backtest manifest: %s", artifacts.manifest_path)
     return 0
 
 

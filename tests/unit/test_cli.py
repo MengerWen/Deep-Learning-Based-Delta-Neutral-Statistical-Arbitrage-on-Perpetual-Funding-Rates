@@ -45,6 +45,13 @@ def test_cli_parser_accepts_evaluate_baseline_command() -> None:
 
 
 
+def test_cli_parser_accepts_backtest_command() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["backtest"])
+    assert args.command == "backtest"
+    assert args.config.endswith("configs\\backtests\\default.yaml") or args.config.endswith("configs/backtests/default.yaml")
+
+
 def test_cli_parser_accepts_train_dl_command_with_log_level() -> None:
     parser = build_parser()
     args = parser.parse_args(["train-dl", "--log-level", "DEBUG"])

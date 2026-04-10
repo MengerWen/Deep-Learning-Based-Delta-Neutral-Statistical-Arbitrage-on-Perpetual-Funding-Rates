@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from funding_arb.config.loader import get_command_settings, load_command_settings
 from funding_arb.config.models import (
+    BacktestSettings,
     BaselineSettings,
     DataQualityReportSettings,
     DataSettings,
@@ -75,6 +76,15 @@ def test_generate_signals_default_config_loads_typed_model() -> None:
     assert config.input.dl_predictions_path.endswith("dl_predictions.parquet")
     assert config.source.name == "baseline"
 
+
+
+def test_backtest_default_config_loads_typed_model() -> None:
+    config = load_command_settings("backtest")
+    assert isinstance(config, BacktestSettings)
+    assert config.input.signal_path.endswith("signals.parquet")
+    assert config.input.market_dataset_path.endswith("hourly_market_data.parquet")
+    assert config.execution.holding_window_hours == 24
+    assert config.reporting.run_name == "baseline_signals_default"
 
 
 def test_evaluate_baseline_metadata_points_to_expected_default_file() -> None:
