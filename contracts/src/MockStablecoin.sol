@@ -2,9 +2,14 @@
 pragma solidity ^0.8.24;
 
 contract MockStablecoin {
-    string public name = "Mock USD Coin";
-    string public symbol = "mUSDC";
-    uint8 public decimals = 6;
+    error AllowanceExceeded(uint256 allowed, uint256 requested);
+    error InsufficientBalance(uint256 available, uint256 requested);
+    error InvalidRecipient();
+    error InvalidSpender();
+
+    string public constant name = "Mock USD Coin";
+    string public constant symbol = "mUSDC";
+    uint8 public constant decimals = 6;
 
     uint256 public totalSupply;
 
@@ -15,13 +20,21 @@ contract MockStablecoin {
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
     function mint(address to, uint256 amount) external {
-        require(to != address(0), "invalid recipient");
+        if (to == address(0)) {
+            revert InvalidRecipient();
+        }
+
         totalSupply += amount;
         balanceOf[to] += amount;
+
         emit Transfer(address(0), to, amount);
     }
 
     function approve(address spender, uint256 amount) external returns (bool) {
+        if (spender == address(0)) {
+            revert InvalidSpender();
+        }
+
         allowance[msg.sender][spender] = amount;
         emit Approval(msg.sender, spender, amount);
         return true;
@@ -34,18 +47,30 @@ contract MockStablecoin {
 
     function transferFrom(address from, address to, uint256 amount) external returns (bool) {
         uint256 allowed = allowance[from][msg.sender];
-        require(allowed >= amount, "allowance exceeded");
+        if (allowed < amount) {
+            revert AllowanceExceeded(allowed, amount);
+        }
+
         allowance[from][msg.sender] = allowed - amount;
+        emit Approval(from, msg.sender, allowance[from][msg.sender]);
+
         _transfer(from, to, amount);
         return true;
     }
 
     function _transfer(address from, address to, uint256 amount) internal {
-        require(to != address(0), "invalid recipient");
-        require(balanceOf[from] >= amount, "insufficient balance");
-        balanceOf[from] -= amount;
+        if (to == address(0)) {
+            revert InvalidRecipient();
+        }
+
+        uint256 balance = balanceOf[from];
+        if (balance < amount) {
+            revert InsufficientBalance(balance, amount);
+        }
+
+        balanceOf[from] = balance - amount;
         balanceOf[to] += amount;
+
         emit Transfer(from, to, amount);
     }
 }
-

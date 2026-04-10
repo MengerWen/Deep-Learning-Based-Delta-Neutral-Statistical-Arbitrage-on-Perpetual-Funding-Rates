@@ -162,6 +162,14 @@ The `robustness-report` command now reuses the signal and backtest layers to str
 ```bash
 cd contracts
 forge build
+forge test -vv
+```
+
+Local deployment example:
+
+```bash
+cd contracts
+forge script script/DeployLocal.s.sol:DeployLocal --rpc-url http://127.0.0.1:8545 --broadcast
 ```
 
 ### Frontend

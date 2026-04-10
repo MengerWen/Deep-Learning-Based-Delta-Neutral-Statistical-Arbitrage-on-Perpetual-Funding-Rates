@@ -22,17 +22,94 @@ Why Foundry for this project:
   - deposits
   - withdrawals
   - share accounting
-  - owner-controlled NAV updates
+  - owner/operator strategy-state updates
+  - owner/operator NAV and PnL updates
   - pause controls
   - event logging
+- `interfaces/IERC20Like.sol`
+  Minimal ERC20-like interface used by the vault
 
-## Quickstart
+## Workspace Files
+
+- `src/DeltaNeutralVault.sol`
+- `src/MockStablecoin.sol`
+- `test/DeltaNeutralVault.t.sol`
+- `test/utils/TestBase.sol`
+- `script/DeployLocal.s.sol`
+- `script/UpdateVaultState.s.sol`
+
+## Compile
 
 ```bash
+cd contracts
 forge build
 ```
 
+## Test
+
+```bash
+cd contracts
+forge test -vv
+```
+
+## Deploy To A Local/Test Network
+
+Example local deployment to Anvil:
+
+```bash
+cd contracts
+forge script script/DeployLocal.s.sol:DeployLocal \
+  --rpc-url http://127.0.0.1:8545 \
+  --broadcast
+```
+
+Required environment variables:
+
+- `PRIVATE_KEY`
+
+Optional environment variables:
+
+- `INITIAL_OPERATOR`
+- `INITIAL_MINT`
+
+If `INITIAL_OPERATOR` is not set, the script uses the deployer address.
+If `INITIAL_MINT` is set, the script mints that amount of mock stablecoin to the deployer for demo funding.
+
+## Update Vault State After Deployment
+
+```bash
+cd contracts
+forge script script/UpdateVaultState.s.sol:UpdateVaultState \
+  --rpc-url http://127.0.0.1:8545 \
+  --broadcast
+```
+
+Supported environment variables:
+
+- `PRIVATE_KEY`
+- `VAULT_ADDRESS`
+- `UPDATE_STRATEGY_STATE`
+- `UPDATE_NAV`
+- `UPDATE_PNL`
+- `STRATEGY_STATE`
+- `NEW_REPORTED_NAV_ASSETS`
+- `PNL_DELTA_ASSETS`
+- `SIGNAL_HASH`
+- `METADATA_HASH`
+- `REPORT_HASH`
+
+## Key Assumptions
+
+- one mock stablecoin asset only
+- internal, non-transferable shares
+- off-chain NAV and PnL reporting by a trusted owner/operator path
+- withdrawals require both enough reported NAV and enough actual token liquidity
+- no on-chain exchange execution, oracle verification, fees, or withdrawal queue
+
+## Current Environment Note
+
+This repository now includes the contract implementation, tests, and deployment scripts, but `forge` was not installed in the current machine during implementation. The commands above are the intended workflow once Foundry is available locally.
+
 ## Scope Caveat
 
-This contract workspace is a prototype foundation. It is not a production DeFi protocol and should not be treated as audited or deployment-ready.
-
+This contract workspace is a course-project prototype. It is not a production DeFi protocol and should not be treated as audited or deployment-ready.

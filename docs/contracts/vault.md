@@ -28,8 +28,11 @@ Foundry is a good fit here because:
 
 - `contracts/src/MockStablecoin.sol`
 - `contracts/src/DeltaNeutralVault.sol`
+- `contracts/test/DeltaNeutralVault.t.sol`
+- `contracts/script/DeployLocal.s.sol`
+- `contracts/script/UpdateVaultState.s.sol`
 - `contracts/foundry.toml`
 
 ## Caveats
 
-The current contract is a prototype starter. It does not claim production security or complete economic realism.
+The current contract is a prototype accounting vault. It does not claim production security, trustless oracle design, or complete economic realism.

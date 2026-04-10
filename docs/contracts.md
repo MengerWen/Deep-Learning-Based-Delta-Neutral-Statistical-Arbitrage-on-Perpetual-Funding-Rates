@@ -17,6 +17,22 @@ This document should be treated as the canonical design reference for future Sol
 - `contracts/src/MockStablecoin.sol`
 - future Foundry tests under `contracts/test/`
 
+## Current Implementation Snapshot
+
+The repository now includes a first complete prototype implementation in:
+
+- `contracts/src/DeltaNeutralVault.sol`
+- `contracts/src/MockStablecoin.sol`
+- `contracts/test/DeltaNeutralVault.t.sol`
+- `contracts/script/DeployLocal.s.sol`
+- `contracts/script/UpdateVaultState.s.sol`
+
+Implementation note:
+
+- to keep the course-project workspace self-contained, the current version uses small local `Ownable2StepLite`, `PausableLite`, and `ReentrancyGuardLite` helpers instead of importing OpenZeppelin
+- the security model and interfaces still follow the same intent described below
+- if the project later adds `openzeppelin-contracts`, these lightweight helpers can be swapped for audited library versions without changing the external vault behavior
+
 ## Design Recommendation
 
 The recommended first implementation is:
@@ -106,12 +122,14 @@ Expected behavior:
 
 Recommended share-mint rule:
 
-- if `totalShares == 0` or `reportedNavAssets == 0`, mint `shares = assets`
+- if `totalShares == 0`, mint `shares = assets`
+- if `totalShares > 0` and `reportedNavAssets == 0`, revert because the vault is economically insolvent for pricing purposes
 - otherwise mint:
 
 `shares = floor(assets * totalShares / reportedNavAssets_before_deposit)`
 
 This keeps first deposit logic simple and prevents over-minting later deposits.
+The current implementation follows this safer rule and reverts with `VaultInsolvent()` if shares exist while reported NAV is zero.
 
 ### Withdraw flow
 
@@ -428,6 +446,11 @@ Why not full `AccessControl` in v1:
 - `owner + operator` is easier to read in a course demo
 - fewer moving parts improve auditability
 
+Current implementation note:
+
+- the owner can also clear the operator by setting `operator = address(0)`
+- this is useful for demo scenarios where the team wants to disable external updates temporarily while keeping owner recovery paths available
+
 ## 9. Recommended Contract Storage Layout
 
 Keep storage grouped and minimal.
@@ -535,6 +558,47 @@ Useful invariants for a later pass:
 - sum of all known user share balances equals `totalShares`
 - no user can withdraw more assets than their shares imply
 - pause never blocks owner transfer or updater state recording unless explicitly intended
+
+## 11. Local Workflow
+
+The practical local workflow for the current implementation is:
+
+1. compile the workspace
+2. run unit tests
+3. deploy `MockStablecoin` and `DeltaNeutralVault`
+4. mint demo assets if needed
+5. update strategy state and NAV/PnL through the operator path
+
+Recommended commands:
+
+```bash
+cd contracts
+forge build
+forge test -vv
+forge script script/DeployLocal.s.sol:DeployLocal --rpc-url http://127.0.0.1:8545 --broadcast
+forge script script/UpdateVaultState.s.sol:UpdateVaultState --rpc-url http://127.0.0.1:8545 --broadcast
+```
+
+Recommended deployment environment variables:
+
+- `PRIVATE_KEY`
+- `INITIAL_OPERATOR`
+- `INITIAL_MINT`
+- `VAULT_ADDRESS`
+- `UPDATE_STRATEGY_STATE`
+- `UPDATE_NAV`
+- `UPDATE_PNL`
+- `STRATEGY_STATE`
+- `NEW_REPORTED_NAV_ASSETS`
+- `PNL_DELTA_ASSETS`
+- `SIGNAL_HASH`
+- `METADATA_HASH`
+- `REPORT_HASH`
+
+Important operational note:
+
+- this repository currently documents the full Foundry workflow, but the machine used during this implementation did not have `forge` installed
+- the contract code, test files, and script files are written to match the Foundry workspace layout, but compile/test execution still needs a local Foundry installation
 
 ## Recommended State-Transition Diagram
 
