@@ -1,5 +1,9 @@
 # Vault Contract Prototype
 
+Full implementation-facing specification:
+
+- see [`docs/contracts.md`](../contracts.md)
+
 ## Scope
 
 The contract layer is a prototype accounting vault, not a production trading protocol.
@@ -29,4 +33,3 @@ Foundry is a good fit here because:
 ## Caveats
 
 The current contract is a prototype starter. It does not claim production security or complete economic realism.
-

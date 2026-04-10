@@ -186,9 +186,10 @@ npm run dev
 - Unified signals: [docs/signals.md](docs/signals.md)
 - Backtest engine: [docs/backtest.md](docs/backtest.md)
 - Robustness workflow: [docs/robustness.md](docs/robustness.md)
+- Solidity vault specification: [docs/contracts.md](docs/contracts.md)
 - Models and research: [docs/modules/models-and-research.md](docs/modules/models-and-research.md)
 - Backtesting: [docs/modules/backtesting.md](docs/modules/backtesting.md)
-- Vault contract: [docs/contracts/vault.md](docs/contracts/vault.md)
+- Vault module note: [docs/contracts/vault.md](docs/contracts/vault.md)
 - Frontend demo: [docs/demos/frontend.md](docs/demos/frontend.md)
 - Implementation plan: [docs/plans/2026-04-09-course-project-implementation-plan.md](docs/plans/2026-04-09-course-project-implementation-plan.md)
 ## Immediate Next Steps

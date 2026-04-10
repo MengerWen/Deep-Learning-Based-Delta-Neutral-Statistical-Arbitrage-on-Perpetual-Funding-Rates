@@ -9,6 +9,7 @@
 - `signals.md`: unified trading-signal schema and adapters
 - `backtest.md`: explicit delta-neutral backtesting engine and assumptions
 - `robustness.md`: reusable robustness-analysis workflow and experiment definitions
+- `contracts.md`: canonical Solidity vault specification for the prototype
 - `architecture/`: system-level design and data flow
 - `modules/`: module-specific implementation notes
 - `contracts/`: Solidity vault design notes
