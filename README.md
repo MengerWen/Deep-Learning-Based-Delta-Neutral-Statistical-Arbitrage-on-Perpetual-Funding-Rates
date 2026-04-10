@@ -13,7 +13,7 @@ The repository is intentionally scoped as a prototype. We want clear architectur
 
 ## Repository Status
 
-The repository now has a working Binance historical data pipeline, a configurable feature-engineering pipeline, a cost-aware label-generation pipeline, a presentation-friendly data-quality reporting command, a baseline strategy/model benchmarking pipeline, a first LSTM-based deep-learning training pipeline, a unified signal layer, and a first explicit delta-neutral backtesting engine. Richer contract/frontend integration and deeper model iteration are the main remaining build areas.
+The repository now has a working Binance historical data pipeline, a configurable feature-engineering pipeline, a cost-aware label-generation pipeline, a presentation-friendly data-quality reporting command, a baseline strategy/model benchmarking pipeline, a first LSTM-based deep-learning training pipeline, a unified signal layer, a first explicit delta-neutral backtesting engine, and a reusable robustness-analysis workflow. Richer contract/frontend integration and deeper model iteration are the main remaining build areas.
 
 ## Architecture Overview
 
@@ -121,6 +121,7 @@ Example scaffold commands:
 & 'd:\MG\anaconda3\python.exe' scripts/models/train_dl.py --config configs/models/lstm.yaml
 & 'd:\MG\anaconda3\python.exe' scripts/backtests/run_backtest.py --config configs/backtests/default.yaml
 & 'd:\MG\anaconda3\python.exe' scripts/reports/report_data_quality.py --config configs/reports/data_quality.yaml
+& 'd:\MG\anaconda3\python.exe' scripts/reports/robustness_report.py --config configs/reports/robustness.yaml
 ```
 Unified CLI commands:
 
@@ -135,6 +136,7 @@ Unified CLI commands:
 & 'd:\MG\anaconda3\python.exe' -m src.main generate-signals --source baseline
 & 'd:\MG\anaconda3\python.exe' -m src.main generate-signals --source dl
 & 'd:\MG\anaconda3\python.exe' -m src.main backtest
+& 'd:\MG\anaconda3\python.exe' -m src.main robustness-report
 ```
 
 Override config or logging when needed:
@@ -153,6 +155,7 @@ The `evaluate-baseline` command reloads saved baseline artifacts and regenerates
 The `train-dl` command now trains the first LSTM sequence model on the supervised dataset, saves the best checkpoint, writes prediction artifacts, and exports a lightweight experiment summary under `data/artifacts/models/dl/`.
 The `generate-signals` command now normalizes rule-based, baseline ML, and deep-learning outputs into one shared signal schema under `data/artifacts/signals/`, ready for backtesting and demo consumption.
 The `backtest` command now consumes standardized signals plus the canonical market dataset, writes trade logs, realized equity curves, summary metrics, report figures, and a markdown backtest report under `data/artifacts/backtests/`.
+The `robustness-report` command now reuses the signal and backtest layers to stress-test results under alternative cost assumptions, holding windows, rule thresholds, and feature ablations, then writes presentation-ready tables and figures under `reports/robustness/`.
 
 ### Solidity
 
@@ -182,6 +185,7 @@ npm run dev
 - Deep learning models: [docs/models.md](docs/models.md)
 - Unified signals: [docs/signals.md](docs/signals.md)
 - Backtest engine: [docs/backtest.md](docs/backtest.md)
+- Robustness workflow: [docs/robustness.md](docs/robustness.md)
 - Models and research: [docs/modules/models-and-research.md](docs/modules/models-and-research.md)
 - Backtesting: [docs/modules/backtesting.md](docs/modules/backtesting.md)
 - Vault contract: [docs/contracts/vault.md](docs/contracts/vault.md)
@@ -191,7 +195,7 @@ npm run dev
 
 1. Add mark-to-market intratrade equity and drawdown to the backtesting engine.
 2. Expand the data layer with index-price ingestion and optional open-interest validation.
-3. Connect report artifacts, model outputs, signal artifacts, and backtest summaries into the frontend demo.
+3. Connect robustness and backtest report artifacts into the frontend demo.
 4. Add a second sequence architecture, such as a Transformer encoder, only after the LSTM benchmark is stable.
 
 ## Minimal No-Install Verification

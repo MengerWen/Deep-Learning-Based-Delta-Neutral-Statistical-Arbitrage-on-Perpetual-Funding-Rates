@@ -767,11 +767,18 @@ def _plot_trade_return_boxplot(trade_log: pd.DataFrame, leaderboard: pd.DataFram
     _apply_plot_style()
     fig, ax = plt.subplots(figsize=(12, 6))
     top_names = leaderboard.head(max(top_n, 1))["strategy_name"].tolist()
-    filtered = trade_log[trade_log["strategy_name"].isin(top_names)].copy()
-    if filtered.empty:
+    if trade_log.empty or "strategy_name" not in trade_log.columns or "net_return_bps" not in trade_log.columns:
         ax.text(0.5, 0.5, "No trades available", ha="center", va="center")
         ax.set_axis_off()
     else:
+        filtered = trade_log[trade_log["strategy_name"].isin(top_names)].copy()
+        if filtered.empty:
+            ax.text(0.5, 0.5, "No trades available", ha="center", va="center")
+            ax.set_axis_off()
+            fig.tight_layout()
+            fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
+            plt.close(fig)
+            return str(output_path)
         ordered_groups = [filtered.loc[filtered["strategy_name"] == name, "net_return_bps"].astype(float).to_numpy() for name in top_names]
         ax.boxplot(ordered_groups, labels=top_names, patch_artist=True)
         ax.set_ylabel("Net trade return (bps)")

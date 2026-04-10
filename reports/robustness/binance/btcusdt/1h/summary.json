@@ -1,0 +1,201 @@
+{
+  "ranking_metric": "cumulative_return",
+  "family_comparison": [
+    {
+      "experiment": "family_comparison",
+      "family_name": "baseline_ml",
+      "family_label": "Simple ML Baseline",
+      "family_source_name": "baseline-ml",
+      "scenario_name": "base",
+      "scenario_order": 1,
+      "run_name": "family_comparison_baseline_ml_base",
+      "strategy_name": "logistic_regression",
+      "source": "baseline-ml",
+      "source_subtype": "baseline_ml",
+      "task": "classification",
+      "trade_count": 3,
+      "active_position_count": 3,
+      "cumulative_return": -0.001050101232486278,
+      "annualized_return": -0.00102782004101043,
+      "sharpe_ratio": -1.7085220457921593,
+      "max_drawdown": -0.001050101232486389,
+      "win_rate": 0.0,
+      "average_trade_return_bps": -35.003374416209134,
+      "average_trade_pnl_usd": -35.003374416209134,
+      "average_holding_hours": 1.0,
+      "total_turnover_usd": 120000.0,
+      "total_fees_usd": 60.0,
+      "total_gas_cost_usd": 6.0,
+      "total_other_friction_usd": 0.0,
+      "total_funding_pnl_usd": 0.0,
+      "total_gross_pnl_usd": -39.01012324862738,
+      "total_net_pnl_usd": -105.0101232486274,
+      "final_equity_usd": 99894.98987675137,
+      "scenario_label": "base"
+    },
+    {
+      "experiment": "family_comparison",
+      "family_name": "deep_learning",
+      "family_label": "Deep Learning",
+      "family_source_name": "dl",
+      "scenario_name": "base",
+      "scenario_order": 1,
+      "run_name": "family_comparison_deep_learning_base",
+      "strategy_name": "lstm",
+      "source": "dl",
+      "source_subtype": "deep_learning",
+      "task": "regression",
+      "trade_count": 0,
+      "active_position_count": 0,
+      "cumulative_return": 0.0,
+      "annualized_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.0,
+      "win_rate": 0.0,
+      "average_trade_return_bps": 0.0,
+      "average_trade_pnl_usd": 0.0,
+      "average_holding_hours": 0.0,
+      "total_turnover_usd": 0.0,
+      "total_fees_usd": 0.0,
+      "total_gas_cost_usd": 0.0,
+      "total_other_friction_usd": 0.0,
+      "total_funding_pnl_usd": 0.0,
+      "total_gross_pnl_usd": 0.0,
+      "total_net_pnl_usd": 0.0,
+      "final_equity_usd": 100000.0,
+      "scenario_label": "base"
+    },
+    {
+      "experiment": "family_comparison",
+      "family_name": "rule_based",
+      "family_label": "Rule-Based Baseline",
+      "family_source_name": "rules",
+      "scenario_name": "base",
+      "scenario_order": 1,
+      "run_name": "family_comparison_rule_based_base",
+      "strategy_name": "combined_funding_spread",
+      "source": "rules",
+      "source_subtype": "rule_based",
+      "task": "classification",
+      "trade_count": 7,
+      "active_position_count": 7,
+      "cumulative_return": -0.002328156739906384,
+      "annualized_return": -0.0022787885407622444,
+      "sharpe_ratio": -2.6180781859871143,
+      "max_drawdown": -0.002328156739906273,
+      "win_rate": 0.0,
+      "average_trade_return_bps": -33.25938199866055,
+      "average_trade_pnl_usd": -33.25938199866055,
+      "average_holding_hours": 1.0,
+      "total_turnover_usd": 280000.0,
+      "total_fees_usd": 140.0,
+      "total_gas_cost_usd": 14.0,
+      "total_other_friction_usd": 0.0,
+      "total_funding_pnl_usd": 0.0,
+      "total_gross_pnl_usd": -78.81567399062382,
+      "total_net_pnl_usd": -232.81567399062385,
+      "final_equity_usd": 99767.18432600937,
+      "scenario_label": "base"
+    }
+  ],
+  "cost_sensitivity_range": [
+    {
+      "family_name": "deep_learning",
+      "max": 0.0,
+      "min": 0.0,
+      "metric_range": 0.0
+    },
+    {
+      "family_name": "baseline_ml",
+      "max": -0.0005410370106530005,
+      "min": -0.0015891655454235432,
+      "metric_range": 0.0010481285347705427
+    },
+    {
+      "family_name": "rule_based",
+      "max": -0.001139890131692134,
+      "min": -0.0035864235412175205,
+      "metric_range": 0.0024465334095253866
+    }
+  ],
+  "best_holding_window_by_family": [
+    {
+      "family_name": "baseline_ml",
+      "family_label": "Simple ML Baseline",
+      "scenario_name": "hold_24h",
+      "holding_window_hours": 24,
+      "cumulative_return": -0.001050101232486278
+    },
+    {
+      "family_name": "deep_learning",
+      "family_label": "Deep Learning",
+      "scenario_name": "hold_24h",
+      "holding_window_hours": 24,
+      "cumulative_return": 0.0
+    },
+    {
+      "family_name": "rule_based",
+      "family_label": "Rule-Based Baseline",
+      "scenario_name": "hold_24h",
+      "holding_window_hours": 24,
+      "cumulative_return": -0.002328156739906384
+    }
+  ],
+  "best_rule_threshold_by_strategy": [
+    {
+      "strategy_name": "combined_funding_spread",
+      "scenario_name": "score_1p0",
+      "min_signal_score": 1.0,
+      "cumulative_return": -0.0006640760821216007
+    },
+    {
+      "strategy_name": "funding_threshold_2bps",
+      "scenario_name": "score_0",
+      "min_signal_score": 0.0,
+      "cumulative_return": 0.0
+    },
+    {
+      "strategy_name": "spread_zscore_1p5",
+      "scenario_name": "score_2p0",
+      "min_signal_score": 2.0,
+      "cumulative_return": -0.0030285758279245956
+    }
+  ],
+  "most_damaging_ablation_cases": [
+    {
+      "family_name": "baseline_ml",
+      "family_label": "Simple ML Baseline",
+      "scenario_name": "no_interaction",
+      "cumulative_return": -0.0028024867128452202,
+      "strategy_name": "logistic_regression"
+    },
+    {
+      "family_name": "baseline_ml",
+      "family_label": "Simple ML Baseline",
+      "scenario_name": "no_basis",
+      "cumulative_return": -0.0012912532321054382,
+      "strategy_name": "logistic_regression"
+    },
+    {
+      "family_name": "baseline_ml",
+      "family_label": "Simple ML Baseline",
+      "scenario_name": "no_volatility",
+      "cumulative_return": -0.0006964184569364651,
+      "strategy_name": "logistic_regression"
+    },
+    {
+      "family_name": "baseline_ml",
+      "family_label": "Simple ML Baseline",
+      "scenario_name": "no_funding",
+      "cumulative_return": -0.0006662809124119429,
+      "strategy_name": "logistic_regression"
+    },
+    {
+      "family_name": "baseline_ml",
+      "family_label": "Simple ML Baseline",
+      "scenario_name": "no_liquidity",
+      "cumulative_return": 0.0,
+      "strategy_name": "logistic_regression"
+    }
+  ]
+}

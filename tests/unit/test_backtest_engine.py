@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
 import pytest
 
-from funding_arb.backtest.engine import build_realized_equity_curve, calculate_trade_pnl, summarize_strategy_backtest
+from funding_arb.backtest.engine import (
+    _plot_trade_return_boxplot,
+    build_realized_equity_curve,
+    calculate_trade_pnl,
+    summarize_strategy_backtest,
+)
 
 
 def test_calculate_trade_pnl_for_short_perp_long_spot_convergence_trade() -> None:
@@ -84,9 +91,29 @@ def test_realized_equity_curve_and_summary_metrics() -> None:
         initial_capital=100_000.0,
     )
 
-    assert equity_curve["equity_usd"].tolist() == pytest.approx([100_000.0, 100_100.0, 100_100.0, 100_050.0])
+    assert equity_curve["equity_usd"].tolist() == pytest.approx(
+        [100_000.0, 100_100.0, 100_100.0, 100_050.0]
+    )
     assert summary["trade_count"] == 2
     assert summary["win_rate"] == pytest.approx(0.5)
     assert summary["total_net_pnl_usd"] == pytest.approx(50.0)
     assert summary["cumulative_return"] == pytest.approx(0.0005)
     assert summary["final_equity_usd"] == pytest.approx(100_050.0)
+
+
+def test_trade_return_boxplot_handles_empty_trade_log() -> None:
+    leaderboard = pd.DataFrame({"strategy_name": ["ridge_regression"]})
+    scratch_dir = Path("tests/.tmp/backtest")
+    scratch_dir.mkdir(parents=True, exist_ok=True)
+    output_path = scratch_dir / "boxplot.png"
+
+    written = _plot_trade_return_boxplot(
+        pd.DataFrame(),
+        leaderboard,
+        output_path,
+        top_n=1,
+        dpi=72,
+    )
+
+    assert written.endswith("boxplot.png")
+    assert output_path.exists()

@@ -9,9 +9,9 @@ from funding_arb.config.models import (
     DeepLearningSettings,
     FeatureSettings,
     LabelPipelineSettings,
+    RobustnessReportSettings,
     SignalSettings,
 )
-
 
 
 def test_fetch_data_default_config_loads_typed_model() -> None:
@@ -22,13 +22,11 @@ def test_fetch_data_default_config_loads_typed_model() -> None:
     assert config.sources["funding"].enabled is True
 
 
-
 def test_report_data_quality_default_config_loads_typed_model() -> None:
     config = load_command_settings("report-data-quality")
     assert isinstance(config, DataQualityReportSettings)
     assert config.input.symbol == "BTCUSDT"
     assert config.output.output_dir == "reports/data_quality"
-
 
 
 def test_build_features_default_config_loads_typed_model() -> None:
@@ -39,14 +37,12 @@ def test_build_features_default_config_loads_typed_model() -> None:
     assert config.labels.forward_horizon_hours == 8
 
 
-
 def test_build_labels_default_config_loads_typed_model() -> None:
     config = load_command_settings("build-labels")
     assert isinstance(config, LabelPipelineSettings)
     assert config.input.feature_table_path.endswith("btcusdt_feature_set.parquet")
     assert config.target.holding_windows_hours == [8, 24]
     assert config.target.primary_horizon_hours == 8
-
 
 
 def test_train_baseline_default_config_loads_typed_model() -> None:
@@ -58,7 +54,6 @@ def test_train_baseline_default_config_loads_typed_model() -> None:
     assert len(config.rules) >= 1
 
 
-
 def test_train_dl_default_config_loads_typed_model() -> None:
     config = load_command_settings("train-dl")
     assert isinstance(config, DeepLearningSettings)
@@ -68,14 +63,14 @@ def test_train_dl_default_config_loads_typed_model() -> None:
     assert config.model.name == "lstm"
 
 
-
 def test_generate_signals_default_config_loads_typed_model() -> None:
     config = load_command_settings("generate-signals")
     assert isinstance(config, SignalSettings)
-    assert config.input.baseline_predictions_path.endswith("baseline_predictions.parquet")
+    assert config.input.baseline_predictions_path.endswith(
+        "baseline_predictions.parquet"
+    )
     assert config.input.dl_predictions_path.endswith("dl_predictions.parquet")
     assert config.source.name == "baseline"
-
 
 
 def test_backtest_default_config_loads_typed_model() -> None:
@@ -85,6 +80,16 @@ def test_backtest_default_config_loads_typed_model() -> None:
     assert config.input.market_dataset_path.endswith("hourly_market_data.parquet")
     assert config.execution.holding_window_hours == 24
     assert config.reporting.run_name == "baseline_signals_default"
+
+
+def test_robustness_report_default_config_loads_typed_model() -> None:
+    config = load_command_settings("robustness-report")
+    assert isinstance(config, RobustnessReportSettings)
+    assert config.input.symbol == "BTCUSDT"
+    assert config.evaluation.split_filter == ["test"]
+    assert len(config.families) == 3
+    assert config.families[0].name == "rule_based"
+    assert len(config.feature_ablation.groups) >= 3
 
 
 def test_evaluate_baseline_metadata_points_to_expected_default_file() -> None:

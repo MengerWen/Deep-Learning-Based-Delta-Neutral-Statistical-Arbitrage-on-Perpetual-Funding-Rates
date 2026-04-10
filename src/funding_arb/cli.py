@@ -13,26 +13,37 @@ from funding_arb.config.loader import COMMAND_SETTINGS, load_command_settings
 from funding_arb.data.pipeline import describe_ingestion_job, run_data_pipeline
 from funding_arb.features.pipeline import describe_feature_job, run_feature_pipeline
 from funding_arb.labels.generator import describe_labeling_assumption
-from funding_arb.labels.pipeline import describe_supervised_dataset_job, run_label_pipeline
+from funding_arb.labels.pipeline import (
+    describe_supervised_dataset_job,
+    run_label_pipeline,
+)
 from funding_arb.models.baselines import (
     describe_baseline_evaluation_job,
     describe_baseline_job,
     run_baseline_pipeline,
 )
-from funding_arb.models.deep_learning import describe_deep_learning_job, run_deep_learning_pipeline
-from funding_arb.reporting.data_quality import describe_data_quality_job, run_data_quality_report
+from funding_arb.models.deep_learning import (
+    describe_deep_learning_job,
+    run_deep_learning_pipeline,
+)
+from funding_arb.reporting.data_quality import (
+    describe_data_quality_job,
+    run_data_quality_report,
+)
+from funding_arb.reporting.robustness import (
+    describe_robustness_job,
+    run_robustness_report,
+)
 from funding_arb.signals.pipeline import describe_signal_job, run_signal_generation
 from funding_arb.utils.logging import configure_logging
 
 LOGGER = logging.getLogger(__name__)
 
 
-
 def _log_config_summary(command_name: str, config_path: Path, config: Any) -> None:
     LOGGER.info("Command: %s", command_name)
     LOGGER.info("Config path: %s", config_path)
     LOGGER.info("Config model: %s", type(config).__name__)
-
 
 
 def _run_fetch_data(config: Any, config_path: Path) -> int:
@@ -44,7 +55,6 @@ def _run_fetch_data(config: Any, config_path: Path) -> int:
     LOGGER.info("Processed outputs: %s", ", ".join(artifacts.processed_files))
     LOGGER.info("Manifest: %s", artifacts.manifest_path)
     return 0
-
 
 
 def _run_report_data_quality(config: Any, config_path: Path) -> int:
@@ -60,7 +70,6 @@ def _run_report_data_quality(config: Any, config_path: Path) -> int:
     return 0
 
 
-
 def _run_build_features(config: Any, config_path: Path) -> int:
     _log_config_summary("build-features", config_path, config)
     LOGGER.info(describe_feature_job(config))
@@ -71,7 +80,6 @@ def _run_build_features(config: Any, config_path: Path) -> int:
         LOGGER.info("Feature table CSV: %s", artifacts.feature_table_csv_path)
     LOGGER.info("Feature manifest: %s", artifacts.manifest_path)
     return 0
-
 
 
 def _run_build_labels(config: Any, config_path: Path) -> int:
@@ -86,10 +94,12 @@ def _run_build_labels(config: Any, config_path: Path) -> int:
     if artifacts.label_table_csv_path is not None:
         LOGGER.info("Label table CSV: %s", artifacts.label_table_csv_path)
     if artifacts.split_paths:
-        LOGGER.info("Split datasets: %s", ", ".join(f"{name}={path}" for name, path in artifacts.split_paths.items()))
+        LOGGER.info(
+            "Split datasets: %s",
+            ", ".join(f"{name}={path}" for name, path in artifacts.split_paths.items()),
+        )
     LOGGER.info("Supervised manifest: %s", artifacts.manifest_path)
     return 0
-
 
 
 def _run_train_baseline(config: Any, config_path: Path) -> int:
@@ -110,11 +120,18 @@ def _run_train_baseline(config: Any, config_path: Path) -> int:
     LOGGER.info("Feature columns: %s", artifacts.feature_columns_path)
     LOGGER.info("Model manifest: %s", artifacts.manifest_path)
     if artifacts.model_paths:
-        LOGGER.info("Model artifacts: %s", ", ".join(f"{name}={path}" for name, path in artifacts.model_paths.items()))
+        LOGGER.info(
+            "Model artifacts: %s",
+            ", ".join(f"{name}={path}" for name, path in artifacts.model_paths.items()),
+        )
     if artifacts.diagnostic_paths:
-        LOGGER.info("Diagnostics: %s", ", ".join(f"{name}={path}" for name, path in artifacts.diagnostic_paths.items()))
+        LOGGER.info(
+            "Diagnostics: %s",
+            ", ".join(
+                f"{name}={path}" for name, path in artifacts.diagnostic_paths.items()
+            ),
+        )
     return 0
-
 
 
 def _run_evaluate_baseline(config: Any, config_path: Path) -> int:
@@ -135,7 +152,6 @@ def _run_evaluate_baseline(config: Any, config_path: Path) -> int:
     LOGGER.info("Feature columns: %s", artifacts.feature_columns_path)
     LOGGER.info("Model manifest: %s", artifacts.manifest_path)
     return 0
-
 
 
 def _run_train_dl(config: Any, config_path: Path) -> int:
@@ -161,7 +177,6 @@ def _run_train_dl(config: Any, config_path: Path) -> int:
     return 0
 
 
-
 def _run_generate_signals(config: Any, config_path: Path) -> int:
     _log_config_summary("generate-signals", config_path, config)
     LOGGER.info(describe_signal_job(config))
@@ -171,7 +186,6 @@ def _run_generate_signals(config: Any, config_path: Path) -> int:
         LOGGER.info("Signals CSV: %s", artifacts.signals_csv_path)
     LOGGER.info("Signal manifest: %s", artifacts.manifest_path)
     return 0
-
 
 
 def _run_backtest(config: Any, config_path: Path) -> int:
@@ -201,6 +215,19 @@ def _run_backtest(config: Any, config_path: Path) -> int:
     return 0
 
 
+def _run_robustness_report(config: Any, config_path: Path) -> int:
+    _log_config_summary("robustness-report", config_path, config)
+    LOGGER.info(describe_robustness_job(config))
+    artifacts = run_robustness_report(config)
+    LOGGER.info("Robustness tables: %s", ", ".join(artifacts.table_paths))
+    LOGGER.info("Robustness figures: %s", ", ".join(artifacts.figure_paths))
+    if artifacts.summary_json_path is not None:
+        LOGGER.info("Summary JSON: %s", artifacts.summary_json_path)
+    if artifacts.markdown_report_path is not None:
+        LOGGER.info("Markdown report: %s", artifacts.markdown_report_path)
+    return 0
+
+
 COMMAND_HANDLERS: dict[str, Callable[[Any, Path], int]] = {
     "fetch-data": _run_fetch_data,
     "report-data-quality": _run_report_data_quality,
@@ -211,8 +238,8 @@ COMMAND_HANDLERS: dict[str, Callable[[Any, Path], int]] = {
     "train-dl": _run_train_dl,
     "generate-signals": _run_generate_signals,
     "backtest": _run_backtest,
+    "robustness-report": _run_robustness_report,
 }
-
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -222,13 +249,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     for command_name, settings in COMMAND_SETTINGS.items():
         help_text = f"Run the {command_name} pipeline stage."
-        subparser = subparsers.add_parser(command_name, help=help_text, description=help_text)
+        subparser = subparsers.add_parser(
+            command_name, help=help_text, description=help_text
+        )
         subparser.add_argument(
             "--config",
             default=str(settings.default_config_path),
             help=f"Path to config file. Defaults to {settings.default_config_path}.",
         )
-        subparser.add_argument("--log-level", default="INFO", help="Logging level, e.g. INFO or DEBUG.")
+        subparser.add_argument(
+            "--log-level", default="INFO", help="Logging level, e.g. INFO or DEBUG."
+        )
         if command_name == "generate-signals":
             subparser.add_argument(
                 "--source",
@@ -236,7 +267,6 @@ def build_parser() -> argparse.ArgumentParser:
                 help="Optional source override, e.g. baseline, rules, baseline-ml, or dl.",
             )
     return parser
-
 
 
 def run_command(
@@ -253,7 +283,6 @@ def run_command(
         config.source.name = source_override
     handler = COMMAND_HANDLERS[command_name]
     return handler(config, resolved_path)
-
 
 
 def main(argv: Sequence[str] | None = None) -> int:

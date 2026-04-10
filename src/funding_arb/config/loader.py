@@ -16,6 +16,7 @@ from funding_arb.config.models import (
     DeepLearningSettings,
     FeatureSettings,
     LabelPipelineSettings,
+    RobustnessReportSettings,
     SignalSettings,
 )
 from funding_arb.utils.config import load_config
@@ -79,6 +80,11 @@ COMMAND_SETTINGS: dict[str, CommandSettings] = {
         default_config_path=repo_path("configs", "backtests", "default.yaml"),
         config_model=BacktestSettings,
     ),
+    "robustness-report": CommandSettings(
+        command_name="robustness-report",
+        default_config_path=repo_path("configs", "reports", "robustness.yaml"),
+        config_model=RobustnessReportSettings,
+    ),
 }
 
 
@@ -88,7 +94,9 @@ def get_command_settings(command_name: str) -> CommandSettings:
         return COMMAND_SETTINGS[command_name]
     except KeyError as exc:
         available = ", ".join(sorted(COMMAND_SETTINGS))
-        raise ValueError(f"Unknown command '{command_name}'. Available commands: {available}") from exc
+        raise ValueError(
+            f"Unknown command '{command_name}'. Available commands: {available}"
+        ) from exc
 
 
 def load_settings(path: str | Path, model_type: type[SettingsModel]) -> SettingsModel:
@@ -97,8 +105,12 @@ def load_settings(path: str | Path, model_type: type[SettingsModel]) -> Settings
     return model_type.model_validate(raw)
 
 
-def load_command_settings(command_name: str, config_path: str | Path | None = None) -> BaseModel:
+def load_command_settings(
+    command_name: str, config_path: str | Path | None = None
+) -> BaseModel:
     """Load the typed config model for a named CLI command."""
     settings = get_command_settings(command_name)
-    resolved_path = Path(config_path) if config_path is not None else settings.default_config_path
+    resolved_path = (
+        Path(config_path) if config_path is not None else settings.default_config_path
+    )
     return load_settings(resolved_path, settings.config_model)

@@ -113,9 +113,15 @@ class ModelSplitSettings(SettingsBase):
 
 
 class LabelInputSettings(SettingsBase):
-    feature_table_path: str = "data/processed/features/binance/btcusdt/1h/btcusdt_feature_set.parquet"
-    feature_manifest_path: str | None = "data/processed/features/binance/btcusdt/1h/btcusdt_feature_manifest.json"
-    market_dataset_path: str = "data/processed/binance/btcusdt/1h/hourly_market_data.parquet"
+    feature_table_path: str = (
+        "data/processed/features/binance/btcusdt/1h/btcusdt_feature_set.parquet"
+    )
+    feature_manifest_path: str | None = (
+        "data/processed/features/binance/btcusdt/1h/btcusdt_feature_manifest.json"
+    )
+    market_dataset_path: str = (
+        "data/processed/binance/btcusdt/1h/hourly_market_data.parquet"
+    )
     market_manifest_path: str | None = "data/processed/binance/btcusdt/1h/manifest.json"
     provider: str = "binance"
     symbol: str = "BTCUSDT"
@@ -163,8 +169,12 @@ class LabelPipelineSettings(SettingsBase):
 
 
 class BaselineInputSettings(SettingsBase):
-    dataset_path: str = "data/processed/supervised/binance/btcusdt/1h/btcusdt_supervised_dataset.parquet"
-    manifest_path: str | None = "data/processed/supervised/binance/btcusdt/1h/btcusdt_supervised_manifest.json"
+    dataset_path: str = (
+        "data/processed/supervised/binance/btcusdt/1h/btcusdt_supervised_dataset.parquet"
+    )
+    manifest_path: str | None = (
+        "data/processed/supervised/binance/btcusdt/1h/btcusdt_supervised_manifest.json"
+    )
     provider: str = "binance"
     symbol: str = "BTCUSDT"
     venue: str = "binance"
@@ -244,8 +254,12 @@ class TreeBaselineSettings(SettingsBase):
 
 
 class BaselinePredictiveSettings(SettingsBase):
-    classification: ClassificationBaselineSettings = Field(default_factory=ClassificationBaselineSettings)
-    regression: RegressionBaselineSettings = Field(default_factory=RegressionBaselineSettings)
+    classification: ClassificationBaselineSettings = Field(
+        default_factory=ClassificationBaselineSettings
+    )
+    regression: RegressionBaselineSettings = Field(
+        default_factory=RegressionBaselineSettings
+    )
     tree: TreeBaselineSettings = Field(default_factory=TreeBaselineSettings)
 
 
@@ -259,9 +273,13 @@ class BaselineOutputSettings(SettingsBase):
 class BaselineSettings(SettingsBase):
     input: BaselineInputSettings = Field(default_factory=BaselineInputSettings)
     target: BaselineTargetSettings = Field(default_factory=BaselineTargetSettings)
-    feature_selection: BaselineFeatureSelectionSettings = Field(default_factory=BaselineFeatureSelectionSettings)
+    feature_selection: BaselineFeatureSelectionSettings = Field(
+        default_factory=BaselineFeatureSelectionSettings
+    )
     rules: list[RuleBaselineSpec] = Field(default_factory=list)
-    predictive: BaselinePredictiveSettings = Field(default_factory=BaselinePredictiveSettings)
+    predictive: BaselinePredictiveSettings = Field(
+        default_factory=BaselinePredictiveSettings
+    )
     output: BaselineOutputSettings = Field(default_factory=BaselineOutputSettings)
     notes: dict[str, Any] = Field(default_factory=dict)
 
@@ -326,20 +344,36 @@ class DeepLearningOutputSettings(SettingsBase):
 
 class DeepLearningSettings(SettingsBase):
     input: BaselineInputSettings = Field(default_factory=BaselineInputSettings)
-    target: DeepLearningTargetSettings = Field(default_factory=DeepLearningTargetSettings)
-    feature_selection: BaselineFeatureSelectionSettings = Field(default_factory=BaselineFeatureSelectionSettings)
+    target: DeepLearningTargetSettings = Field(
+        default_factory=DeepLearningTargetSettings
+    )
+    feature_selection: BaselineFeatureSelectionSettings = Field(
+        default_factory=BaselineFeatureSelectionSettings
+    )
     sequence: SequenceSettings = Field(default_factory=SequenceSettings)
     model: DeepLearningModelSettings = Field(default_factory=DeepLearningModelSettings)
-    training: DeepLearningTrainingSettings = Field(default_factory=DeepLearningTrainingSettings)
-    output: DeepLearningOutputSettings = Field(default_factory=DeepLearningOutputSettings)
+    training: DeepLearningTrainingSettings = Field(
+        default_factory=DeepLearningTrainingSettings
+    )
+    output: DeepLearningOutputSettings = Field(
+        default_factory=DeepLearningOutputSettings
+    )
     notes: dict[str, Any] = Field(default_factory=dict)
 
 
 class SignalInputSettings(SettingsBase):
-    baseline_predictions_path: str = "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_predictions.parquet"
-    baseline_manifest_path: str | None = "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_manifest.json"
-    dl_predictions_path: str = "data/artifacts/models/dl/binance/btcusdt/1h/lstm_regression_24h_default/dl_predictions.parquet"
-    dl_manifest_path: str | None = "data/artifacts/models/dl/binance/btcusdt/1h/lstm_regression_24h_default/dl_manifest.json"
+    baseline_predictions_path: str = (
+        "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_predictions.parquet"
+    )
+    baseline_manifest_path: str | None = (
+        "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_manifest.json"
+    )
+    dl_predictions_path: str = (
+        "data/artifacts/models/dl/binance/btcusdt/1h/lstm_regression_24h_default/dl_predictions.parquet"
+    )
+    dl_manifest_path: str | None = (
+        "data/artifacts/models/dl/binance/btcusdt/1h/lstm_regression_24h_default/dl_manifest.json"
+    )
     provider: str = "binance"
     symbol: str = "BTCUSDT"
     venue: str = "binance"
@@ -367,9 +401,15 @@ class SignalSettings(SettingsBase):
 
 
 class BacktestInputSettings(SettingsBase):
-    signal_path: str = "data/artifacts/signals/binance/btcusdt/1h/baseline/signals.parquet"
-    signal_manifest_path: str | None = "data/artifacts/signals/binance/btcusdt/1h/baseline/signals_manifest.json"
-    market_dataset_path: str = "data/processed/binance/btcusdt/1h/hourly_market_data.parquet"
+    signal_path: str = (
+        "data/artifacts/signals/binance/btcusdt/1h/baseline/signals.parquet"
+    )
+    signal_manifest_path: str | None = (
+        "data/artifacts/signals/binance/btcusdt/1h/baseline/signals_manifest.json"
+    )
+    market_dataset_path: str = (
+        "data/processed/binance/btcusdt/1h/hourly_market_data.parquet"
+    )
     market_manifest_path: str | None = "data/processed/binance/btcusdt/1h/manifest.json"
     provider: str = "binance"
     symbol: str = "BTCUSDT"
@@ -379,7 +419,9 @@ class BacktestInputSettings(SettingsBase):
 
 class BacktestSelectionSettings(SettingsBase):
     strategy_names: list[str] = Field(default_factory=list)
-    split_filter: list[str] = Field(default_factory=lambda: ["train", "validation", "test"])
+    split_filter: list[str] = Field(
+        default_factory=lambda: ["train", "validation", "test"]
+    )
     direction: str = "short_perp_long_spot"
     require_should_trade: bool = True
     min_signal_score: float | None = None
@@ -426,7 +468,9 @@ class ReportingSettings(SettingsBase):
 
 class BacktestSettings(SettingsBase):
     input: BacktestInputSettings = Field(default_factory=BacktestInputSettings)
-    selection: BacktestSelectionSettings = Field(default_factory=BacktestSelectionSettings)
+    selection: BacktestSelectionSettings = Field(
+        default_factory=BacktestSelectionSettings
+    )
     portfolio: PortfolioSettings
     costs: CostSettings
     execution: ExecutionSettings
@@ -460,7 +504,129 @@ class DataQualityReportOutputSettings(SettingsBase):
 
 
 class DataQualityReportSettings(SettingsBase):
-    input: DataQualityReportInputSettings = Field(default_factory=DataQualityReportInputSettings)
+    input: DataQualityReportInputSettings = Field(
+        default_factory=DataQualityReportInputSettings
+    )
     plots: DataQualityPlotSettings = Field(default_factory=DataQualityPlotSettings)
-    output: DataQualityReportOutputSettings = Field(default_factory=DataQualityReportOutputSettings)
+    output: DataQualityReportOutputSettings = Field(
+        default_factory=DataQualityReportOutputSettings
+    )
+    notes: dict[str, Any] = Field(default_factory=dict)
+
+
+class RobustnessInputSettings(SettingsBase):
+    provider: str = "binance"
+    symbol: str = "BTCUSDT"
+    venue: str = "binance"
+    frequency: str = "1h"
+    signal_config_path: str = "configs/signals/default.yaml"
+    baseline_config_path: str = "configs/models/baseline.yaml"
+    dl_config_path: str = "configs/models/lstm.yaml"
+    backtest_config_path: str = "configs/backtests/default.yaml"
+    feature_manifest_path: str | None = (
+        "data/processed/features/binance/btcusdt/1h/btcusdt_feature_manifest.json"
+    )
+
+
+class RobustnessFamilySettings(SettingsBase):
+    name: str
+    label: str | None = None
+    source_name: str
+    enabled: bool = True
+    signal_path: str | None = None
+    signal_manifest_path: str | None = None
+    strategy_names: list[str] = Field(default_factory=list)
+    regenerate_signal: bool = False
+
+
+class RobustnessEvaluationSettings(SettingsBase):
+    split_filter: list[str] = Field(default_factory=lambda: ["test"])
+    ranking_metric: str = "cumulative_return"
+    top_n_strategies: int = 1
+
+
+class RobustnessCostScenario(SettingsBase):
+    name: str
+    taker_fee_bps: float | None = None
+    slippage_bps: float | None = None
+    gas_cost_usd: float | None = None
+    other_friction_bps: float | None = None
+
+
+class CostSensitivitySettings(SettingsBase):
+    enabled: bool = True
+    scenarios: list[RobustnessCostScenario] = Field(default_factory=list)
+
+
+class RobustnessHoldingScenario(SettingsBase):
+    name: str
+    holding_window_hours: int
+    maximum_holding_hours: int | None = None
+
+
+class HoldingSensitivitySettings(SettingsBase):
+    enabled: bool = True
+    scenarios: list[RobustnessHoldingScenario] = Field(default_factory=list)
+
+
+class RobustnessThresholdScenario(SettingsBase):
+    name: str
+    min_signal_score: float | None = None
+    min_confidence: float | None = None
+    min_expected_return_bps: float | None = None
+
+
+class ThresholdSensitivitySettings(SettingsBase):
+    enabled: bool = True
+    family_name: str = "rule_based"
+    scenarios: list[RobustnessThresholdScenario] = Field(default_factory=list)
+
+
+class FeatureAblationSpec(SettingsBase):
+    name: str
+    feature_groups: list[str] = Field(default_factory=list)
+    exclude_columns: list[str] = Field(default_factory=list)
+    include_baseline_ml: bool = True
+    include_deep_learning: bool = True
+
+
+class FeatureAblationSettings(SettingsBase):
+    enabled: bool = True
+    signal_output_dir: str = "data/artifacts/robustness/signals"
+    backtest_output_dir: str = "data/artifacts/robustness/backtests"
+    baseline_run_name_prefix: str = "robustness_baseline"
+    dl_run_name_prefix: str = "robustness_dl"
+    groups: list[FeatureAblationSpec] = Field(default_factory=list)
+
+
+class RobustnessReportingSettings(SettingsBase):
+    output_dir: str = "reports/robustness"
+    write_csv: bool = True
+    write_markdown: bool = True
+    write_json_summary: bool = True
+    figure_format: str = "png"
+    dpi: int = 180
+
+
+class RobustnessReportSettings(SettingsBase):
+    input: RobustnessInputSettings = Field(default_factory=RobustnessInputSettings)
+    families: list[RobustnessFamilySettings] = Field(default_factory=list)
+    evaluation: RobustnessEvaluationSettings = Field(
+        default_factory=RobustnessEvaluationSettings
+    )
+    cost_sensitivity: CostSensitivitySettings = Field(
+        default_factory=CostSensitivitySettings
+    )
+    holding_sensitivity: HoldingSensitivitySettings = Field(
+        default_factory=HoldingSensitivitySettings
+    )
+    threshold_sensitivity: ThresholdSensitivitySettings = Field(
+        default_factory=ThresholdSensitivitySettings
+    )
+    feature_ablation: FeatureAblationSettings = Field(
+        default_factory=FeatureAblationSettings
+    )
+    reporting: RobustnessReportingSettings = Field(
+        default_factory=RobustnessReportingSettings
+    )
     notes: dict[str, Any] = Field(default_factory=dict)
