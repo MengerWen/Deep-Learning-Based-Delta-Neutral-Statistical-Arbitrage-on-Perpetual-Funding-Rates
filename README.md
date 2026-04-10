@@ -137,6 +137,7 @@ Unified CLI commands:
 & 'd:\MG\anaconda3\python.exe' -m src.main generate-signals --source dl
 & 'd:\MG\anaconda3\python.exe' -m src.main backtest
 & 'd:\MG\anaconda3\python.exe' -m src.main robustness-report
+& 'd:\MG\anaconda3\python.exe' -m src.main sync-vault
 ```
 
 Override config or logging when needed:
@@ -156,6 +157,7 @@ The `train-dl` command now trains the first LSTM sequence model on the supervise
 The `generate-signals` command now normalizes rule-based, baseline ML, and deep-learning outputs into one shared signal schema under `data/artifacts/signals/`, ready for backtesting and demo consumption.
 The `backtest` command now consumes standardized signals plus the canonical market dataset, writes trade logs, realized equity curves, summary metrics, report figures, and a markdown backtest report under `data/artifacts/backtests/`.
 The `robustness-report` command now reuses the signal and backtest layers to stress-test results under alternative cost assumptions, holding windows, rule thresholds, and feature ablations, then writes presentation-ready tables and figures under `reports/robustness/`.
+The `sync-vault` command now demonstrates a mock operator/oracle-style bridge from off-chain strategy artifacts to the on-chain vault by generating a vault update payload and, when enabled, broadcasting `updateStrategyState` plus `updateNav` or `updatePnl`.
 
 ### Solidity
 
@@ -195,6 +197,7 @@ npm run dev
 - Backtest engine: [docs/backtest.md](docs/backtest.md)
 - Robustness workflow: [docs/robustness.md](docs/robustness.md)
 - Solidity vault specification: [docs/contracts.md](docs/contracts.md)
+- Mock off-chain to on-chain integration: [docs/integration.md](docs/integration.md)
 - Models and research: [docs/modules/models-and-research.md](docs/modules/models-and-research.md)
 - Backtesting: [docs/modules/backtesting.md](docs/modules/backtesting.md)
 - Vault module note: [docs/contracts/vault.md](docs/contracts/vault.md)

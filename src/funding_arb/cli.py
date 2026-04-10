@@ -12,6 +12,10 @@ from funding_arb.backtest.engine import describe_backtest_job, run_backtest_pipe
 from funding_arb.config.loader import COMMAND_SETTINGS, load_command_settings
 from funding_arb.data.pipeline import describe_ingestion_job, run_data_pipeline
 from funding_arb.features.pipeline import describe_feature_job, run_feature_pipeline
+from funding_arb.integration.pipeline import (
+    describe_integration_job,
+    run_vault_sync_pipeline,
+)
 from funding_arb.labels.generator import describe_labeling_assumption
 from funding_arb.labels.pipeline import (
     describe_supervised_dataset_job,
@@ -228,6 +232,18 @@ def _run_robustness_report(config: Any, config_path: Path) -> int:
     return 0
 
 
+def _run_sync_vault(config: Any, config_path: Path) -> int:
+    _log_config_summary("sync-vault", config_path, config)
+    LOGGER.info(describe_integration_job(config))
+    artifacts = run_vault_sync_pipeline(config)
+    LOGGER.info("Selected strategy summary: %s", artifacts.selection_summary_path)
+    LOGGER.info("Vault update plan: %s", artifacts.plan_path)
+    LOGGER.info("Contract call summary: %s", artifacts.call_summary_path)
+    if artifacts.markdown_report_path is not None:
+        LOGGER.info("Markdown report: %s", artifacts.markdown_report_path)
+    return 0
+
+
 COMMAND_HANDLERS: dict[str, Callable[[Any, Path], int]] = {
     "fetch-data": _run_fetch_data,
     "report-data-quality": _run_report_data_quality,
@@ -239,6 +255,7 @@ COMMAND_HANDLERS: dict[str, Callable[[Any, Path], int]] = {
     "generate-signals": _run_generate_signals,
     "backtest": _run_backtest,
     "robustness-report": _run_robustness_report,
+    "sync-vault": _run_sync_vault,
 }
 
 

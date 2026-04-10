@@ -72,3 +72,12 @@ def test_cli_parser_accepts_train_dl_command_with_log_level() -> None:
     args = parser.parse_args(["train-dl", "--log-level", "DEBUG"])
     assert args.command == "train-dl"
     assert args.log_level == "DEBUG"
+
+
+def test_cli_parser_accepts_sync_vault_command() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["sync-vault"])
+    assert args.command == "sync-vault"
+    assert args.config.endswith(
+        "configs\\integration\\default.yaml"
+    ) or args.config.endswith("configs/integration/default.yaml")

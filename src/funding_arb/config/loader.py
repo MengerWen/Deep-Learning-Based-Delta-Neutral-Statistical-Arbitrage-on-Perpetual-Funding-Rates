@@ -15,6 +15,7 @@ from funding_arb.config.models import (
     DataSettings,
     DeepLearningSettings,
     FeatureSettings,
+    IntegrationSettings,
     LabelPipelineSettings,
     RobustnessReportSettings,
     SignalSettings,
@@ -84,6 +85,11 @@ COMMAND_SETTINGS: dict[str, CommandSettings] = {
         command_name="robustness-report",
         default_config_path=repo_path("configs", "reports", "robustness.yaml"),
         config_model=RobustnessReportSettings,
+    ),
+    "sync-vault": CommandSettings(
+        command_name="sync-vault",
+        default_config_path=repo_path("configs", "integration", "default.yaml"),
+        config_model=IntegrationSettings,
     ),
 }
 

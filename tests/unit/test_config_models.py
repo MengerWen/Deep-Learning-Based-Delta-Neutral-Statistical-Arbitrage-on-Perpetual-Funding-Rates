@@ -8,6 +8,7 @@ from funding_arb.config.models import (
     DataSettings,
     DeepLearningSettings,
     FeatureSettings,
+    IntegrationSettings,
     LabelPipelineSettings,
     RobustnessReportSettings,
     SignalSettings,
@@ -96,3 +97,12 @@ def test_evaluate_baseline_metadata_points_to_expected_default_file() -> None:
     settings = get_command_settings("evaluate-baseline")
     assert settings.default_config_path.name == "baseline.yaml"
     assert settings.config_model is BaselineSettings
+
+
+def test_sync_vault_default_config_loads_typed_model() -> None:
+    config = load_command_settings("sync-vault")
+    assert isinstance(config, IntegrationSettings)
+    assert config.input.signals_path.endswith("signals.parquet")
+    assert config.input.leaderboard_path.endswith("leaderboard.parquet")
+    assert config.contract.broadcast is False
+    assert config.contract.update_nav is True

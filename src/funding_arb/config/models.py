@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class SettingsBase(BaseModel):
@@ -629,4 +629,91 @@ class RobustnessReportSettings(SettingsBase):
     reporting: RobustnessReportingSettings = Field(
         default_factory=RobustnessReportingSettings
     )
+    notes: dict[str, Any] = Field(default_factory=dict)
+
+
+class IntegrationInputSettings(SettingsBase):
+    signals_path: str = (
+        "data/artifacts/signals/binance/btcusdt/1h/baseline/signals.parquet"
+    )
+    signals_manifest_path: str | None = (
+        "data/artifacts/signals/binance/btcusdt/1h/baseline/signals_manifest.json"
+    )
+    leaderboard_path: str = (
+        "data/artifacts/backtests/binance/btcusdt/1h/baseline_signals_default/leaderboard.parquet"
+    )
+    leaderboard_manifest_path: str | None = (
+        "data/artifacts/backtests/binance/btcusdt/1h/baseline_signals_default/backtest_manifest.json"
+    )
+    provider: str = "binance"
+    symbol: str = "BTCUSDT"
+    venue: str = "binance"
+    frequency: str = "1h"
+
+
+class IntegrationSelectionSettings(SettingsBase):
+    strategy_name: str | None = None
+    ranking_metric: str = "total_net_pnl_usd"
+    ranking_ascending: bool = False
+    split_preference: list[str] = Field(
+        default_factory=lambda: ["test", "validation", "train"]
+    )
+    prefer_should_trade: bool = False
+    require_should_trade: bool = False
+    allow_flat_fallback: bool = True
+
+
+class IntegrationContractSettings(SettingsBase):
+    artifact_path: str = "contracts/out/DeltaNeutralVault.sol/DeltaNeutralVault.json"
+    rpc_url: str = "http://127.0.0.1:8545"
+    rpc_url_env: str | None = "VITE_RPC_URL"
+    vault_address: str = "0x0000000000000000000000000000000000000000"
+    vault_address_env: str | None = "VAULT_ADDRESS"
+    operator_private_key_env: str = "PRIVATE_KEY"
+    chain_id: int | None = 31337
+    broadcast: bool = False
+    update_strategy_state: bool = True
+    update_nav: bool = True
+    update_pnl: bool = False
+    gas_limit: int = 500000
+    gas_price_wei: int | None = None
+    wait_for_receipt: bool = True
+
+    @model_validator(mode="after")
+    def validate_update_mode(self) -> "IntegrationContractSettings":
+        if self.update_nav and self.update_pnl:
+            raise ValueError(
+                "Set at most one of update_nav or update_pnl to true for a single sync run."
+            )
+        return self
+
+
+class IntegrationSemanticsSettings(SettingsBase):
+    base_nav_assets: int = 100_000 * 10**6
+    asset_decimals: int = 6
+    asset_usd_price: float = 1.0
+    nav_floor_assets: int = 0
+    flat_strategy_state: str = "idle"
+    active_strategy_state: str = "active"
+
+
+class IntegrationOutputSettings(SettingsBase):
+    output_dir: str = "data/artifacts/integration"
+    run_name: str = "mock_operator_default"
+    write_json: bool = True
+    write_markdown_report: bool = True
+
+
+class IntegrationSettings(SettingsBase):
+    input: IntegrationInputSettings = Field(default_factory=IntegrationInputSettings)
+    selection: IntegrationSelectionSettings = Field(
+        default_factory=IntegrationSelectionSettings
+    )
+    contract: IntegrationContractSettings = Field(
+        default_factory=IntegrationContractSettings
+    )
+    semantics: IntegrationSemanticsSettings = Field(
+        default_factory=IntegrationSemanticsSettings
+    )
+    output: IntegrationOutputSettings = Field(default_factory=IntegrationOutputSettings)
     notes: dict[str, Any] = Field(default_factory=dict)
