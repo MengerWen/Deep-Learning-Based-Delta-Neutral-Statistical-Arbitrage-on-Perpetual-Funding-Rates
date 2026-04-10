@@ -398,6 +398,9 @@ def run_demo_workflow(config: DemoWorkflowSettings) -> DemoWorkflowArtifacts:
             continue
         existing_artifacts = _stage_existing_artifact_paths(stage.key, config)
         if _artifact_exists(existing_artifacts):
+            # Presentation runs should remain usable when an upstream stage is
+            # temporarily unavailable but its last successful artifacts are
+            # already present locally.
             stage_results[-1] = DemoWorkflowStageResult(
                 key=stage.key,
                 label=stage.label,

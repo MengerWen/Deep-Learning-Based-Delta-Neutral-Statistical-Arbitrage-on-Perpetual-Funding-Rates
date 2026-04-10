@@ -162,6 +162,9 @@ def export_demo_snapshot(config: dict[str, Any]) -> DemoArtifacts:
     ]
 
     if integration_selection is None:
+        # The dashboard should still tell a coherent story even when the
+        # operator sync stage is skipped. In that case, fall back to the best
+        # available backtest row and present the vault as idle.
         best_backtest = top_backtests[0]
         integration_selection = {
             "strategy_name": best_backtest.get("strategy_name", "not_available"),
@@ -181,6 +184,9 @@ def export_demo_snapshot(config: dict[str, Any]) -> DemoArtifacts:
             "should_trade": False,
         }
     if integration_calls is None:
+        # Keep the snapshot export resilient when no live or dry-run contract
+        # call summary exists yet. This makes the frontend usable for a pure
+        # research-only demo path.
         integration_calls = {
             "calls": [],
             "execution_summary": {
