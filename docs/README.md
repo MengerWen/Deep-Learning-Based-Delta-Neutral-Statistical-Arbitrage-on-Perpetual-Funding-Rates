@@ -10,8 +10,9 @@ This directory is organized so a reviewer can move from high-level motivation to
 2. [../Proposal.md](../Proposal.md)
 3. [review_guide.md](review_guide.md)
 4. [architecture.md](architecture.md)
+5. [final_checklist.md](final_checklist.md)
 
-These four files explain the project goal, scope, prototype boundaries, and the full system story.
+These files explain the project goal, scope, prototype boundaries, and the final submission state.
 
 ### 2. Understand the runnable demo
 
@@ -66,6 +67,7 @@ Read:
 1. [review_guide.md](review_guide.md)
 2. [architecture.md](architecture.md)
 3. [demo.md](demo.md)
+4. [final_checklist.md](final_checklist.md)
 
 ### For a Python contributor
 

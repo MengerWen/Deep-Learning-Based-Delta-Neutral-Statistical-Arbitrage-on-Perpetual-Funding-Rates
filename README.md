@@ -2,12 +2,12 @@
 
 This repository is a course-project prototype for a hybrid quantitative-research and DeFi-system workflow.
 
-The project asks a concrete question:
+The project asks one concrete question:
 
 > Can we identify post-cost, delta-neutral funding-rate arbitrage opportunities off-chain, evaluate them rigorously, and then mirror strategy state into a simple on-chain vault prototype?
 
 The answer here is intentionally prototype-scoped rather than production-scoped.
-The repository focuses on a clean, inspectable end-to-end story:
+The repository is designed to tell a clean end-to-end story:
 
 - historical perpetual and spot data ingestion
 - feature engineering and post-cost label construction
@@ -18,14 +18,14 @@ The repository focuses on a clean, inspectable end-to-end story:
 
 ## Why This Project Matters
 
-Perpetual funding-rate arbitrage is attractive because it combines:
+Perpetual funding-rate arbitrage is a strong course-project topic because it combines:
 
 - a real market microstructure mechanism: funding keeps perpetual prices anchored to spot
 - a tractable delta-neutral framing: short perp plus long spot or index proxy
-- a strong applied-ML use case: the important question is not “will price go up,” but “is the dislocation still worth trading after costs?”
-- a natural hybrid architecture: modeling happens off-chain, while asset accounting and strategy state can be represented on-chain
+- a practical ML question: not "will price go up," but "is the dislocation still worth trading after costs?"
+- a natural hybrid architecture: modeling happens off-chain, while accounting and state can be represented on-chain
 
-That makes the project a good fit for a course prototype: financially meaningful, technically layered, and still small enough to explain clearly.
+That makes the project financially meaningful, technically layered, and still small enough to explain clearly in a final presentation.
 
 ## What Is Implemented
 
@@ -86,11 +86,11 @@ Key directories:
 - `data/`
   Raw, interim, processed, and artifact outputs.
 - `docs/`
-  Design, module notes, demo instructions, and instructor-friendly reading order.
+  Design notes, module docs, reviewer guidance, and demo instructions.
 - `scripts/`
   Thin command-line wrappers around the Python modules.
 - `tests/`
-  Fast Python unit tests plus placeholders for future integration tests.
+  Fast Python unit tests plus Solidity tests under `contracts/test/`.
 - `contracts/`
   Vault contract, Foundry tests, and deploy/update scripts.
 - `frontend/`
@@ -106,9 +106,9 @@ All Python commands in this repository should use:
 d:\MG\anaconda3\python.exe
 ```
 
-If you are using that environment, the core dependencies are already available.
+If you are already using that environment, the core dependencies are available.
 
-If you need to recreate the environment elsewhere, install from the project metadata:
+If you need to recreate the environment elsewhere:
 
 ```powershell
 & 'd:\MG\anaconda3\python.exe' -m pip install -e .[dev]
@@ -132,7 +132,8 @@ forge test -vv
 
 ### Frontend
 
-The frontend lives under `frontend/` and is independent from the Solidity workspace.
+The active frontend workspace is `frontend/`.
+The active Solidity workspace is `contracts/`.
 
 ```powershell
 cd frontend
@@ -229,8 +230,9 @@ If you are grading or reviewing the repository, this is the most efficient order
    - [docs/backtest.md](docs/backtest.md)
    - [docs/contracts.md](docs/contracts.md)
    - [docs/integration.md](docs/integration.md)
+   - [docs/final_checklist.md](docs/final_checklist.md)
 
-The docs index with a more detailed path is in [docs/README.md](docs/README.md).
+The docs index with a more detailed reading path is in [docs/README.md](docs/README.md).
 
 ## Testing
 
@@ -245,6 +247,13 @@ Foundry contract tests:
 ```powershell
 cd contracts
 forge test -vv
+```
+
+Frontend production build:
+
+```powershell
+cd frontend
+npm run build
 ```
 
 ## Important Artifact Locations
@@ -300,9 +309,22 @@ Still prototype-level:
 - live oracle security model
 - real wallet-connected vault UX
 
+## Submission Notes
+
+- Primary submission/demo path:
+  - run `& 'd:\MG\anaconda3\python.exe' -m src.main run-demo --config configs/demo/workflow.yaml`
+  - then open the dashboard from `frontend/`
+- Primary grading docs:
+  - [docs/review_guide.md](docs/review_guide.md)
+  - [docs/demo.md](docs/demo.md)
+  - [docs/final_checklist.md](docs/final_checklist.md)
+- If live Binance fetch fails because of temporary network conditions, the demo workflow can reuse the most recent local artifacts and still produce a valid demo snapshot.
+- The repository is intentionally prototype-scoped and explicitly documents its simplifications instead of presenting itself as production-ready.
+
 ## More Documentation
 
 - Instructor/reviewer guide: [docs/review_guide.md](docs/review_guide.md)
+- Final submission checklist: [docs/final_checklist.md](docs/final_checklist.md)
 - Documentation index: [docs/README.md](docs/README.md)
 - Frontend notes: [frontend/README.md](frontend/README.md)
 - Contract notes: [contracts/README.md](contracts/README.md)

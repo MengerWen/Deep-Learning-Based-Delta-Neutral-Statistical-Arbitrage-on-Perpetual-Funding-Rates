@@ -108,7 +108,10 @@ Supported environment variables:
 
 ## Current Environment Note
 
-This repository now includes the contract implementation, tests, and deployment scripts, but `forge` was not installed in the current machine during implementation. The commands above are the intended workflow once Foundry is available locally.
+The contract workspace has now been validated locally with Foundry:
+
+- `forge test -vv` passes against `test/DeltaNeutralVault.t.sol`
+- the scripts remain demo-oriented local/testnet helpers rather than production deployment tooling
 
 ## Scope Caveat
 

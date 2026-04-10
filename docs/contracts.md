@@ -595,10 +595,11 @@ Recommended deployment environment variables:
 - `METADATA_HASH`
 - `REPORT_HASH`
 
-Important operational note:
+Current validation note:
 
-- this repository currently documents the full Foundry workflow, but the machine used during this implementation did not have `forge` installed
-- the contract code, test files, and script files are written to match the Foundry workspace layout, but compile/test execution still needs a local Foundry installation
+- the Foundry workspace is now runnable locally
+- `forge test -vv` has been executed successfully against `contracts/test/DeltaNeutralVault.t.sol`
+- local deployment and update scripts are still prototype/demo scripts and should be treated as operator tooling, not production deployment infrastructure
 
 ## Recommended State-Transition Diagram
 
