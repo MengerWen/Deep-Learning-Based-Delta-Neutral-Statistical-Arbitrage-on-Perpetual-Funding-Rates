@@ -7,7 +7,7 @@ This repository keeps configuration centralized under `configs/` using YAML file
 - `configs/labels/`: label horizons, execution alignment, cost assumptions, and time-series splits
 - `configs/models/`: baseline model configs and deep-learning experiment parameters
 - `configs/backtests/`: fees, slippage, execution assumptions, portfolio rules
-- `configs/demo/`: frontend/demo artifact settings
+- `configs/demo/`: frontend/demo artifact settings plus the end-to-end demo workflow config
 - `configs/integration/`: mock operator/oracle-style bridge settings for vault sync demos
 - `configs/reports/`: exploratory reporting, figure generation, markdown summaries, and robustness experiments
 

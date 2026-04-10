@@ -41,6 +41,28 @@ def _load_table(path_text: str) -> pd.DataFrame:
     raise ValueError(f"Unsupported table format for demo input: {path.suffix}")
 
 
+def _load_optional_json(path_text: str | None) -> dict[str, Any] | None:
+    if path_text is None:
+        return None
+    path = _resolve_path(path_text)
+    if not path.exists():
+        return None
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _load_optional_table(path_text: str | None) -> pd.DataFrame | None:
+    if path_text is None:
+        return None
+    path = _resolve_path(path_text)
+    if not path.exists():
+        return None
+    if path.suffix.lower() == ".parquet":
+        return pd.read_parquet(path)
+    if path.suffix.lower() == ".csv":
+        return pd.read_csv(path)
+    raise ValueError(f"Unsupported table format for demo input: {path.suffix}")
+
+
 def _json_ready(value: Any) -> Any:
     if isinstance(value, pd.Timestamp):
         return value.isoformat()
@@ -83,11 +105,15 @@ def _pick_best_dl_row(frame: pd.DataFrame) -> dict[str, Any]:
     return {key: _json_ready(value) for key, value in row.to_dict().items()}
 
 
-def _copy_chart_assets(chart_specs: list[dict[str, Any]], public_assets_dir: Path) -> list[dict[str, Any]]:
+def _copy_chart_assets(
+    chart_specs: list[dict[str, Any]], public_assets_dir: Path
+) -> list[dict[str, Any]]:
     ensure_directory(public_assets_dir)
     charts: list[dict[str, Any]] = []
     for item in chart_specs:
         source_path = _resolve_path(item["source_path"])
+        if not source_path.exists():
+            continue
         target_name = item.get("target_name") or source_path.name
         target_path = public_assets_dir / target_name
         shutil.copy2(source_path, target_path)
@@ -118,11 +144,11 @@ def export_demo_snapshot(config: dict[str, Any]) -> DemoArtifacts:
     quality_summary = _load_json(input_config["data_quality_summary_path"])
     backtest_manifest = _load_json(input_config["backtest_manifest_path"])
     baseline_leaderboard = _load_table(input_config["baseline_leaderboard_path"])
-    dl_leaderboard = _load_table(input_config["dl_leaderboard_path"])
+    dl_leaderboard = _load_optional_table(input_config.get("dl_leaderboard_path"))
     backtest_leaderboard = _load_table(input_config["backtest_leaderboard_path"])
-    integration_selection = _load_json(input_config["integration_selection_path"])
-    integration_plan = _load_json(input_config["integration_plan_path"])
-    integration_calls = _load_json(input_config["integration_call_summary_path"])
+    integration_selection = _load_optional_json(input_config.get("integration_selection_path"))
+    integration_plan = _load_optional_json(input_config.get("integration_plan_path"))
+    integration_calls = _load_optional_json(input_config.get("integration_call_summary_path"))
 
     charts = _copy_chart_assets(input_config["charts"], public_assets_dir)
 
@@ -134,6 +160,34 @@ def export_demo_snapshot(config: dict[str, Any]) -> DemoArtifacts:
         {key: _json_ready(value) for key, value in row.items()}
         for row in backtest_leaderboard.head(demo_config.get("top_strategies", 5)).to_dict("records")
     ]
+
+    if integration_selection is None:
+        best_backtest = top_backtests[0]
+        integration_selection = {
+            "strategy_name": best_backtest.get("strategy_name", "not_available"),
+            "timestamp": datetime.now(UTC).isoformat(),
+            "leaderboard_summary": {
+                "total_net_pnl_usd": best_backtest.get("total_net_pnl_usd", 0.0)
+            },
+        }
+    if integration_plan is None:
+        integration_plan = {
+            "selected_strategy_name": integration_selection["strategy_name"],
+            "strategy_state_name": "idle",
+            "suggested_direction": "flat",
+            "reported_nav_assets": 100_000 * 10**6,
+            "summary_pnl_assets": 0,
+            "summary_pnl_usd": 0.0,
+            "should_trade": False,
+        }
+    if integration_calls is None:
+        integration_calls = {
+            "calls": [],
+            "execution_summary": {
+                "mode": "not_run",
+                "status": "The sync-vault stage was skipped or its artifacts were missing.",
+            },
+        }
 
     base_nav_assets = max(
         integration_plan["reported_nav_assets"] - integration_plan["summary_pnl_assets"],
@@ -182,7 +236,18 @@ def export_demo_snapshot(config: dict[str, Any]) -> DemoArtifacts:
         },
         "models": {
             "baseline_best": _pick_best_baseline_row(baseline_leaderboard),
-            "deep_learning_best": _pick_best_dl_row(dl_leaderboard),
+            "deep_learning_best": (
+                _pick_best_dl_row(dl_leaderboard)
+                if dl_leaderboard is not None and not dl_leaderboard.empty
+                else {
+                    "model_name": "Deep learning not available",
+                    "task": "optional",
+                    "split": "n/a",
+                    "pearson_corr": None,
+                    "rmse": None,
+                    "note": "The demo snapshot was exported without a deep-learning leaderboard artifact.",
+                }
+            ),
         },
         "backtest": {
             "summary": backtest_manifest["summary"],

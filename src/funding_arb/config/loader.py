@@ -13,6 +13,7 @@ from funding_arb.config.models import (
     BaselineSettings,
     DataQualityReportSettings,
     DataSettings,
+    DemoWorkflowSettings,
     DeepLearningSettings,
     FeatureSettings,
     IntegrationSettings,
@@ -90,6 +91,11 @@ COMMAND_SETTINGS: dict[str, CommandSettings] = {
         command_name="sync-vault",
         default_config_path=repo_path("configs", "integration", "default.yaml"),
         config_model=IntegrationSettings,
+    ),
+    "run-demo": CommandSettings(
+        command_name="run-demo",
+        default_config_path=repo_path("configs", "demo", "workflow.yaml"),
+        config_model=DemoWorkflowSettings,
     ),
 }
 

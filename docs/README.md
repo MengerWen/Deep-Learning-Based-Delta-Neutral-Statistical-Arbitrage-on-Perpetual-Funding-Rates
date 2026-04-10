@@ -11,6 +11,7 @@
 - `robustness.md`: reusable robustness-analysis workflow and experiment definitions
 - `contracts.md`: canonical Solidity vault specification for the prototype
 - `integration.md`: prototype operator/oracle-style flow from strategy artifacts to vault updates
+- `demo.md`: end-to-end demo workflow with one runnable path plus optional frontend and local-chain extensions
 - `architecture/`: system-level design and data flow
 - `modules/`: module-specific implementation notes
 - `contracts/`: Solidity vault design notes

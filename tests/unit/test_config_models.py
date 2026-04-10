@@ -6,6 +6,7 @@ from funding_arb.config.models import (
     BaselineSettings,
     DataQualityReportSettings,
     DataSettings,
+    DemoWorkflowSettings,
     DeepLearningSettings,
     FeatureSettings,
     IntegrationSettings,
@@ -106,3 +107,12 @@ def test_sync_vault_default_config_loads_typed_model() -> None:
     assert config.input.leaderboard_path.endswith("leaderboard.parquet")
     assert config.contract.broadcast is False
     assert config.contract.update_nav is True
+
+
+def test_run_demo_default_config_loads_typed_model() -> None:
+    config = load_command_settings("run-demo")
+    assert isinstance(config, DemoWorkflowSettings)
+    assert config.commands.fetch_data_config_path.endswith("configs/data/default.yaml")
+    assert config.stages.train_deep_learning.optional is True
+    assert config.stages.generate_deep_learning_signals.optional is True
+    assert config.output.run_name == "full_demo_default"

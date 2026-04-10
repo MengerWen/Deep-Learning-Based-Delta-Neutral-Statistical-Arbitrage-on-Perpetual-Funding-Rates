@@ -11,6 +11,7 @@ from typing import Any
 from funding_arb.backtest.engine import describe_backtest_job, run_backtest_pipeline
 from funding_arb.config.loader import COMMAND_SETTINGS, load_command_settings
 from funding_arb.data.pipeline import describe_ingestion_job, run_data_pipeline
+from funding_arb.demo.workflow import describe_demo_workflow_job, run_demo_workflow
 from funding_arb.features.pipeline import describe_feature_job, run_feature_pipeline
 from funding_arb.integration.pipeline import (
     describe_integration_job,
@@ -244,6 +245,27 @@ def _run_sync_vault(config: Any, config_path: Path) -> int:
     return 0
 
 
+def _run_demo(config: Any, config_path: Path) -> int:
+    _log_config_summary("run-demo", config_path, config)
+    LOGGER.info(describe_demo_workflow_job(config))
+    artifacts = run_demo_workflow(config)
+    LOGGER.info("Completed stages: %s", artifacts.completed_stage_count)
+    if artifacts.summary_json_path is not None:
+        LOGGER.info("Workflow summary JSON: %s", artifacts.summary_json_path)
+    if artifacts.markdown_report_path is not None:
+        LOGGER.info("Workflow markdown report: %s", artifacts.markdown_report_path)
+    if artifacts.artifact_snapshot_path is not None:
+        LOGGER.info("Artifact snapshot: %s", artifacts.artifact_snapshot_path)
+    if artifacts.frontend_snapshot_path is not None:
+        LOGGER.info("Frontend snapshot: %s", artifacts.frontend_snapshot_path)
+    if artifacts.overall_status == "failed":
+        LOGGER.error("Demo workflow failed at stage: %s", artifacts.failed_stage)
+        return 1
+    if artifacts.overall_status != "completed":
+        LOGGER.warning("Demo workflow finished with warnings: %s", artifacts.overall_status)
+    return 0
+
+
 COMMAND_HANDLERS: dict[str, Callable[[Any, Path], int]] = {
     "fetch-data": _run_fetch_data,
     "report-data-quality": _run_report_data_quality,
@@ -256,6 +278,7 @@ COMMAND_HANDLERS: dict[str, Callable[[Any, Path], int]] = {
     "backtest": _run_backtest,
     "robustness-report": _run_robustness_report,
     "sync-vault": _run_sync_vault,
+    "run-demo": _run_demo,
 }
 
 

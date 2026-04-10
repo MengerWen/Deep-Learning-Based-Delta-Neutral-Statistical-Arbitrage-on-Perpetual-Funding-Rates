@@ -20,13 +20,19 @@ The frontend is intentionally lightweight:
 
 ## Recommended startup flow
 
-1. Export the local demo snapshot:
+1. Run the end-to-end demo workflow once:
+
+```powershell
+& 'd:\MG\anaconda3\python.exe' -m src.main run-demo --config configs/demo/workflow.yaml
+```
+
+2. If you only need to refresh the snapshot without rerunning the whole pipeline, export the local demo snapshot:
 
 ```powershell
 & 'd:\MG\anaconda3\python.exe' scripts/demo/export_demo_snapshot.py --config configs/demo/default.yaml
 ```
 
-2. Start the frontend:
+3. Start the frontend:
 
 ```bash
 cd frontend
@@ -34,7 +40,7 @@ npm install
 npm run dev
 ```
 
-3. Open the local Vite URL, usually:
+4. Open the local Vite URL, usually:
 
 ```text
 http://127.0.0.1:5173

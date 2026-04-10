@@ -139,6 +139,7 @@ Unified CLI commands:
 & 'd:\MG\anaconda3\python.exe' -m src.main backtest
 & 'd:\MG\anaconda3\python.exe' -m src.main robustness-report
 & 'd:\MG\anaconda3\python.exe' -m src.main sync-vault
+& 'd:\MG\anaconda3\python.exe' -m src.main run-demo
 ```
 
 Override config or logging when needed:
@@ -159,6 +160,17 @@ The `generate-signals` command now normalizes rule-based, baseline ML, and deep-
 The `backtest` command now consumes standardized signals plus the canonical market dataset, writes trade logs, realized equity curves, summary metrics, report figures, and a markdown backtest report under `data/artifacts/backtests/`.
 The `robustness-report` command now reuses the signal and backtest layers to stress-test results under alternative cost assumptions, holding windows, rule thresholds, and feature ablations, then writes presentation-ready tables and figures under `reports/robustness/`.
 The `sync-vault` command now demonstrates a mock operator/oracle-style bridge from off-chain strategy artifacts to the on-chain vault by generating a vault update payload and, when enabled, broadcasting `updateStrategyState` plus `updateNav` or `updatePnl`.
+The `run-demo` command now orchestrates the end-to-end presentation workflow, refreshes core artifacts, and exports a frontend-ready snapshot plus a workflow summary under `data/artifacts/demo/workflow/`.
+
+### End-to-End Demo
+
+For the cleanest classroom or presentation run, use:
+
+```bash
+& 'd:\MG\anaconda3\python.exe' -m src.main run-demo --config configs/demo/workflow.yaml
+```
+
+This single entry point reuses the default configs for data, reports, features, labels, baseline models, optional deep learning, signals, backtest, vault sync, and demo snapshot export.
 
 ### Solidity
 
@@ -202,6 +214,7 @@ The frontend reads `frontend/public/demo/demo_snapshot.json`, which is generated
 - Robustness workflow: [docs/robustness.md](docs/robustness.md)
 - Solidity vault specification: [docs/contracts.md](docs/contracts.md)
 - Mock off-chain to on-chain integration: [docs/integration.md](docs/integration.md)
+- End-to-end demo workflow: [docs/demo.md](docs/demo.md)
 - Models and research: [docs/modules/models-and-research.md](docs/modules/models-and-research.md)
 - Backtesting: [docs/modules/backtesting.md](docs/modules/backtesting.md)
 - Vault module note: [docs/contracts/vault.md](docs/contracts/vault.md)

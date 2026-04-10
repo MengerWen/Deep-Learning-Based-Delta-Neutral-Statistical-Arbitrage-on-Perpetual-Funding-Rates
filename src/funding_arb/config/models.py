@@ -717,3 +717,94 @@ class IntegrationSettings(SettingsBase):
     )
     output: IntegrationOutputSettings = Field(default_factory=IntegrationOutputSettings)
     notes: dict[str, Any] = Field(default_factory=dict)
+
+
+class DemoWorkflowStageSettings(SettingsBase):
+    enabled: bool = True
+    optional: bool = False
+
+
+class DemoWorkflowCommandsSettings(SettingsBase):
+    fetch_data_config_path: str = "configs/data/default.yaml"
+    report_data_quality_config_path: str = "configs/reports/data_quality.yaml"
+    features_config_path: str = "configs/features/default.yaml"
+    labels_config_path: str = "configs/labels/default.yaml"
+    baseline_config_path: str = "configs/models/baseline.yaml"
+    deep_learning_config_path: str = "configs/models/lstm.yaml"
+    signals_config_path: str = "configs/signals/default.yaml"
+    backtest_config_path: str = "configs/backtests/default.yaml"
+    integration_config_path: str = "configs/integration/default.yaml"
+    demo_snapshot_config_path: str = "configs/demo/default.yaml"
+
+
+class DemoWorkflowStages(SettingsBase):
+    fetch_data: DemoWorkflowStageSettings = Field(
+        default_factory=DemoWorkflowStageSettings
+    )
+    report_data_quality: DemoWorkflowStageSettings = Field(
+        default_factory=DemoWorkflowStageSettings
+    )
+    build_features: DemoWorkflowStageSettings = Field(
+        default_factory=DemoWorkflowStageSettings
+    )
+    build_labels: DemoWorkflowStageSettings = Field(
+        default_factory=DemoWorkflowStageSettings
+    )
+    train_baseline: DemoWorkflowStageSettings = Field(
+        default_factory=DemoWorkflowStageSettings
+    )
+    train_deep_learning: DemoWorkflowStageSettings = Field(
+        default_factory=lambda: DemoWorkflowStageSettings(optional=True)
+    )
+    generate_baseline_signals: DemoWorkflowStageSettings = Field(
+        default_factory=DemoWorkflowStageSettings
+    )
+    generate_deep_learning_signals: DemoWorkflowStageSettings = Field(
+        default_factory=lambda: DemoWorkflowStageSettings(optional=True)
+    )
+    backtest: DemoWorkflowStageSettings = Field(
+        default_factory=DemoWorkflowStageSettings
+    )
+    sync_vault: DemoWorkflowStageSettings = Field(
+        default_factory=DemoWorkflowStageSettings
+    )
+    export_demo_snapshot: DemoWorkflowStageSettings = Field(
+        default_factory=DemoWorkflowStageSettings
+    )
+
+
+class DemoWorkflowExecutionSettings(SettingsBase):
+    continue_on_optional_failure: bool = True
+
+
+class DemoWorkflowFrontendSettings(SettingsBase):
+    frontend_dir: str = "frontend"
+    public_snapshot_path: str = "frontend/public/demo/demo_snapshot.json"
+    dashboard_url: str = "http://127.0.0.1:5173"
+    dev_command: str = "npm run dev"
+    build_command: str = "npm run build"
+
+
+class DemoWorkflowOutputSettings(SettingsBase):
+    output_dir: str = "data/artifacts/demo/workflow"
+    run_name: str = "full_demo_default"
+    log_level: str = "INFO"
+    write_json: bool = True
+    write_markdown_report: bool = True
+
+
+class DemoWorkflowSettings(SettingsBase):
+    commands: DemoWorkflowCommandsSettings = Field(
+        default_factory=DemoWorkflowCommandsSettings
+    )
+    stages: DemoWorkflowStages = Field(default_factory=DemoWorkflowStages)
+    execution: DemoWorkflowExecutionSettings = Field(
+        default_factory=DemoWorkflowExecutionSettings
+    )
+    frontend: DemoWorkflowFrontendSettings = Field(
+        default_factory=DemoWorkflowFrontendSettings
+    )
+    output: DemoWorkflowOutputSettings = Field(
+        default_factory=DemoWorkflowOutputSettings
+    )
+    notes: dict[str, Any] = Field(default_factory=dict)

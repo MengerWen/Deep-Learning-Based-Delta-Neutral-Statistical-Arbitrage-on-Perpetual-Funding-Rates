@@ -81,3 +81,12 @@ def test_cli_parser_accepts_sync_vault_command() -> None:
     assert args.config.endswith(
         "configs\\integration\\default.yaml"
     ) or args.config.endswith("configs/integration/default.yaml")
+
+
+def test_cli_parser_accepts_run_demo_command() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["run-demo"])
+    assert args.command == "run-demo"
+    assert args.config.endswith(
+        "configs\\demo\\workflow.yaml"
+    ) or args.config.endswith("configs/demo/workflow.yaml")

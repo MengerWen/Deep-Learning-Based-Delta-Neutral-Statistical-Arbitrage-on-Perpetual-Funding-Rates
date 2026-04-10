@@ -260,7 +260,9 @@ function renderError(errorMessage: string): void {
         <p class="eyebrow">Snapshot Missing</p>
         <h1>The frontend could not load <code>/demo/demo_snapshot.json</code>.</h1>
         <p>${errorMessage}</p>
-        <pre class="command-block">& 'd:\\MG\\anaconda3\\python.exe' scripts/demo/export_demo_snapshot.py --config configs/demo/default.yaml</pre>
+        <pre class="command-block">& 'd:\\MG\\anaconda3\\python.exe' -m src.main run-demo --config configs/demo/workflow.yaml</pre>
+        <pre class="command-block"># or only refresh the frontend snapshot
+& 'd:\\MG\\anaconda3\\python.exe' scripts/demo/export_demo_snapshot.py --config configs/demo/default.yaml</pre>
         <pre class="command-block">cd frontend
 npm install
 npm run dev</pre>

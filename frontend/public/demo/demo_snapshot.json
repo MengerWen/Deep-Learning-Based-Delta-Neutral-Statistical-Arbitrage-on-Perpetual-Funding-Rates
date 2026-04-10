@@ -2,7 +2,7 @@
   "meta": {
     "title": "Funding-Rate Arbitrage Prototype Dashboard",
     "subtitle": "Research to signals, backtest to vault, all in one lightweight demo.",
-    "generated_at": "2026-04-10T06:05:49.055440+00:00",
+    "generated_at": "2026-04-10T07:43:14.910627+00:00",
     "symbol": "BTCUSDT",
     "venue": "binance",
     "frequency": "1h",
@@ -282,7 +282,7 @@
       "detail": "Dry-run call data prepared for 2 vault update calls."
     },
     {
-      "timestamp": "2026-04-10T06:05:49.057708+00:00",
+      "timestamp": "2026-04-10T07:43:14.912142+00:00",
       "kind": "demo",
       "title": "Frontend snapshot exported",
       "detail": "Charts, metrics, and mock vault state were packaged for the local dashboard."
