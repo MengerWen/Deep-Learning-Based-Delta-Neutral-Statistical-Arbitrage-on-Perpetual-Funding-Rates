@@ -1,0 +1,312 @@
+{
+  "meta": {
+    "title": "Funding-Rate Arbitrage Prototype Dashboard",
+    "subtitle": "Research to signals, backtest to vault, all in one lightweight demo.",
+    "generated_at": "2026-04-10T06:05:49.055440+00:00",
+    "symbol": "BTCUSDT",
+    "venue": "binance",
+    "frequency": "1h",
+    "date_range": {
+      "start": "2021-01-01T00:00:00+00:00",
+      "end_exclusive": "2026-04-08T00:00:00+00:00"
+    },
+    "chain_name": "local_foundry"
+  },
+  "overview": {
+    "goal": "Show a complete prototype story from perpetual funding-rate data through modeling, backtesting, and on-chain vault state management.",
+    "story_points": [
+      "Historical Binance perpetual and spot data are normalized into a canonical hourly dataset.",
+      "Funding, basis, volatility, liquidity, and interaction features drive both baseline and sequence models.",
+      "Signals are evaluated in a delta-neutral backtester with fees, slippage, and funding effects.",
+      "A prototype Solidity vault mirrors the off-chain strategy state through a trusted operator update path."
+    ],
+    "layers": [
+      {
+        "label": "Data",
+        "detail": "Binance BTCUSDT hourly perpetual, spot, and funding history over the main 2021-01-01 to 2026-04-07 UTC window."
+      },
+      {
+        "label": "Models",
+        "detail": "Interpretable rule-based and linear baselines plus an LSTM sequence model."
+      },
+      {
+        "label": "Backtest",
+        "detail": "Explicit delta-neutral trade accounting with cost-aware results and robustness checks."
+      },
+      {
+        "label": "Vault",
+        "detail": "Mock stablecoin deposits, internal shares, strategy state, NAV/PnL updates, and event-rich accounting."
+      }
+    ]
+  },
+  "research": {
+    "canonical_rows": 46152,
+    "perpetual_rows": 46152,
+    "funding_events": 3092,
+    "coverage_ratio": 1.0,
+    "funding_mean_bps": 1.039758,
+    "funding_std_bps": 1.891661,
+    "spread_mean_bps": -1.534091,
+    "annualized_volatility": 0.508612
+  },
+  "models": {
+    "baseline_best": {
+      "model_name": "ridge_regression",
+      "model_family": "linear",
+      "task": "regression",
+      "split": "test",
+      "row_count": 8822,
+      "actual_positive_count": null,
+      "predicted_positive_count": null,
+      "actual_positive_rate": null,
+      "predicted_positive_rate": 0.0,
+      "accuracy": null,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "signal_count": 0,
+      "signal_rate": 0.0,
+      "avg_signal_return_bps": null,
+      "median_signal_return_bps": null,
+      "cumulative_signal_return_bps": null,
+      "signal_hit_rate": null,
+      "roc_auc": null,
+      "average_precision": null,
+      "mae": 1.844481541346271,
+      "rmse": 2.1567812092260263,
+      "r2": -0.8852180349267131,
+      "directional_accuracy": 1.0,
+      "pearson_corr": 0.5462066551052603
+    },
+    "deep_learning_best": {
+      "model_name": "lstm",
+      "model_family": "deep_learning",
+      "task": "regression",
+      "split": "test",
+      "row_count": 8822,
+      "mae": 1.167282361622798,
+      "rmse": 1.493855229381484,
+      "r2": 0.0955877689950172,
+      "directional_accuracy": 1.0,
+      "predicted_positive_rate": 0.0,
+      "signal_count": 0,
+      "signal_rate": 0.0,
+      "avg_signal_return_bps": null,
+      "median_signal_return_bps": null,
+      "cumulative_signal_return_bps": null,
+      "signal_hit_rate": null,
+      "pearson_corr": 0.6063407243339457
+    }
+  },
+  "backtest": {
+    "summary": {
+      "strategy_count": 5,
+      "trade_count": 3344,
+      "best_strategy": "ridge_regression",
+      "best_sharpe_ratio": 0.06805197494640328,
+      "best_cumulative_return": 0.000282846620587085
+    },
+    "best_strategy": {
+      "strategy_name": "ridge_regression",
+      "source": "baseline",
+      "source_subtype": "baseline_ml",
+      "task": "regression",
+      "trade_count": 20,
+      "cumulative_return": 0.000282846620587085,
+      "annualized_return": 5.37641633988617e-05,
+      "sharpe_ratio": 0.06805197494640328,
+      "max_drawdown": -0.001755652565847532,
+      "win_rate": 0.25,
+      "average_trade_return_bps": 1.4142331029359363,
+      "total_net_pnl_usd": 28.284662058718727,
+      "final_equity_usd": 100028.28466205872
+    },
+    "top_strategies": [
+      {
+        "strategy_name": "ridge_regression",
+        "source": "baseline",
+        "source_subtype": "baseline_ml",
+        "task": "regression",
+        "trade_count": 20,
+        "cumulative_return": 0.000282846620587085,
+        "annualized_return": 5.37641633988617e-05,
+        "sharpe_ratio": 0.06805197494640328,
+        "max_drawdown": -0.001755652565847532,
+        "win_rate": 0.25,
+        "average_trade_return_bps": 1.4142331029359363,
+        "total_net_pnl_usd": 28.284662058718727,
+        "final_equity_usd": 100028.28466205872
+      },
+      {
+        "strategy_name": "combined_funding_spread",
+        "source": "baseline",
+        "source_subtype": "rule_based",
+        "task": "classification",
+        "trade_count": 160,
+        "cumulative_return": -0.052229131244131755,
+        "annualized_return": -0.010145843941635313,
+        "sharpe_ratio": -5.504349576496939,
+        "max_drawdown": -0.052229131244130644,
+        "win_rate": 0.0,
+        "average_trade_return_bps": -32.64320702758165,
+        "total_net_pnl_usd": -5222.913124413065,
+        "final_equity_usd": 94777.08687558693
+      },
+      {
+        "strategy_name": "funding_threshold_2bps",
+        "source": "baseline",
+        "source_subtype": "rule_based",
+        "task": "classification",
+        "trade_count": 288,
+        "cumulative_return": -0.09755791643645362,
+        "annualized_return": -0.01932516580872856,
+        "sharpe_ratio": -7.384430563601771,
+        "max_drawdown": -0.09755791643645362,
+        "win_rate": 0.0,
+        "average_trade_return_bps": -33.87427654043532,
+        "total_net_pnl_usd": -9755.791643645372,
+        "final_equity_usd": 90244.20835635463
+      },
+      {
+        "strategy_name": "logistic_regression",
+        "source": "baseline",
+        "source_subtype": "baseline_ml",
+        "task": "classification",
+        "trade_count": 450,
+        "cumulative_return": -0.13250002897828073,
+        "annualized_return": -0.026659557364151376,
+        "sharpe_ratio": -8.627462012056803,
+        "max_drawdown": -0.1326682059984189,
+        "win_rate": 0.017777777777777778,
+        "average_trade_return_bps": -29.444450884062533,
+        "total_net_pnl_usd": -13250.00289782814,
+        "final_equity_usd": 86749.99710217184
+      },
+      {
+        "strategy_name": "spread_zscore_1p5",
+        "source": "baseline",
+        "source_subtype": "rule_based",
+        "task": "classification",
+        "trade_count": 2426,
+        "cumulative_return": -0.767298536361256,
+        "annualized_return": -0.24207562653782333,
+        "sharpe_ratio": -19.852662267333326,
+        "max_drawdown": -0.7673075818492949,
+        "win_rate": 0.002061005770816158,
+        "average_trade_return_bps": -31.628134227586795,
+        "total_net_pnl_usd": -76729.85363612557,
+        "final_equity_usd": 23270.146363874373
+      }
+    ],
+    "assumptions": [
+      "Single-asset, delta-neutral prototype with at most one open position per strategy.",
+      "Signals at timestamp t are executed after entry_delay_bars using the configured execution price field.",
+      "Equity curve is realized-PnL based rather than full intratrade mark-to-market.",
+      "Funding PnL uses summed realized funding_rate rows between entry and exit execution timestamps.",
+      "Trading fees use taker_fee_bps on all four round-trip leg transactions.",
+      "Slippage is modeled by adverse execution prices, not by a separate extra deduction."
+    ]
+  },
+  "charts": [
+    {
+      "title": "Funding Rate Regime Map",
+      "subtitle": "Hourly funding history shows persistent positive funding with episodic spikes and reversals.",
+      "section": "data",
+      "image": "/demo/assets/funding_rate_time_series.png",
+      "source_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\reports\\data_quality\\binance\\btcusdt\\1h\\figures\\funding_rate_time_series.png"
+    },
+    {
+      "title": "Perpetual vs Spot Spread",
+      "subtitle": "Basis dislocations stay small on average but widen during stress and short-lived directional bursts.",
+      "section": "data",
+      "image": "/demo/assets/perp_vs_spot_spread.png",
+      "source_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\reports\\data_quality\\binance\\btcusdt\\1h\\figures\\perp_vs_spot_spread.png"
+    },
+    {
+      "title": "Cumulative Returns by Strategy",
+      "subtitle": "The explicit delta-neutral backtest makes the ranking between rule-based, baseline ML, and learned models easy to explain.",
+      "section": "backtest",
+      "image": "/demo/assets/cumulative_returns.png",
+      "source_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\binance\\btcusdt\\1h\\baseline_signals_default\\figures\\cumulative_returns.png"
+    },
+    {
+      "title": "Drawdown Profile",
+      "subtitle": "Even prototype strategies need a clear view of path dependence and downside depth.",
+      "section": "backtest",
+      "image": "/demo/assets/drawdowns.png",
+      "source_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\binance\\btcusdt\\1h\\baseline_signals_default\\figures\\drawdowns.png"
+    },
+    {
+      "title": "Robustness Family Comparison",
+      "subtitle": "Rule-based, simple ML, and deep learning outputs are compared under one shared evaluation lens.",
+      "section": "robustness",
+      "image": "/demo/assets/family_comparison.png",
+      "source_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\reports\\robustness\\binance\\btcusdt\\1h\\figures\\family_comparison.png"
+    }
+  ],
+  "vault": {
+    "chain_name": "local_foundry",
+    "vault_address": "0x0000000000000000000000000000000000000000",
+    "stablecoin_address": "0x0000000000000000000000000000000000000000",
+    "selected_strategy": "ridge_regression",
+    "strategy_state": "idle",
+    "suggested_direction": "flat",
+    "reported_nav_assets": 100028284662,
+    "summary_pnl_assets": 28284662,
+    "summary_pnl_usd": 28.284662058718727,
+    "call_count": 2,
+    "execution_summary": {
+      "mode": "dry-run",
+      "rpc_url": "http://127.0.0.1:8545",
+      "vault_address": "0x0000000000000000000000000000000000000000",
+      "operator_private_key_env": "PRIVATE_KEY"
+    }
+  },
+  "activity_log": [
+    {
+      "timestamp": "2021-01-01T00:00:00+00:00",
+      "kind": "data",
+      "title": "Hourly research dataset established",
+      "detail": "46,152 canonical rows covering multiple funding regimes."
+    },
+    {
+      "timestamp": "2026-04-06T22:00:00+00:00",
+      "kind": "strategy",
+      "title": "Top backtest strategy selected",
+      "detail": "ridge_regression leads the current leaderboard with $28.28 net PnL."
+    },
+    {
+      "timestamp": "2026-04-06T22:00:00+00:00",
+      "kind": "vault",
+      "title": "Operator sync payload prepared",
+      "detail": "Dry-run call data prepared for 2 vault update calls."
+    },
+    {
+      "timestamp": "2026-04-10T06:05:49.057708+00:00",
+      "kind": "demo",
+      "title": "Frontend snapshot exported",
+      "detail": "Charts, metrics, and mock vault state were packaged for the local dashboard."
+    }
+  ],
+  "simulation": {
+    "asset_symbol": "mUSDC",
+    "asset_decimals": 6,
+    "wallet_cash_assets": 25000000000,
+    "base_vault_cash_assets": 100000000000,
+    "base_reported_nav_assets": 100000000000,
+    "base_total_shares": 100000000000,
+    "user_shares": 0,
+    "strategy_state": "idle",
+    "operator_plan": {
+      "selected_strategy": "ridge_regression",
+      "strategy_state": "idle",
+      "suggested_direction": "flat",
+      "reported_nav_assets": 100028284662,
+      "summary_pnl_assets": 28284662,
+      "summary_pnl_usd": 28.284662058718727,
+      "should_trade": false,
+      "demo_activation_state": "active",
+      "demo_activation_direction": "short_perp_long_spot"
+    }
+  }
+}

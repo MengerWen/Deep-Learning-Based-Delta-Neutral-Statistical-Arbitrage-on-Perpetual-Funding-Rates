@@ -9,6 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
+from funding_arb.demo.pipeline import export_demo_snapshot
 from funding_arb.utils.config import load_yaml_config
 from funding_arb.utils.logging import configure_logging
 
@@ -30,9 +31,13 @@ def main() -> int:
     config = load_yaml_config(args.config)
     title = config.get("demo", {}).get("title", "Funding-Rate Arbitrage Prototype Dashboard")
     artifact_dir = config.get("demo", {}).get("artifact_dir", "data/artifacts/demo")
+    artifacts = export_demo_snapshot(config)
     LOGGER.info("Command: export-demo-snapshot")
     LOGGER.info("Config path: %s", args.config)
-    LOGGER.info("Demo scaffold ready for '%s' with artifact directory '%s'.", title, artifact_dir)
+    LOGGER.info("Demo snapshot ready for '%s' with artifact directory '%s'.", title, artifact_dir)
+    LOGGER.info("Artifact snapshot: %s", artifacts.artifact_snapshot_path)
+    LOGGER.info("Frontend snapshot: %s", artifacts.public_snapshot_path)
+    LOGGER.info("Frontend assets: %s", artifacts.public_assets_dir)
     return 0
 
 

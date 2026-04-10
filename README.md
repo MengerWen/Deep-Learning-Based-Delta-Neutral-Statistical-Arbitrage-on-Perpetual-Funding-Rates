@@ -122,6 +122,7 @@ Example scaffold commands:
 & 'd:\MG\anaconda3\python.exe' scripts/backtests/run_backtest.py --config configs/backtests/default.yaml
 & 'd:\MG\anaconda3\python.exe' scripts/reports/report_data_quality.py --config configs/reports/data_quality.yaml
 & 'd:\MG\anaconda3\python.exe' scripts/reports/robustness_report.py --config configs/reports/robustness.yaml
+& 'd:\MG\anaconda3\python.exe' scripts/demo/export_demo_snapshot.py --config configs/demo/default.yaml
 ```
 Unified CLI commands:
 
@@ -177,10 +178,13 @@ forge script script/DeployLocal.s.sol:DeployLocal --rpc-url http://127.0.0.1:854
 ### Frontend
 
 ```bash
+& 'd:\MG\anaconda3\python.exe' scripts/demo/export_demo_snapshot.py --config configs/demo/default.yaml
 cd frontend
 npm install
 npm run dev
 ```
+
+The frontend reads `frontend/public/demo/demo_snapshot.json`, which is generated from the latest local research, backtest, and vault-integration artifacts by `scripts/demo/export_demo_snapshot.py`.
 
 ## Docs
 

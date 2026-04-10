@@ -1,28 +1,55 @@
 # Frontend Demo
 
-This directory contains a lightweight dashboard scaffold built with `Vite + TypeScript`.
+This directory contains the presentation-friendly dashboard for the course-project prototype.
 
-## Why this stack
+The frontend is intentionally lightweight:
 
-- simpler than a full SPA framework for a course-project demo
-- easy to connect to static artifacts later
-- light enough to keep attention on the quant and contract layers
+- `Vite + TypeScript`
+- no backend required
+- reads one exported local snapshot plus copied chart assets
 
-## Planned Responsibilities
+## What the dashboard shows
 
-- show project overview and current architecture
-- display backtest metrics and signal summary
-- present mock vault balances and NAV
-- host simple demo controls for deposit/withdraw flows
+- project overview and architecture story
+- key data-quality and backtest charts
+- model comparison cards
+- strategy metrics table
+- vault status and mock operator update summary
+- local deposit / withdraw / strategy update / NAV update simulation
+- example activity log
 
-## Quickstart
+## Recommended startup flow
+
+1. Export the local demo snapshot:
+
+```powershell
+& 'd:\MG\anaconda3\python.exe' scripts/demo/export_demo_snapshot.py --config configs/demo/default.yaml
+```
+
+2. Start the frontend:
 
 ```bash
+cd frontend
 npm install
 npm run dev
 ```
 
-## Caveat
+3. Open the local Vite URL, usually:
 
-The current UI is a static scaffold. Real artifact loading and contract integration are future tasks.
+```text
+http://127.0.0.1:5173
+```
 
+## Re-export after new results
+
+If you rerun upstream pipeline stages and want the dashboard to reflect new artifacts, rerun:
+
+```powershell
+& 'd:\MG\anaconda3\python.exe' scripts/demo/export_demo_snapshot.py --config configs/demo/default.yaml
+```
+
+## Caveats
+
+- The demo console is local and simulated; it is not a wallet-connected production dApp.
+- The operator/oracle flow is a prototype bridge from local artifacts to mock vault updates.
+- Broadcasted on-chain updates still depend on your local/testnet vault deployment and environment variables.
