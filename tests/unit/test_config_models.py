@@ -68,6 +68,10 @@ def test_train_dl_default_config_loads_typed_model() -> None:
     assert config.target.task == "regression"
     assert config.sequence.lookback_steps == 48
     assert config.model.name == "lstm"
+    assert config.training.selection_metric == "validation_avg_signal_return_bps"
+    assert config.threshold_search.enabled is True
+    assert config.preprocessing.scaler == "robust"
+    assert config.prediction.mode == "static"
 
 
 def test_generate_signals_default_config_loads_typed_model() -> None:

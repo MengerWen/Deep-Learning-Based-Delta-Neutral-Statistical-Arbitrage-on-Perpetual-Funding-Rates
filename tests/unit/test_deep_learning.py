@@ -6,8 +6,13 @@ import torch
 
 from funding_arb.config.models import DeepLearningSettings
 from funding_arb.models.deep_learning import (
+    GRUSequenceModel,
     LSTMSequenceModel,
     SequenceDataset,
+    _apply_threshold,
+    _loss_function,
+    _selection_resolution,
+    _select_threshold,
     build_sequence_indices,
 )
 
@@ -113,3 +118,75 @@ def test_lstm_sequence_model_forward_shape_is_batch_scalar() -> None:
     output = model(batch)
 
     assert output.shape == (4,)
+
+
+def test_gru_sequence_model_forward_shape_is_batch_scalar() -> None:
+    model = GRUSequenceModel(
+        input_size=5,
+        hidden_size=8,
+        num_layers=2,
+        dropout=0.1,
+        bidirectional=False,
+    )
+    batch = torch.randn(4, 12, 5)
+
+    output = model(batch)
+
+    assert output.shape == (4,)
+
+
+def test_loss_function_supports_huber_regression() -> None:
+    settings = _settings()
+    settings.training.regression_loss = "huber"
+    loss_fn, metadata = _loss_function(settings, torch.device("cpu"), np.array([1.0, -2.0], dtype=np.float32))
+
+    assert loss_fn.__class__.__name__ == "HuberLoss"
+    assert metadata["loss_name"] == "huber"
+
+
+def test_threshold_selection_uses_validation_objective() -> None:
+    settings = _settings()
+    settings.threshold_search.enabled = True
+    settings.threshold_search.objective = "avg_signal_return_bps"
+    validation_scores = pd.DataFrame(
+        {
+            "timestamp": pd.date_range("2024-01-01", periods=4, freq="h", tz="UTC"),
+            "split": ["validation"] * 4,
+            "model_name": ["lstm"] * 4,
+            "model_family": ["deep_learning"] * 4,
+            "task": ["regression"] * 4,
+            "signal_direction": ["short_perp_long_spot"] * 4,
+            "decision_score": [6.0, 3.0, -1.0, 0.5],
+            "predicted_probability": [np.nan] * 4,
+            "predicted_return_bps": [6.0, 3.0, -1.0, 0.5],
+            "actual_label": [1, 1, 0, 0],
+            "actual_return_bps": [4.0, 1.0, -2.0, -0.5],
+            "selected_hyperparameters_json": ["{}"] * 4,
+            "selected_threshold_objective": ["avg_signal_return_bps"] * 4,
+            "calibration_method": ["none"] * 4,
+            "feature_importance_method": ["ablation_validation"] * 4,
+            "prediction_mode": ["static"] * 4,
+        }
+    )
+
+    threshold, objective_value, search = _select_threshold(validation_scores, settings)
+    predictions = _apply_threshold(validation_scores, settings, threshold)
+
+    assert float(threshold) in {-5.0, 0.0, 2.5, 5.0, 7.5, 10.0}
+    assert objective_value is not None
+    assert search["selected"].sum() == 1
+    assert "signal" in predictions.columns
+
+
+def test_selection_metric_falls_back_to_validation_loss_when_signal_metric_is_missing() -> None:
+    selection = _selection_resolution(
+        "validation_avg_signal_return_bps",
+        validation_loss=1.25,
+        validation_metrics={"avg_signal_return_bps": np.nan},
+    )
+
+    assert selection["configured_metric"] == "validation_avg_signal_return_bps"
+    assert selection["configured_value"] is None
+    assert selection["effective_metric"] == "validation_loss"
+    assert selection["effective_value"] == 1.25
+    assert selection["fallback_used"] is True

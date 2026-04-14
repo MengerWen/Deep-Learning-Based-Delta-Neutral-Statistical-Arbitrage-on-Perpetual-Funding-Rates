@@ -13,6 +13,13 @@
       "source": "baseline-ml",
       "source_subtype": "baseline_ml",
       "task": "classification",
+      "signal_threshold": null,
+      "signal_threshold_mode": "missing",
+      "threshold_objective": null,
+      "prediction_mode": null,
+      "calibration_method": null,
+      "feature_importance_method": null,
+      "selected_hyperparameters_json": "{}",
       "trade_count": 3,
       "active_position_count": 3,
       "cumulative_return": -0.001050101232486278,
@@ -31,6 +38,7 @@
       "total_gross_pnl_usd": -39.01012324862738,
       "total_net_pnl_usd": -105.0101232486274,
       "final_equity_usd": 99894.98987675137,
+      "strategy_detail_label": "baseline_ml",
       "scenario_label": "base"
     },
     {
@@ -45,6 +53,13 @@
       "source": "dl",
       "source_subtype": "deep_learning",
       "task": "regression",
+      "signal_threshold": null,
+      "signal_threshold_mode": "missing",
+      "threshold_objective": null,
+      "prediction_mode": null,
+      "calibration_method": null,
+      "feature_importance_method": null,
+      "selected_hyperparameters_json": "{}",
       "trade_count": 0,
       "active_position_count": 0,
       "cumulative_return": 0.0,
@@ -63,6 +78,7 @@
       "total_gross_pnl_usd": 0.0,
       "total_net_pnl_usd": 0.0,
       "final_equity_usd": 100000.0,
+      "strategy_detail_label": "deep_learning",
       "scenario_label": "base"
     },
     {
@@ -77,6 +93,13 @@
       "source": "rules",
       "source_subtype": "rule_based",
       "task": "classification",
+      "signal_threshold": null,
+      "signal_threshold_mode": "missing",
+      "threshold_objective": null,
+      "prediction_mode": null,
+      "calibration_method": null,
+      "feature_importance_method": null,
+      "selected_hyperparameters_json": "{}",
       "trade_count": 7,
       "active_position_count": 7,
       "cumulative_return": -0.002328156739906384,
@@ -95,6 +118,7 @@
       "total_gross_pnl_usd": -78.81567399062382,
       "total_net_pnl_usd": -232.81567399062385,
       "final_equity_usd": 99767.18432600937,
+      "strategy_detail_label": "rule_based",
       "scenario_label": "base"
     }
   ],
@@ -124,6 +148,14 @@
       "family_label": "Simple ML Baseline",
       "scenario_name": "hold_24h",
       "holding_window_hours": 24,
+      "strategy_name": "logistic_regression",
+      "source_subtype": "baseline_ml",
+      "strategy_detail_label": "baseline_ml",
+      "prediction_mode": null,
+      "calibration_method": null,
+      "signal_threshold": null,
+      "threshold_objective": null,
+      "feature_importance_method": null,
       "cumulative_return": -0.001050101232486278
     },
     {
@@ -131,6 +163,14 @@
       "family_label": "Deep Learning",
       "scenario_name": "hold_24h",
       "holding_window_hours": 24,
+      "strategy_name": "lstm",
+      "source_subtype": "deep_learning",
+      "strategy_detail_label": "deep_learning",
+      "prediction_mode": null,
+      "calibration_method": null,
+      "signal_threshold": null,
+      "threshold_objective": null,
+      "feature_importance_method": null,
       "cumulative_return": 0.0
     },
     {
@@ -138,6 +178,14 @@
       "family_label": "Rule-Based Baseline",
       "scenario_name": "hold_24h",
       "holding_window_hours": 24,
+      "strategy_name": "combined_funding_spread",
+      "source_subtype": "rule_based",
+      "strategy_detail_label": "rule_based",
+      "prediction_mode": null,
+      "calibration_method": null,
+      "signal_threshold": null,
+      "threshold_objective": null,
+      "feature_importance_method": null,
       "cumulative_return": -0.002328156739906384
     }
   ],
@@ -146,18 +194,39 @@
       "strategy_name": "combined_funding_spread",
       "scenario_name": "score_1p0",
       "min_signal_score": 1.0,
+      "source_subtype": "rule_based",
+      "strategy_detail_label": "rule_based",
+      "prediction_mode": null,
+      "calibration_method": null,
+      "signal_threshold": null,
+      "threshold_objective": null,
+      "feature_importance_method": null,
       "cumulative_return": -0.0006640760821216007
     },
     {
       "strategy_name": "funding_threshold_2bps",
       "scenario_name": "score_0",
       "min_signal_score": 0.0,
+      "source_subtype": "rule_based",
+      "strategy_detail_label": "rule_based",
+      "prediction_mode": null,
+      "calibration_method": null,
+      "signal_threshold": null,
+      "threshold_objective": null,
+      "feature_importance_method": null,
       "cumulative_return": 0.0
     },
     {
       "strategy_name": "spread_zscore_1p5",
       "scenario_name": "score_2p0",
       "min_signal_score": 2.0,
+      "source_subtype": "rule_based",
+      "strategy_detail_label": "rule_based",
+      "prediction_mode": null,
+      "calibration_method": null,
+      "signal_threshold": null,
+      "threshold_objective": null,
+      "feature_importance_method": null,
       "cumulative_return": -0.0030285758279245956
     }
   ],
@@ -165,37 +234,72 @@
     {
       "family_name": "baseline_ml",
       "family_label": "Simple ML Baseline",
-      "scenario_name": "no_interaction",
-      "cumulative_return": -0.0028024867128452202,
-      "strategy_name": "logistic_regression"
-    },
-    {
-      "family_name": "baseline_ml",
-      "family_label": "Simple ML Baseline",
       "scenario_name": "no_basis",
-      "cumulative_return": -0.0012912532321054382,
-      "strategy_name": "logistic_regression"
+      "strategy_name": "logistic_l1",
+      "source_subtype": "baseline_linear",
+      "strategy_detail_label": "baseline_linear | static | thr=0.75",
+      "prediction_mode": "static",
+      "calibration_method": "none",
+      "signal_threshold": 0.75,
+      "threshold_objective": "avg_signal_return_bps",
+      "feature_importance_method": "permutation_validation",
+      "cumulative_return": -0.0010011228058751653
     },
     {
       "family_name": "baseline_ml",
       "family_label": "Simple ML Baseline",
       "scenario_name": "no_volatility",
-      "cumulative_return": -0.0006964184569364651,
-      "strategy_name": "logistic_regression"
+      "strategy_name": "logistic_l1",
+      "source_subtype": "baseline_linear",
+      "strategy_detail_label": "baseline_linear | static | thr=0.65",
+      "prediction_mode": "static",
+      "calibration_method": "none",
+      "signal_threshold": 0.65,
+      "threshold_objective": "avg_signal_return_bps",
+      "feature_importance_method": "permutation_validation",
+      "cumulative_return": -0.0003591843786664439
     },
     {
       "family_name": "baseline_ml",
       "family_label": "Simple ML Baseline",
       "scenario_name": "no_funding",
-      "cumulative_return": -0.0006662809124119429,
-      "strategy_name": "logistic_regression"
+      "strategy_name": "logistic_l1",
+      "source_subtype": "baseline_linear",
+      "strategy_detail_label": "baseline_linear | static | thr=0.65",
+      "prediction_mode": "static",
+      "calibration_method": "none",
+      "signal_threshold": 0.65,
+      "threshold_objective": "avg_signal_return_bps",
+      "feature_importance_method": "permutation_validation",
+      "cumulative_return": -0.00033723407827002116
+    },
+    {
+      "family_name": "baseline_ml",
+      "family_label": "Simple ML Baseline",
+      "scenario_name": "no_interaction",
+      "strategy_name": "elastic_net_regression",
+      "source_subtype": "baseline_linear",
+      "strategy_detail_label": "baseline_linear | static | thr=0",
+      "prediction_mode": "static",
+      "calibration_method": "none",
+      "signal_threshold": 0.0,
+      "threshold_objective": "avg_signal_return_bps",
+      "feature_importance_method": "permutation_validation",
+      "cumulative_return": 0.0
     },
     {
       "family_name": "baseline_ml",
       "family_label": "Simple ML Baseline",
       "scenario_name": "no_liquidity",
-      "cumulative_return": 0.0,
-      "strategy_name": "logistic_regression"
+      "strategy_name": "elastic_net_regression",
+      "source_subtype": "baseline_linear",
+      "strategy_detail_label": "baseline_linear | static | thr=0",
+      "prediction_mode": "static",
+      "calibration_method": "none",
+      "signal_threshold": 0.0,
+      "threshold_objective": "avg_signal_return_bps",
+      "feature_importance_method": "permutation_validation",
+      "cumulative_return": 0.0
     }
   ]
 }

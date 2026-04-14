@@ -478,6 +478,152 @@ class DeepLearningModelSettings(SettingsBase):
     dropout: float = 0.1
     bidirectional: bool = False
 
+    @model_validator(mode="after")
+    def validate_model_name(self) -> "DeepLearningModelSettings":
+        valid_names = {"lstm", "gru"}
+        if self.name not in valid_names:
+            raise ValueError(
+                f"Deep-learning model.name must be one of {sorted(valid_names)}, got '{self.name}'."
+            )
+        if self.hidden_size <= 0:
+            raise ValueError("Deep-learning hidden_size must be positive.")
+        if self.num_layers <= 0:
+            raise ValueError("Deep-learning num_layers must be positive.")
+        return self
+
+
+class DeepLearningPreprocessingSettings(SettingsBase):
+    scaler: str = "standard"
+    winsorize_lower_quantile: float | None = None
+    winsorize_upper_quantile: float | None = None
+
+    @model_validator(mode="after")
+    def validate_preprocessing(self) -> "DeepLearningPreprocessingSettings":
+        valid_scalers = {"standard", "robust"}
+        if self.scaler not in valid_scalers:
+            raise ValueError(
+                f"Deep-learning preprocessing.scaler must be one of {sorted(valid_scalers)}, got '{self.scaler}'."
+            )
+        if self.winsorize_lower_quantile is not None and not 0.0 <= self.winsorize_lower_quantile < 0.5:
+            raise ValueError(
+                "Deep-learning winsorize_lower_quantile must be in [0.0, 0.5)."
+            )
+        if self.winsorize_upper_quantile is not None and not 0.5 < self.winsorize_upper_quantile <= 1.0:
+            raise ValueError(
+                "Deep-learning winsorize_upper_quantile must be in (0.5, 1.0]."
+            )
+        if (
+            self.winsorize_lower_quantile is not None
+            and self.winsorize_upper_quantile is not None
+            and self.winsorize_lower_quantile >= self.winsorize_upper_quantile
+        ):
+            raise ValueError(
+                "Deep-learning winsorize_lower_quantile must be smaller than winsorize_upper_quantile."
+            )
+        return self
+
+
+class DeepLearningThresholdSearchSettings(SettingsBase):
+    enabled: bool = True
+    objective: str = "avg_signal_return_bps"
+    probability_grid: list[float] = Field(default_factory=list)
+    regression_threshold_grid_bps: list[float] = Field(default_factory=list)
+    top_quantile: float = 0.1
+
+    @model_validator(mode="after")
+    def validate_threshold_search(self) -> "DeepLearningThresholdSearchSettings":
+        if not 0.0 < self.top_quantile <= 0.5:
+            raise ValueError(
+                "Deep-learning threshold_search.top_quantile must be in (0, 0.5]."
+            )
+        return self
+
+
+class DeepLearningTuningSettings(SettingsBase):
+    enabled: bool = False
+    mode: str = "expanding"
+    n_splits: int = 2
+    gap: int = 0
+    min_train_size: int = 2000
+    rolling_window_size: int | None = None
+    max_candidates: int = 8
+    trial_epochs: int = 3
+    metric: str = "validation_avg_signal_return_bps"
+    lookback_steps: list[int] = Field(default_factory=list)
+    hidden_size: list[int] = Field(default_factory=list)
+    num_layers: list[int] = Field(default_factory=list)
+    dropout: list[float] = Field(default_factory=list)
+    learning_rate: list[float] = Field(default_factory=list)
+    weight_decay: list[float] = Field(default_factory=list)
+    batch_size: list[int] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_tuning(self) -> "DeepLearningTuningSettings":
+        valid_modes = {"expanding", "rolling"}
+        if self.mode not in valid_modes:
+            raise ValueError(
+                f"Deep-learning tuning mode must be one of {sorted(valid_modes)}, got '{self.mode}'."
+            )
+        if self.n_splits < 2:
+            raise ValueError("Deep-learning tuning requires at least 2 splits when enabled.")
+        if self.gap < 0:
+            raise ValueError("Deep-learning tuning gap must be non-negative.")
+        if self.min_train_size <= 0:
+            raise ValueError("Deep-learning tuning min_train_size must be positive.")
+        if self.max_candidates <= 0:
+            raise ValueError("Deep-learning tuning max_candidates must be positive.")
+        if self.trial_epochs <= 0:
+            raise ValueError("Deep-learning tuning trial_epochs must be positive.")
+        if self.mode == "rolling" and self.rolling_window_size is None:
+            raise ValueError(
+                "Deep-learning tuning rolling mode requires rolling_window_size."
+            )
+        return self
+
+
+class DeepLearningPredictionSettings(SettingsBase):
+    mode: str = "static"
+    refit_every_n_periods: int = 168
+    rolling_window_size: int | None = None
+    expanding_window_start: int = 2000
+    use_validation_history_for_test: bool = True
+
+    @model_validator(mode="after")
+    def validate_prediction(self) -> "DeepLearningPredictionSettings":
+        valid_modes = {"static", "expanding", "rolling"}
+        if self.mode not in valid_modes:
+            raise ValueError(
+                f"Deep-learning prediction.mode must be one of {sorted(valid_modes)}, got '{self.mode}'."
+            )
+        if self.refit_every_n_periods <= 0:
+            raise ValueError(
+                "Deep-learning prediction.refit_every_n_periods must be positive."
+            )
+        if self.expanding_window_start <= 0:
+            raise ValueError(
+                "Deep-learning prediction.expanding_window_start must be positive."
+            )
+        if self.mode == "rolling" and self.rolling_window_size is None:
+            raise ValueError(
+                "Deep-learning prediction rolling mode requires rolling_window_size."
+            )
+        return self
+
+
+class DeepLearningInterpretabilitySettings(SettingsBase):
+    enabled: bool = True
+    ablation_splits: list[str] = Field(default_factory=lambda: ["validation"])
+    calibration_bins: int = 10
+    max_feature_groups: int | None = None
+
+    @model_validator(mode="after")
+    def validate_interpretability(self) -> "DeepLearningInterpretabilitySettings":
+        if self.calibration_bins <= 1:
+            raise ValueError(
+                "Deep-learning interpretability.calibration_bins must be greater than 1."
+            )
+        return self
+
 
 class DeepLearningTrainingSettings(SettingsBase):
     batch_size: int = 256
@@ -491,6 +637,37 @@ class DeepLearningTrainingSettings(SettingsBase):
     early_stopping_patience: int = 3
     deterministic: bool = True
     use_balanced_classification_loss: bool = True
+    selection_metric: str = "validation_avg_signal_return_bps"
+    regression_loss: str = "huber"
+    huber_delta: float = 1.0
+    internal_validation_fraction: float = 0.15
+
+    @model_validator(mode="after")
+    def validate_training(self) -> "DeepLearningTrainingSettings":
+        valid_regression_losses = {"mse", "huber", "smooth_l1"}
+        if self.regression_loss not in valid_regression_losses:
+            raise ValueError(
+                f"Deep-learning regression_loss must be one of {sorted(valid_regression_losses)}, got '{self.regression_loss}'."
+            )
+        if self.batch_size <= 0:
+            raise ValueError("Deep-learning batch_size must be positive.")
+        if self.epochs <= 0:
+            raise ValueError("Deep-learning epochs must be positive.")
+        if self.learning_rate <= 0.0:
+            raise ValueError("Deep-learning learning_rate must be positive.")
+        if self.weight_decay < 0.0:
+            raise ValueError("Deep-learning weight_decay must be non-negative.")
+        if self.early_stopping_patience <= 0:
+            raise ValueError(
+                "Deep-learning early_stopping_patience must be positive."
+            )
+        if not 0.0 < self.internal_validation_fraction < 0.5:
+            raise ValueError(
+                "Deep-learning internal_validation_fraction must be in (0, 0.5)."
+            )
+        if self.huber_delta <= 0.0:
+            raise ValueError("Deep-learning huber_delta must be positive.")
+        return self
 
 
 class DeepLearningOutputSettings(SettingsBase):
@@ -510,6 +687,21 @@ class DeepLearningSettings(SettingsBase):
     )
     sequence: SequenceSettings = Field(default_factory=SequenceSettings)
     model: DeepLearningModelSettings = Field(default_factory=DeepLearningModelSettings)
+    preprocessing: DeepLearningPreprocessingSettings = Field(
+        default_factory=DeepLearningPreprocessingSettings
+    )
+    threshold_search: DeepLearningThresholdSearchSettings = Field(
+        default_factory=DeepLearningThresholdSearchSettings
+    )
+    tuning: DeepLearningTuningSettings = Field(
+        default_factory=DeepLearningTuningSettings
+    )
+    prediction: DeepLearningPredictionSettings = Field(
+        default_factory=DeepLearningPredictionSettings
+    )
+    interpretability: DeepLearningInterpretabilitySettings = Field(
+        default_factory=DeepLearningInterpretabilitySettings
+    )
     training: DeepLearningTrainingSettings = Field(
         default_factory=DeepLearningTrainingSettings
     )

@@ -6,7 +6,7 @@ This module is the first sequence-modeling layer for the project. It is designed
 
 Can a small time-series model learn better post-cost opportunity signals from the engineered hourly feature set than simple rule-based and linear baselines?
 
-The implementation deliberately starts with one model family only: `LSTM`. This keeps the pipeline correct, understandable, and easy to debug before adding more expressive sequence models.
+The implementation deliberately stays small, but it is no longer locked to one exact architecture. The current default is still `LSTM`, and a lightweight `GRU` option is now available through the same builder/CLI path.
 
 ## Default Task Setup
 
@@ -27,9 +27,10 @@ The same pipeline also supports classification by changing `target.task` and `ta
 
 ## Architecture
 
-Implemented model:
+Implemented sequence models:
 
 - `LSTMSequenceModel`
+- `GRUSequenceModel`
 - encoder: stacked LSTM with `batch_first=True`
 - representation: final hidden state from the last LSTM layer
 - head: dropout + linear projection to one scalar output
@@ -41,7 +42,32 @@ Default hyperparameters:
 - dropout: `0.1`
 - bidirectional: `false`
 
-The model builder is dispatch-based, so a Transformer encoder can be added later without changing sequence construction, artifact format, or CLI usage.
+The model builder is dispatch-based, so new sequence encoders can be added later without changing sequence construction, artifact format, or CLI usage.
+
+## Training and Selection Logic
+
+The first prototype selected checkpoints only by validation loss. The upgraded version is more research-oriented.
+
+It now supports configurable checkpoint selection metrics such as:
+
+- `validation_loss`
+- `validation_f1`
+- `validation_roc_auc`
+- `validation_pearson_corr`
+- `validation_avg_signal_return_bps`
+- `validation_signal_hit_rate`
+- `validation_cumulative_signal_return_bps`
+
+For the default regression experiment, the config now uses a trading-aware selection metric so the saved checkpoint is chosen with signal usefulness in mind rather than loss alone.
+
+If a trading-oriented validation metric is undefined because a given epoch produces zero traded signals, the pipeline falls back to `validation_loss` for checkpoint comparison. That fallback is recorded in the training history and manifest so the selection behavior stays auditable.
+
+Thresholds are also no longer fixed-only. The module can search thresholds on the validation split:
+
+- probability thresholds for classification
+- predicted-return thresholds for regression
+
+The default threshold objective is `avg_signal_return_bps`.
 
 ## Input Shape
 
@@ -84,9 +110,9 @@ Default output directory:
 Key artifacts:
 
 - `best_model.pt`
-  Best checkpoint selected by validation loss.
+  Best checkpoint selected by the configured validation metric.
 - `training_history.csv`
-  Per-epoch train/validation loss and task-specific metrics.
+  Per-epoch train/validation loss, selected threshold, selection score, and strategy-oriented metrics.
 - `dl_predictions.parquet`
   Row-level predictions and trading signals.
 - `dl_metrics.parquet`
@@ -100,7 +126,14 @@ Key artifacts:
 - `training_report.md`
   Lightweight experiment report.
 - `dl_manifest.json`
-  Reproducibility summary.
+  Reproducibility summary including selected loss, threshold, configured checkpoint metric, effective checkpoint metric, prediction mode, preprocessing, and tuning settings.
+
+Additional diagnostics may also be written under `diagnostics/`, including:
+
+- threshold-search tables
+- tuning results when enabled
+- classification calibration tables
+- feature-group ablation summaries
 
 ## Prediction Output Contract
 
@@ -119,6 +152,14 @@ The prediction table follows the same general format as the baseline pipeline so
 - `predicted_return_bps`
 - `actual_label`
 - `actual_return_bps`
+
+Additional metadata columns now include:
+
+- `selected_hyperparameters_json`
+- `selected_threshold_objective`
+- `calibration_method`
+- `feature_importance_method`
+- `prediction_mode`
 
 For regression:
 
@@ -165,8 +206,33 @@ At the same time, the current implementation remains lightweight:
 
 That keeps the module maintainable and appropriate for a course-project prototype.
 
+## Walk-Forward and Robustness Hooks
+
+The upgraded module also adds two realism/robustness hooks:
+
+- optional tuning-ready time-series validation structure
+- optional expanding / rolling prediction mode with periodic retraining
+
+The default run still uses `prediction.mode = static` to keep the main experiment easy to reproduce, but the code is now prepared for more chronological scoring when needed.
+
+Preprocessing can also be made more robust through:
+
+- winsorization before scaling
+- `standard` or `robust` scaling
+- training-only fitted preprocessing statistics
+
+## Interpretability
+
+This is still not a SHAP-heavy deep-learning research stack, but the module now includes a practical interpretability path:
+
+- feature-group ablation on validation/test predictions
+
+Groups are taken from the feature manifest when available, and otherwise inferred heuristically from feature names.
+
 ## Caveats
 
 - The current post-cost labels are intentionally hard, so model quality should be judged with both predictive metrics and realized signal-return diagnostics.
 - This first version uses only engineered tabular features arranged into sequences; it does not yet include raw order-book or multi-asset sequence inputs.
-- Transformer support is not implemented yet.
+- Tuning support is intentionally lightweight and disabled by default because full deep time-series hyperparameter search can become expensive quickly.
+- Walk-forward mode is available, but the exported checkpoint still refers to the base train/validation model rather than every refit chunk.
+- Transformer support is still not implemented.
