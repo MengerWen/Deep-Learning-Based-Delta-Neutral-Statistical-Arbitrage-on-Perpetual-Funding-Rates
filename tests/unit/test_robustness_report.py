@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import pandas as pd
 
-from funding_arb.reporting.robustness import _ablation_columns, _best_rows
+from funding_arb.reporting.robustness import (
+    _ablation_columns,
+    _annotate_metrics,
+    _best_rows,
+)
+from funding_arb.config.models import RobustnessFamilySettings
 
 
 def test_ablation_columns_resolve_feature_groups_and_aliases() -> None:
@@ -48,3 +53,36 @@ def test_best_rows_selects_highest_ranked_strategy_per_group() -> None:
         best.loc[best["family_name"] == "baseline_ml", "strategy_name"].iloc[0]
         == "logistic"
     )
+
+
+def test_annotate_metrics_preserves_baseline_strategy_metadata() -> None:
+    metrics = pd.DataFrame(
+        {
+            "strategy_name": ["ridge_regression"],
+            "source_subtype": ["baseline_linear"],
+            "prediction_mode": ["expanding"],
+            "calibration_method": ["none"],
+            "signal_threshold": [4.5],
+            "cumulative_return": [0.02],
+            "trade_count": [12],
+        }
+    )
+    family = RobustnessFamilySettings(
+        name="baseline_ml",
+        label="Simple ML Baseline",
+        source_name="baseline-ml",
+    )
+
+    annotated = _annotate_metrics(
+        metrics,
+        experiment="family_comparison",
+        family=family,
+        scenario_name="base",
+        scenario_order=1,
+        run_name="family_comparison_baseline_ml_base",
+        scenario_params={"scenario_label": "base"},
+    )
+
+    assert annotated["family_name"].iloc[0] == "baseline_ml"
+    assert annotated["source_subtype"].iloc[0] == "baseline_linear"
+    assert annotated["strategy_detail_label"].iloc[0] == "baseline_linear | expanding | thr=4.5"

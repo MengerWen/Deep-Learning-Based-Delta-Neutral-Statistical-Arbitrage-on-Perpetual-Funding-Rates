@@ -75,6 +75,20 @@ The default robustness config compares three families:
 - `deep_learning`: the first LSTM sequence model
 
 The family comparison section uses the same ranking metric as the report config, which defaults to `cumulative_return`.
+The default config now regenerates `rules` and `baseline-ml` signals before running the sweeps so robustness tables stay aligned with the latest upgraded baseline artifacts.
+
+After the baseline upgrade, the robustness tables also preserve the strategy configuration details that matter for interpretation:
+
+- `source_subtype`
+  Distinguishes `rule_based`, `baseline_linear`, `baseline_tree`, and `deep_learning`.
+- `prediction_mode`
+  Shows whether the predictive baseline used static scoring or a more chronological expanding/rolling path.
+- `calibration_method`
+  Shows whether classifier probabilities were left uncalibrated or calibrated.
+- `signal_threshold`
+  Shows the threshold that actually converted scores into traded signals.
+- `threshold_objective`
+  Shows which validation objective selected that threshold.
 
 ## File / Module Ownership
 
@@ -140,6 +154,7 @@ Compatibility wrapper:
 - Cost and holding sweeps reuse existing signals; they do not retrain models.
 - Threshold sensitivity operates on standardized signal strength rather than raw rule parameter search.
 - Feature ablation can be slower because it retrains models.
+- Family-level comparisons intentionally keep the high-level family names, but the detail tables now preserve the underlying baseline configuration so the report can explain why one baseline won.
 - The backtest is still the project prototype backtest:
   - single asset
   - delta-neutral abstraction

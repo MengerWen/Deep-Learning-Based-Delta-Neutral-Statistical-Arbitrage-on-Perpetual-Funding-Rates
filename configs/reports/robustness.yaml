@@ -13,10 +13,12 @@ families:
   - name: rule_based
     label: Rule-Based Baseline
     source_name: rules
+    regenerate_signal: true
     signal_path: data/artifacts/signals/binance/btcusdt/1h/rules/signals.parquet
   - name: baseline_ml
     label: Simple ML Baseline
     source_name: baseline-ml
+    regenerate_signal: true
     signal_path: data/artifacts/signals/binance/btcusdt/1h/baseline-ml/signals.parquet
   - name: deep_learning
     label: Deep Learning

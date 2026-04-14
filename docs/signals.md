@@ -28,6 +28,12 @@ Every normalized signal row contains these columns:
 - `signal_score`
 - `predicted_class`
 - `expected_return_bps`
+- `signal_threshold`
+- `threshold_objective`
+- `prediction_mode`
+- `calibration_method`
+- `feature_importance_method`
+- `selected_hyperparameters_json`
 - `suggested_direction`
 - `confidence`
 - `should_trade`
@@ -42,6 +48,18 @@ Interpretation:
   Usually `0/1` when a classifier or threshold rule is used.
 - `expected_return_bps`
   Predicted future net return when a regression-style model is used.
+- `signal_threshold`
+  The threshold actually applied upstream when converting scores into tradeable signals.
+- `threshold_objective`
+  The validation objective used to choose that threshold when threshold search is enabled.
+- `prediction_mode`
+  Whether the source used static scoring or a more chronological expanding/rolling prediction path.
+- `calibration_method`
+  Probability calibration choice for classifier baselines when applicable.
+- `feature_importance_method`
+  The preferred feature-importance diagnostic attached to that model family.
+- `selected_hyperparameters_json`
+  Serialized chosen hyperparameters from the upstream baseline training artifact.
 - `suggested_direction`
   `short_perp_long_spot` when the source says trade, otherwise `flat`.
 - `confidence`
@@ -97,7 +115,7 @@ Each run writes:
 - optional CSV copy
 - `signals_manifest.json`
 
-The manifest includes summary stats such as row count, active signal count, strategies present, and source subtype breakdown.
+The manifest includes summary stats such as row count, active signal count, strategies present, source subtype breakdown, and strategy-level metadata previews for thresholds, calibration, and prediction mode.
 
 ## CLI
 
@@ -154,4 +172,5 @@ That gives us three advantages:
 
 - The current signal interface is single-asset and single-direction oriented around `short_perp_long_spot` vs `flat`.
 - Confidence is naturally better defined for classification models than for regression models.
-- The normalized signal layer keeps actual labels/returns only inside `metadata_json` for diagnostics; the main table is intended to stay prediction-first.
+- The normalized signal layer now keeps the most important baseline-training decisions as first-class columns so backtesting and robustness reporting can stay finance-aware without reparsing JSON blobs.
+- The full raw prediction context still remains available inside `metadata_json` for diagnostics.

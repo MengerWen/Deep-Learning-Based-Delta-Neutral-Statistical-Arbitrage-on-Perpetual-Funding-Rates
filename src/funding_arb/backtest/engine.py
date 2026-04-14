@@ -31,6 +31,14 @@ PLOT_COLORS = [
     "#65a30d",
 ]
 PERIODS_PER_YEAR_1H = 24 * 365
+OPTIONAL_SIGNAL_DEFAULTS = {
+    "signal_threshold": np.nan,
+    "threshold_objective": None,
+    "prediction_mode": None,
+    "calibration_method": None,
+    "feature_importance_method": None,
+    "selected_hyperparameters_json": "{}",
+}
 
 
 @dataclass(frozen=True)
@@ -66,6 +74,12 @@ class OpenPosition:
     signal_score: float | None
     predicted_class: float | None
     expected_return_bps: float | None
+    signal_threshold: float | None
+    threshold_objective: str | None
+    prediction_mode: str | None
+    calibration_method: str | None
+    feature_importance_method: str | None
+    selected_hyperparameters_json: str
     confidence: float | None
     metadata_json: str
     direction: str
@@ -129,6 +143,9 @@ def _load_signal_table(settings: BacktestSettings) -> pd.DataFrame:
     missing = sorted(required - set(frame.columns))
     if missing:
         raise ValueError(f"Signal artifact is missing required columns: {', '.join(missing)}")
+    for column, default in OPTIONAL_SIGNAL_DEFAULTS.items():
+        if column not in frame.columns:
+            frame[column] = default
     frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True)
     frame = frame.sort_values(["strategy_name", "timestamp"]).reset_index(drop=True)
     split_filter = set(settings.selection.split_filter)
@@ -173,6 +190,54 @@ def _safe_float(value: Any) -> float | None:
     if math.isnan(converted) or math.isinf(converted):
         return None
     return converted
+
+
+def _safe_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        stripped = value.strip()
+        return stripped or None
+    try:
+        if pd.isna(value):
+            return None
+    except TypeError:
+        pass
+    text = str(value).strip()
+    return text or None
+
+
+def _constant_signal_value(values: pd.Series) -> Any:
+    non_null = values.dropna()
+    if non_null.empty:
+        return None
+    unique_values = pd.unique(non_null.astype(object))
+    if len(unique_values) == 1:
+        return unique_values[0]
+    return "mixed"
+
+
+def _signal_threshold_metadata(values: pd.Series) -> tuple[float | None, str]:
+    numeric = pd.to_numeric(values, errors="coerce").dropna()
+    if numeric.empty:
+        return None, "missing"
+    rounded = pd.unique(numeric.round(10))
+    if len(rounded) == 1:
+        return float(rounded[0]), "constant"
+    return None, "varying"
+
+
+def _strategy_signal_metadata(strategy_frame: pd.DataFrame) -> dict[str, Any]:
+    signal_threshold, signal_threshold_mode = _signal_threshold_metadata(strategy_frame["signal_threshold"])
+    return {
+        "signal_threshold": signal_threshold,
+        "signal_threshold_mode": signal_threshold_mode,
+        "threshold_objective": _safe_text(_constant_signal_value(strategy_frame["threshold_objective"])),
+        "prediction_mode": _safe_text(_constant_signal_value(strategy_frame["prediction_mode"])),
+        "calibration_method": _safe_text(_constant_signal_value(strategy_frame["calibration_method"])),
+        "feature_importance_method": _safe_text(_constant_signal_value(strategy_frame["feature_importance_method"])),
+        "selected_hyperparameters_json": _safe_text(_constant_signal_value(strategy_frame["selected_hyperparameters_json"])),
+    }
 
 
 def _price_column(prefix: str, field: str) -> str:
@@ -311,6 +376,12 @@ def _open_position(row: pd.Series, market: pd.DataFrame, entry_market_index: int
         signal_score=_safe_float(row.get("signal_score")),
         predicted_class=_safe_float(row.get("predicted_class")),
         expected_return_bps=_safe_float(row.get("expected_return_bps")),
+        signal_threshold=_safe_float(row.get("signal_threshold")),
+        threshold_objective=_safe_text(row.get("threshold_objective")),
+        prediction_mode=_safe_text(row.get("prediction_mode")),
+        calibration_method=_safe_text(row.get("calibration_method")),
+        feature_importance_method=_safe_text(row.get("feature_importance_method")),
+        selected_hyperparameters_json=_safe_text(row.get("selected_hyperparameters_json")) or "{}",
         confidence=_safe_float(row.get("confidence")),
         metadata_json=str(row.get("metadata_json", "{}")),
         direction=str(row["suggested_direction"]),
@@ -396,6 +467,12 @@ def _close_position(
         "signal_score_at_entry": position.signal_score,
         "predicted_class_at_entry": position.predicted_class,
         "expected_return_bps_at_entry": position.expected_return_bps,
+        "signal_threshold_at_entry": position.signal_threshold,
+        "threshold_objective_at_entry": position.threshold_objective,
+        "prediction_mode_at_entry": position.prediction_mode,
+        "calibration_method_at_entry": position.calibration_method,
+        "feature_importance_method_at_entry": position.feature_importance_method,
+        "selected_hyperparameters_json_at_entry": position.selected_hyperparameters_json,
         "confidence_at_entry": position.confidence,
         "metadata_json_at_entry": position.metadata_json,
         "perp_entry_price_raw": float(position.perp_entry_price_raw),
@@ -598,6 +675,7 @@ def summarize_strategy_backtest(
     equity_curve: pd.DataFrame,
     trade_log: pd.DataFrame,
     initial_capital: float,
+    strategy_metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Summarize a realized backtest into report-friendly metrics."""
     trade_count = int(len(trade_log))
@@ -618,11 +696,19 @@ def summarize_strategy_backtest(
     sharpe_ratio = calculate_sharpe_ratio(equity_curve["period_return"], periods_per_year=PERIODS_PER_YEAR_1H) if not equity_curve.empty else 0.0
     max_drawdown = calculate_max_drawdown(equity_curve["equity_usd"]) if not equity_curve.empty else 0.0
     active_signal_count = int(trade_log["entry_timestamp"].count())
+    metadata = strategy_metadata or {}
     return {
         "strategy_name": strategy_name,
         "source": source,
         "source_subtype": source_subtype,
         "task": task,
+        "signal_threshold": metadata.get("signal_threshold"),
+        "signal_threshold_mode": metadata.get("signal_threshold_mode"),
+        "threshold_objective": metadata.get("threshold_objective"),
+        "prediction_mode": metadata.get("prediction_mode"),
+        "calibration_method": metadata.get("calibration_method"),
+        "feature_importance_method": metadata.get("feature_importance_method"),
+        "selected_hyperparameters_json": metadata.get("selected_hyperparameters_json"),
         "trade_count": trade_count,
         "active_position_count": active_signal_count,
         "cumulative_return": float(total_return),
@@ -648,6 +734,9 @@ def _split_trade_summary(trade_log: pd.DataFrame) -> pd.DataFrame:
     columns = [
         "strategy_name",
         "signal_split",
+        "source_subtype",
+        "prediction_mode",
+        "calibration_method",
         "trade_count",
         "win_rate",
         "average_trade_return_bps",
@@ -665,6 +754,9 @@ def _split_trade_summary(trade_log: pd.DataFrame) -> pd.DataFrame:
             {
                 "strategy_name": strategy_name,
                 "signal_split": signal_split,
+                "source_subtype": _safe_text(_constant_signal_value(group["source_subtype"])),
+                "prediction_mode": _safe_text(_constant_signal_value(group["prediction_mode_at_entry"])),
+                "calibration_method": _safe_text(_constant_signal_value(group["calibration_method_at_entry"])),
                 "trade_count": int(len(group)),
                 "win_rate": float((group["net_pnl_usd"] > 0).mean()) if len(group) else 0.0,
                 "average_trade_return_bps": float(group["net_return_bps"].mean()) if len(group) else 0.0,
@@ -822,6 +914,8 @@ def _build_markdown_report(
     if signal_manifest is not None:
         manifest_lines += f"- Signal rows: `{signal_manifest.get('summary', {}).get('row_count', 'n/a')}`\n"
         manifest_lines += f"- Active signal count: `{signal_manifest.get('summary', {}).get('active_signal_count', 'n/a')}`\n"
+        manifest_lines += f"- Signal prediction modes: `{signal_manifest.get('summary', {}).get('prediction_modes', [])}`\n"
+        manifest_lines += f"- Signal calibration methods: `{signal_manifest.get('summary', {}).get('calibration_methods', [])}`\n"
     if market_manifest is not None:
         manifest_lines += f"- Canonical market rows: `{market_manifest.get('canonical_row_count', 'n/a')}`\n"
 
@@ -829,6 +923,10 @@ def _build_markdown_report(
         strategy_metrics[
             [
                 "strategy_name",
+                "source_subtype",
+                "prediction_mode",
+                "calibration_method",
+                "signal_threshold",
                 "trade_count",
                 "cumulative_return",
                 "annualized_return",
@@ -902,6 +1000,7 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
 
     for strategy_name, strategy_frame in signals.groupby("strategy_name", sort=True):
         strategy_frame = strategy_frame.sort_values("timestamp").reset_index(drop=True)
+        strategy_metadata = _strategy_signal_metadata(strategy_frame)
         trade_log = _simulate_strategy(strategy_frame, selected_market, selected_index_map, funding_cumulative, settings)
         if not trade_log.empty:
             trade_log["trade_id"] = np.arange(1, len(trade_log) + 1, dtype=int)
@@ -928,6 +1027,7 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
                 equity_curve=equity_curve,
                 trade_log=trade_log,
                 initial_capital=settings.portfolio.initial_capital,
+                strategy_metadata=strategy_metadata,
             )
         )
 
@@ -952,6 +1052,12 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
                 "source",
                 "source_subtype",
                 "task",
+                "signal_threshold",
+                "signal_threshold_mode",
+                "threshold_objective",
+                "prediction_mode",
+                "calibration_method",
+                "feature_importance_method",
                 "trade_count",
                 "cumulative_return",
                 "annualized_return",
@@ -1034,6 +1140,15 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
             "best_strategy": None if leaderboard.empty else str(leaderboard.iloc[0]["strategy_name"]),
             "best_sharpe_ratio": None if leaderboard.empty else float(leaderboard.iloc[0]["sharpe_ratio"]),
             "best_cumulative_return": None if leaderboard.empty else float(leaderboard.iloc[0]["cumulative_return"]),
+            "prediction_modes": []
+            if strategy_metrics.empty
+            else sorted(strategy_metrics["prediction_mode"].dropna().astype(str).unique().tolist()),
+            "calibration_methods": []
+            if strategy_metrics.empty
+            else sorted(strategy_metrics["calibration_method"].dropna().astype(str).unique().tolist()),
+            "source_subtypes": []
+            if strategy_metrics.empty
+            else sorted(strategy_metrics["source_subtype"].dropna().astype(str).unique().tolist()),
         },
         "signal_manifest": signal_manifest,
         "market_manifest": market_manifest,

@@ -126,6 +126,35 @@ def _family_label(family: RobustnessFamilySettings) -> str:
     return family.label or family.name.replace("_", " ").title()
 
 
+def _safe_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except TypeError:
+        pass
+    text = str(value).strip()
+    return text or None
+
+
+def _strategy_detail_label(row: pd.Series) -> str:
+    parts: list[str] = []
+    source_subtype = _safe_text(row.get("source_subtype"))
+    if source_subtype:
+        parts.append(source_subtype)
+    prediction_mode = _safe_text(row.get("prediction_mode"))
+    if prediction_mode:
+        parts.append(prediction_mode)
+    calibration_method = _safe_text(row.get("calibration_method"))
+    if calibration_method and calibration_method != "none":
+        parts.append(f"cal={calibration_method}")
+    signal_threshold = pd.to_numeric(pd.Series([row.get("signal_threshold")]), errors="coerce").iloc[0]
+    if pd.notna(signal_threshold):
+        parts.append(f"thr={float(signal_threshold):.4g}")
+    return " | ".join(parts) if parts else "n/a"
+
+
 def _enabled_families(
     settings: RobustnessReportSettings,
 ) -> list[RobustnessFamilySettings]:
@@ -244,6 +273,10 @@ def _annotate_metrics(
     annotated.insert(4, "scenario_name", scenario_name)
     annotated.insert(5, "scenario_order", int(scenario_order))
     annotated.insert(6, "run_name", run_name)
+    if "source_subtype" in annotated.columns:
+        annotated["strategy_detail_label"] = annotated.apply(
+            _strategy_detail_label, axis=1
+        )
     if scenario_params:
         for key, value in scenario_params.items():
             annotated[key] = value
@@ -667,6 +700,16 @@ def _build_summary_json(
     ablation_best: pd.DataFrame,
     ranking_metric: str,
 ) -> dict[str, Any]:
+    metadata_columns = [
+        "strategy_name",
+        "source_subtype",
+        "strategy_detail_label",
+        "prediction_mode",
+        "calibration_method",
+        "signal_threshold",
+        "threshold_objective",
+        "feature_importance_method",
+    ]
     summary: dict[str, Any] = {
         "ranking_metric": ranking_metric,
         "family_comparison": family_comparison_best.to_dict(orient="records"),
@@ -684,27 +727,47 @@ def _build_summary_json(
         best_holds = _best_rows(holding_best, ranking_metric, ["family_name"])
         summary["best_holding_window_by_family"] = best_holds[
             [
-                "family_name",
-                "family_label",
-                "scenario_name",
-                "holding_window_hours",
-                ranking_metric,
+                column
+                for column in [
+                    "family_name",
+                    "family_label",
+                    "scenario_name",
+                    "holding_window_hours",
+                    *metadata_columns,
+                    ranking_metric,
+                ]
+                if column in best_holds.columns
             ]
         ].to_dict(orient="records")
     if not threshold_detail.empty:
         threshold_best = _best_rows(threshold_detail, ranking_metric, ["strategy_name"])
         summary["best_rule_threshold_by_strategy"] = threshold_best[
-            ["strategy_name", "scenario_name", "min_signal_score", ranking_metric]
+            [
+                column
+                for column in [
+                    "strategy_name",
+                    "scenario_name",
+                    "min_signal_score",
+                    *metadata_columns,
+                    ranking_metric,
+                ]
+                if column in threshold_best.columns
+            ]
         ].to_dict(orient="records")
     if not ablation_best.empty:
         worst_ablation = ablation_best.sort_values(ranking_metric).head(5)
         summary["most_damaging_ablation_cases"] = worst_ablation[
             [
-                "family_name",
-                "family_label",
-                "scenario_name",
-                ranking_metric,
-                "strategy_name",
+                column
+                for column in [
+                    "family_name",
+                    "family_label",
+                    "scenario_name",
+                    "strategy_name",
+                    *metadata_columns,
+                    ranking_metric,
+                ]
+                if column in worst_ablation.columns
             ]
         ].to_dict(orient="records")
     return summary
@@ -747,6 +810,7 @@ def _build_markdown_report(
 - Cost and holding-window sweeps reuse the same standardized signals and the same backtest engine, so the accounting logic stays identical to the main strategy evaluation.
 - Rule-threshold sensitivity is implemented by tightening or relaxing `min_signal_score` in the standardized rule-based signal layer. This measures robustness to stronger or weaker entry confidence, not a full redefinition of the raw heuristic itself.
 - Feature ablation retrains only predictive baselines and the deep-learning model, regenerates their signals, and reruns the same backtest logic. Rule-based heuristics are excluded from ablation because they do not consume the engineered feature matrix.
+- The comparison tables preserve baseline-specific metadata such as `source_subtype`, `prediction_mode`, `calibration_method`, `signal_threshold`, and `threshold_objective`, so the report stays aligned with the upgraded baseline pipeline rather than collapsing everything into one generic ML bucket.
 
 ## Family Comparison
 

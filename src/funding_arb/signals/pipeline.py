@@ -69,14 +69,37 @@ def _write_frame(frame: pd.DataFrame, path: Path) -> str:
 
 
 def _signal_summary(frame: pd.DataFrame) -> dict[str, Any]:
+    strategy_columns = [
+        "strategy_name",
+        "source_subtype",
+        "model_family",
+        "task",
+        "signal_threshold",
+        "threshold_objective",
+        "prediction_mode",
+        "calibration_method",
+        "feature_importance_method",
+    ]
+    strategy_summary = (
+        frame[strategy_columns]
+        .drop_duplicates()
+        .sort_values(["strategy_name", "source_subtype"])
+        .reset_index(drop=True)
+        .to_dict(orient="records")
+    )
     return {
         "row_count": int(len(frame)),
         "active_signal_count": int(frame["should_trade"].sum()),
         "active_signal_rate": float(frame["should_trade"].mean()) if not frame.empty else 0.0,
         "strategies": sorted(frame["strategy_name"].dropna().astype(str).unique().tolist()),
         "source_subtypes": sorted(frame["source_subtype"].dropna().astype(str).unique().tolist()),
+        "prediction_modes": sorted(frame["prediction_mode"].dropna().astype(str).unique().tolist()),
+        "calibration_methods": sorted(frame["calibration_method"].dropna().astype(str).unique().tolist()),
+        "feature_importance_methods": sorted(frame["feature_importance_method"].dropna().astype(str).unique().tolist()),
+        "threshold_objectives": sorted(frame["threshold_objective"].dropna().astype(str).unique().tolist()),
         "splits": frame["split"].value_counts().to_dict(),
         "directions": frame["suggested_direction"].value_counts().to_dict(),
+        "strategy_summary": strategy_summary,
     }
 
 

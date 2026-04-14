@@ -300,6 +300,8 @@ Additional metadata columns are now included for auditability, such as:
 - `feature_importance_method`
 - `prediction_mode`
 
+Those fields are no longer "baseline-only" metadata. They are now propagated into the standardized signal layer and then into backtest / robustness summaries, so later strategy comparisons can explain not just which baseline won, but which configuration decisions produced that result.
+
 ## Recommended Review Story
 
 When presenting the baseline layer, a clean narrative is:

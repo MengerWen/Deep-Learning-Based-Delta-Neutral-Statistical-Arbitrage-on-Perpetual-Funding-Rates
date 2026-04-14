@@ -25,21 +25,26 @@ def _make_temp_dir() -> Path:
 def _baseline_frame() -> pd.DataFrame:
     return pd.DataFrame(
         {
-            'timestamp': pd.date_range('2024-01-01', periods=2, freq='h', tz='UTC'),
-            'split': ['train', 'validation'],
-            'model_name': ['rule_a', 'logit_a'],
-            'model_family': ['rule_based', 'linear'],
-            'task': ['classification', 'classification'],
-            'signal_direction': ['short_perp_long_spot', 'short_perp_long_spot'],
-            'signal': [1, 0],
-            'decision_score': [1.5, 0.42],
-            'signal_threshold': [1.0, 0.5],
-            'signal_strength': [0.5, -0.08],
-            'predicted_probability': [None, 0.42],
-            'predicted_return_bps': [None, None],
-            'predicted_label': [1, 0],
-            'actual_label': [1, 0],
-            'actual_return_bps': [5.0, -3.0],
+            'timestamp': pd.date_range('2024-01-01', periods=3, freq='h', tz='UTC'),
+            'split': ['train', 'validation', 'test'],
+            'model_name': ['rule_a', 'logit_a', 'tree_reg_a'],
+            'model_family': ['rule_based', 'linear', 'tree'],
+            'task': ['classification', 'classification', 'regression'],
+            'signal_direction': ['short_perp_long_spot', 'short_perp_long_spot', 'short_perp_long_spot'],
+            'signal': [1, 0, 1],
+            'decision_score': [1.5, 0.42, 6.8],
+            'signal_threshold': [1.0, 0.5, 5.0],
+            'signal_strength': [0.5, -0.08, 1.8],
+            'predicted_probability': [None, 0.42, None],
+            'predicted_return_bps': [None, None, 6.8],
+            'predicted_label': [1, 0, 1],
+            'actual_label': [1, 0, 1],
+            'actual_return_bps': [5.0, -3.0, 4.5],
+            'selected_threshold_objective': ['avg_signal_return_bps', 'precision', 'avg_signal_return_bps'],
+            'calibration_method': ['none', 'sigmoid', 'none'],
+            'feature_importance_method': ['not_applicable', 'permutation_validation', 'permutation_validation'],
+            'prediction_mode': ['static', 'static', 'expanding'],
+            'selected_hyperparameters_json': ['{}', '{"c": 0.1}', '{"max_depth": 4}'],
         }
     )
 
@@ -101,9 +106,12 @@ def test_adapt_baseline_predictions_returns_rule_and_ml_subtypes() -> None:
     try:
         settings = _settings(tmp_dir, 'baseline')
         signals = adapt_baseline_predictions(settings)
-        assert set(signals['source_subtype'].tolist()) == {'baseline_ml', 'rule_based'}
+        assert set(signals['source_subtype'].tolist()) == {'baseline_linear', 'baseline_tree', 'rule_based'}
         assert signals.loc[signals['strategy_name'] == 'rule_a', 'suggested_direction'].iloc[0] == 'short_perp_long_spot'
         assert signals.loc[signals['strategy_name'] == 'logit_a', 'suggested_direction'].iloc[0] == 'flat'
+        assert signals.loc[signals['strategy_name'] == 'logit_a', 'calibration_method'].iloc[0] == 'sigmoid'
+        assert signals.loc[signals['strategy_name'] == 'tree_reg_a', 'prediction_mode'].iloc[0] == 'expanding'
+        assert float(signals.loc[signals['strategy_name'] == 'tree_reg_a', 'signal_threshold'].iloc[0]) == 5.0
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
@@ -133,12 +141,15 @@ def test_adapt_deep_learning_predictions_sets_expected_return_and_deep_learning_
 def test_run_signal_generation_writes_artifacts_and_manifest() -> None:
     tmp_dir = _make_temp_dir()
     try:
-        settings = _settings(tmp_dir, 'dl')
+        settings = _settings(tmp_dir, 'baseline')
         artifacts = run_signal_generation(settings)
-        manifest_path = tmp_dir / 'signals_out' / 'binance' / 'btcusdt' / '1h' / 'dl' / 'signals_manifest.json'
+        manifest_path = tmp_dir / 'signals_out' / 'binance' / 'btcusdt' / '1h' / 'baseline' / 'signals_manifest.json'
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
         assert artifacts.signals_path.endswith('signals.parquet')
         assert artifacts.signals_csv_path is not None
-        assert manifest['summary']['active_signal_count'] == 1
+        assert manifest['summary']['active_signal_count'] == 2
+        assert 'static' in manifest['summary']['prediction_modes']
+        assert 'sigmoid' in manifest['summary']['calibration_methods']
+        assert len(manifest['summary']['strategy_summary']) == 3
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)

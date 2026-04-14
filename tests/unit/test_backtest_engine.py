@@ -89,6 +89,15 @@ def test_realized_equity_curve_and_summary_metrics() -> None:
         equity_curve=equity_curve,
         trade_log=trade_log,
         initial_capital=100_000.0,
+        strategy_metadata={
+            "signal_threshold": 1.5,
+            "signal_threshold_mode": "constant",
+            "threshold_objective": "avg_signal_return_bps",
+            "prediction_mode": "static",
+            "calibration_method": "none",
+            "feature_importance_method": "not_applicable",
+            "selected_hyperparameters_json": "{}",
+        },
     )
 
     assert equity_curve["equity_usd"].tolist() == pytest.approx(
@@ -99,6 +108,9 @@ def test_realized_equity_curve_and_summary_metrics() -> None:
     assert summary["total_net_pnl_usd"] == pytest.approx(50.0)
     assert summary["cumulative_return"] == pytest.approx(0.0005)
     assert summary["final_equity_usd"] == pytest.approx(100_050.0)
+    assert summary["signal_threshold"] == pytest.approx(1.5)
+    assert summary["prediction_mode"] == "static"
+    assert summary["threshold_objective"] == "avg_signal_return_bps"
 
 
 def test_trade_return_boxplot_handles_empty_trade_log() -> None:

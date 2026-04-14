@@ -51,11 +51,31 @@ def _baseline_mode(source_name: str, configured_mode: str) -> str:
 def _baseline_subtype(model_family: str) -> str:
     if model_family == "rule_based":
         return "rule_based"
+    if model_family == "linear":
+        return "baseline_linear"
+    if model_family == "tree":
+        return "baseline_tree"
     return "baseline_ml"
+
+
+def _optional_column(frame: pd.DataFrame, column: str, default: Any) -> pd.Series:
+    if column in frame.columns:
+        return frame[column]
+    return pd.Series([default] * len(frame), index=frame.index)
 
 
 
 def _metadata_json(row: pd.Series, source_name: str, source_path: str) -> str:
+    def _safe_metadata_value(value: Any) -> Any:
+        if value is None:
+            return None
+        try:
+            if pd.isna(value):
+                return None
+        except TypeError:
+            return value
+        return value
+
     metadata = {
         "source_name": source_name,
         "source_path": source_path,
@@ -66,6 +86,11 @@ def _metadata_json(row: pd.Series, source_name: str, source_path: str) -> str:
         "predicted_probability": None if pd.isna(row.get("predicted_probability")) else float(row.get("predicted_probability")),
         "predicted_return_bps": None if pd.isna(row.get("predicted_return_bps")) else float(row.get("predicted_return_bps")),
         "predicted_label": None if pd.isna(row.get("predicted_label")) else int(row.get("predicted_label")),
+        "selected_threshold_objective": _safe_metadata_value(row.get("selected_threshold_objective")),
+        "prediction_mode": _safe_metadata_value(row.get("prediction_mode")),
+        "calibration_method": _safe_metadata_value(row.get("calibration_method")),
+        "feature_importance_method": _safe_metadata_value(row.get("feature_importance_method")),
+        "selected_hyperparameters_json": _safe_metadata_value(row.get("selected_hyperparameters_json")),
         "actual_label": None if pd.isna(row.get("actual_label")) else float(row.get("actual_label")),
         "actual_return_bps": None if pd.isna(row.get("actual_return_bps")) else float(row.get("actual_return_bps")),
     }
@@ -94,6 +119,12 @@ def _normalize_predictions(
             "signal_score": pd.to_numeric(frame["signal_strength"], errors="coerce"),
             "predicted_class": pd.to_numeric(frame["predicted_label"], errors="coerce"),
             "expected_return_bps": pd.to_numeric(frame["predicted_return_bps"], errors="coerce"),
+            "signal_threshold": pd.to_numeric(_optional_column(frame, "signal_threshold", np.nan), errors="coerce"),
+            "threshold_objective": _optional_column(frame, "selected_threshold_objective", None).astype(object),
+            "prediction_mode": _optional_column(frame, "prediction_mode", None).astype(object),
+            "calibration_method": _optional_column(frame, "calibration_method", None).astype(object),
+            "feature_importance_method": _optional_column(frame, "feature_importance_method", None).astype(object),
+            "selected_hyperparameters_json": _optional_column(frame, "selected_hyperparameters_json", "{}").fillna("{}").astype(str),
             "suggested_direction": np.where(
                 pd.to_numeric(frame["signal"], errors="coerce").fillna(0).astype(int) == 1,
                 frame["signal_direction"].fillna("flat").astype(str),

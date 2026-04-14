@@ -41,6 +41,11 @@ Required signal fields:
 - `signal_score`
 - `predicted_class`
 - `expected_return_bps`
+- `signal_threshold`
+- `threshold_objective`
+- `prediction_mode`
+- `calibration_method`
+- `feature_importance_method`
 - `suggested_direction`
 - `confidence`
 - `should_trade`
@@ -52,6 +57,11 @@ Required market fields:
 - `perp_open`, `perp_close`
 - `spot_open`, `spot_close`
 - `funding_rate`
+
+Important note for the upgraded baseline flow:
+
+- the backtester now preserves baseline-specific metadata such as `source_subtype`, selected threshold, prediction mode, calibration choice, and feature-importance method
+- these fields are written into trade logs and strategy summary tables so later robustness reports can compare not just "ML vs rules", but which baseline configuration actually produced the result
 
 ## Position Model
 
@@ -155,6 +165,15 @@ Key reported metrics:
 - trade count
 - turnover
 - total fees / gas / funding contribution
+
+For upgraded baseline runs, the summary tables also keep:
+
+- source subtype such as `rule_based`, `baseline_linear`, or `baseline_tree`
+- applied signal threshold
+- threshold-selection objective
+- prediction mode such as `static` or `expanding`
+- calibration method
+- feature-importance method
 
 ## Plots
 
