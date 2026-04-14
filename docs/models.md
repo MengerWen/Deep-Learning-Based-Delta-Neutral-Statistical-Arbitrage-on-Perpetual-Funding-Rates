@@ -2,11 +2,20 @@
 
 ## Purpose
 
-This module is the first sequence-modeling layer for the project. It is designed to answer a practical question:
+This module is the sequence-modeling research layer for the project. It is designed to answer a practical question:
 
 Can a small time-series model learn better post-cost opportunity signals from the engineered hourly feature set than simple rule-based and linear baselines?
 
-The implementation deliberately stays small, but it is no longer locked to one exact architecture. The current default is still `LSTM`, and a lightweight `GRU` option is now available through the same builder/CLI path.
+The implementation deliberately stays small, but it is no longer locked to one exact architecture.
+
+Phase 1 adds a compact model zoo while preserving:
+
+- the current `train-dl` CLI workflow
+- the current prediction artifact contract
+- the current signal/backtest integration path
+- the current time-series-safe dataset and normalization logic
+
+The current default is still `LSTM`. This phase does not yet add a full multi-model comparison experiment orchestrator; each model family is still run as its own experiment through its own config.
 
 ## Default Task Setup
 
@@ -31,18 +40,56 @@ Implemented sequence models:
 
 - `LSTMSequenceModel`
 - `GRUSequenceModel`
-- encoder: stacked LSTM with `batch_first=True`
-- representation: final hidden state from the last LSTM layer
-- head: dropout + linear projection to one scalar output
+- `TCNSequenceModel`
+- `TransformerEncoderSequenceModel`
 
-Default hyperparameters:
+Shared design:
+
+- one shared `SequenceDataset`
+- one shared training loop
+- one shared prediction output schema
+- one shared artifact/report/manifest structure
+- one dispatch-based model builder selected by `model.name`
+
+Family-specific summary:
+
+- `lstm`
+  Stacked recurrent encoder with final hidden state and scalar output head.
+- `gru`
+  Same overall interface as LSTM, but with a lighter recurrent cell.
+- `tcn`
+  Causal dilated Conv1d stack with compact residual blocks and final-step readout.
+- `transformer_encoder`
+  Input projection + sinusoidal positional encoding + causal encoder stack + scalar head.
+
+Default LSTM reference hyperparameters:
 
 - hidden size: `64`
 - layers: `2`
 - dropout: `0.1`
 - bidirectional: `false`
 
-The model builder is dispatch-based, so new sequence encoders can be added later without changing sequence construction, artifact format, or CLI usage.
+The model builder is dispatch-based, so model-family expansion does not require changes to sequence construction, artifact format, or CLI usage.
+
+## Practical Trade-Offs
+
+### LSTM vs GRU
+
+- `LSTM`
+  More expressive gating and the most established reference point in this repository.
+- `GRU`
+  Fewer parameters and often easier to train, which can be attractive when the edge is weak and the dataset is not huge.
+
+### Recurrent vs TCN
+
+- recurrent models summarize history step by step and are a natural fit for ordered funding/basis regimes
+- `TCN` is more parallelizable and often trains stably, but it relies on a finite convolutional receptive field rather than recurrent memory
+
+### Transformer under limited financial data
+
+- `transformer_encoder` can model flexible long-range interactions inside the lookback window
+- but it is also the easiest family here to overfit or become unnecessarily heavy on a modest hourly research dataset
+- for this course project, it should be treated as a compact benchmark, not as a claim that “bigger attention models are automatically better”
 
 ## Training and Selection Logic
 
@@ -98,6 +145,8 @@ The deep-learning data path is intentionally conservative:
 - missing and infinite values are handled before tensor conversion
 - validation and test sequences use earlier historical rows only
 - no future labels or future features are exposed to the model
+- TCN uses left-padding-only causal convolutions
+- TransformerEncoder uses an explicit causal attention mask
 
 By default, `allow_cross_split_context = true`. This means a validation or test target may use preceding historical rows from earlier splits as context. This is intentional and realistic: when we score a later time, we do know the earlier market history.
 
@@ -157,9 +206,17 @@ Additional metadata columns now include:
 
 - `selected_hyperparameters_json`
 - `selected_threshold_objective`
+- `selected_threshold_objective_value`
 - `calibration_method`
 - `feature_importance_method`
 - `prediction_mode`
+- `checkpoint_selection_metric`
+- `checkpoint_selection_effective_metric`
+- `checkpoint_selection_fallback_used`
+- `selected_loss`
+- `preprocessing_scaler`
+
+These fields are carried forward so the signal layer, backtest engine, and robustness report can explain not only model performance, but also how the saved deep-learning checkpoint was selected and preprocessed.
 
 For regression:
 
@@ -179,18 +236,37 @@ Unified CLI:
 & 'd:\MG\anaconda3\python.exe' -m src.main train-dl --config configs/models/lstm.yaml
 ```
 
+Other model-family configs:
+
+```powershell
+& 'd:\MG\anaconda3\python.exe' -m src.main train-dl --config configs/models/gru.yaml
+& 'd:\MG\anaconda3\python.exe' -m src.main train-dl --config configs/models/tcn.yaml
+& 'd:\MG\anaconda3\python.exe' -m src.main train-dl --config configs/models/transformer.yaml
+```
+
 Wrapper script:
 
 ```powershell
 & 'd:\MG\anaconda3\python.exe' scripts\models\train_dl.py --config configs/models/lstm.yaml
 ```
 
+Important configs for Phase 1:
+
+- [lstm.yaml](../configs/models/lstm.yaml)
+  Default reference recurrent experiment.
+- [gru.yaml](../configs/models/gru.yaml)
+  Lighter recurrent benchmark.
+- [tcn.yaml](../configs/models/tcn.yaml)
+  Compact convolutional sequence benchmark.
+- [transformer.yaml](../configs/models/transformer.yaml)
+  Compact causal attention benchmark.
+
 ## How It Differs From Baselines
 
 Baseline models treat each timestamp mostly as an independent row after feature engineering.
-The LSTM instead learns from ordered windows of feature history.
+The sequence models instead learn from ordered windows of feature history.
 
-In practice, that means the LSTM can model:
+In practice, that means the sequence-model family can model:
 
 - short-term temporal persistence in funding and basis behavior
 - multi-hour build-up and unwind patterns
@@ -198,8 +274,8 @@ In practice, that means the LSTM can model:
 
 At the same time, the current implementation remains lightweight:
 
-- one model family
-- one target at a time
+- one compact model zoo
+- one target at a time per run
 - no distributed training
 - no experiment server
 - no complex scheduler stack
@@ -235,4 +311,4 @@ Groups are taken from the feature manifest when available, and otherwise inferre
 - This first version uses only engineered tabular features arranged into sequences; it does not yet include raw order-book or multi-asset sequence inputs.
 - Tuning support is intentionally lightweight and disabled by default because full deep time-series hyperparameter search can become expensive quickly.
 - Walk-forward mode is available, but the exported checkpoint still refers to the base train/validation model rather than every refit chunk.
-- Transformer support is still not implemented.
+- Phase 1 only adds model families and per-model configs. It does not yet add a full multi-model comparison workflow or automated tournament-style reporting across all DL families.

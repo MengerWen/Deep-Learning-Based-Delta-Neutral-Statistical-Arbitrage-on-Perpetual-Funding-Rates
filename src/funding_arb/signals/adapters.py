@@ -87,10 +87,22 @@ def _metadata_json(row: pd.Series, source_name: str, source_path: str) -> str:
         "predicted_return_bps": None if pd.isna(row.get("predicted_return_bps")) else float(row.get("predicted_return_bps")),
         "predicted_label": None if pd.isna(row.get("predicted_label")) else int(row.get("predicted_label")),
         "selected_threshold_objective": _safe_metadata_value(row.get("selected_threshold_objective")),
+        "selected_threshold_objective_value": _safe_metadata_value(row.get("selected_threshold_objective_value")),
         "prediction_mode": _safe_metadata_value(row.get("prediction_mode")),
         "calibration_method": _safe_metadata_value(row.get("calibration_method")),
         "feature_importance_method": _safe_metadata_value(row.get("feature_importance_method")),
         "selected_hyperparameters_json": _safe_metadata_value(row.get("selected_hyperparameters_json")),
+        "checkpoint_selection_metric": _safe_metadata_value(row.get("checkpoint_selection_metric")),
+        "best_checkpoint_metric_value": _safe_metadata_value(row.get("best_checkpoint_metric_value")),
+        "checkpoint_selection_effective_metric": _safe_metadata_value(row.get("checkpoint_selection_effective_metric")),
+        "best_checkpoint_effective_metric_value": _safe_metadata_value(row.get("best_checkpoint_effective_metric_value")),
+        "checkpoint_selection_fallback_used": _safe_metadata_value(row.get("checkpoint_selection_fallback_used")),
+        "selected_loss": _safe_metadata_value(row.get("selected_loss")),
+        "regression_loss": _safe_metadata_value(row.get("regression_loss")),
+        "use_balanced_classification_loss": _safe_metadata_value(row.get("use_balanced_classification_loss")),
+        "preprocessing_scaler": _safe_metadata_value(row.get("preprocessing_scaler")),
+        "winsorize_lower_quantile": _safe_metadata_value(row.get("winsorize_lower_quantile")),
+        "winsorize_upper_quantile": _safe_metadata_value(row.get("winsorize_upper_quantile")),
         "actual_label": None if pd.isna(row.get("actual_label")) else float(row.get("actual_label")),
         "actual_return_bps": None if pd.isna(row.get("actual_return_bps")) else float(row.get("actual_return_bps")),
     }
@@ -121,10 +133,40 @@ def _normalize_predictions(
             "expected_return_bps": pd.to_numeric(frame["predicted_return_bps"], errors="coerce"),
             "signal_threshold": pd.to_numeric(_optional_column(frame, "signal_threshold", np.nan), errors="coerce"),
             "threshold_objective": _optional_column(frame, "selected_threshold_objective", None).astype(object),
+            "selected_threshold_objective_value": pd.to_numeric(
+                _optional_column(frame, "selected_threshold_objective_value", np.nan), errors="coerce"
+            ),
             "prediction_mode": _optional_column(frame, "prediction_mode", None).astype(object),
             "calibration_method": _optional_column(frame, "calibration_method", None).astype(object),
             "feature_importance_method": _optional_column(frame, "feature_importance_method", None).astype(object),
             "selected_hyperparameters_json": _optional_column(frame, "selected_hyperparameters_json", "{}").fillna("{}").astype(str),
+            "checkpoint_selection_metric": _optional_column(frame, "checkpoint_selection_metric", None).astype(object),
+            "best_checkpoint_metric_value": pd.to_numeric(
+                _optional_column(frame, "best_checkpoint_metric_value", np.nan), errors="coerce"
+            ),
+            "checkpoint_selection_effective_metric": _optional_column(frame, "checkpoint_selection_effective_metric", None).astype(object),
+            "best_checkpoint_effective_metric_value": pd.to_numeric(
+                _optional_column(frame, "best_checkpoint_effective_metric_value", np.nan), errors="coerce"
+            ),
+            "checkpoint_selection_fallback_used": pd.Series(
+                _optional_column(frame, "checkpoint_selection_fallback_used", False),
+                index=frame.index,
+                dtype="boolean",
+            ).fillna(False).astype(bool),
+            "selected_loss": _optional_column(frame, "selected_loss", None).astype(object),
+            "regression_loss": _optional_column(frame, "regression_loss", None).astype(object),
+            "use_balanced_classification_loss": pd.Series(
+                _optional_column(frame, "use_balanced_classification_loss", False),
+                index=frame.index,
+                dtype="boolean",
+            ).fillna(False).astype(bool),
+            "preprocessing_scaler": _optional_column(frame, "preprocessing_scaler", None).astype(object),
+            "winsorize_lower_quantile": pd.to_numeric(
+                _optional_column(frame, "winsorize_lower_quantile", np.nan), errors="coerce"
+            ),
+            "winsorize_upper_quantile": pd.to_numeric(
+                _optional_column(frame, "winsorize_upper_quantile", np.nan), errors="coerce"
+            ),
             "suggested_direction": np.where(
                 pd.to_numeric(frame["signal"], errors="coerce").fillna(0).astype(int) == 1,
                 frame["signal_direction"].fillna("flat").astype(str),

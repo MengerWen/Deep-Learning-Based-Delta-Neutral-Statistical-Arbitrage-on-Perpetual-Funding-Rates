@@ -86,3 +86,40 @@ def test_annotate_metrics_preserves_baseline_strategy_metadata() -> None:
     assert annotated["family_name"].iloc[0] == "baseline_ml"
     assert annotated["source_subtype"].iloc[0] == "baseline_linear"
     assert annotated["strategy_detail_label"].iloc[0] == "baseline_linear | expanding | thr=4.5"
+
+
+def test_annotate_metrics_includes_deep_learning_strategy_metadata() -> None:
+    metrics = pd.DataFrame(
+        {
+            "strategy_name": ["lstm"],
+            "source_subtype": ["deep_learning"],
+            "prediction_mode": ["rolling"],
+            "calibration_method": ["none"],
+            "signal_threshold": [0.0],
+            "checkpoint_selection_effective_metric": ["validation_loss"],
+            "checkpoint_selection_fallback_used": [True],
+            "selected_loss": ["huber"],
+            "preprocessing_scaler": ["robust"],
+            "cumulative_return": [0.01],
+            "trade_count": [4],
+        }
+    )
+    family = RobustnessFamilySettings(
+        name="deep_learning",
+        label="Deep Learning Model",
+        source_name="dl",
+    )
+
+    annotated = _annotate_metrics(
+        metrics,
+        experiment="family_comparison",
+        family=family,
+        scenario_name="base",
+        scenario_order=1,
+        run_name="family_comparison_deep_learning_base",
+        scenario_params={"scenario_label": "base"},
+    )
+
+    assert annotated["strategy_detail_label"].iloc[0] == (
+        "deep_learning | rolling | thr=0 | loss=huber | ckpt=validation_loss | scale=robust | fallback"
+    )

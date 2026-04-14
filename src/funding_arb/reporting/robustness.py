@@ -138,6 +138,26 @@ def _safe_text(value: Any) -> str | None:
     return text or None
 
 
+def _safe_bool(value: Any) -> bool | None:
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except TypeError:
+        pass
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    text = str(value).strip().lower()
+    if text in {"true", "1", "yes"}:
+        return True
+    if text in {"false", "0", "no"}:
+        return False
+    return None
+
+
 def _strategy_detail_label(row: pd.Series) -> str:
     parts: list[str] = []
     source_subtype = _safe_text(row.get("source_subtype"))
@@ -152,6 +172,18 @@ def _strategy_detail_label(row: pd.Series) -> str:
     signal_threshold = pd.to_numeric(pd.Series([row.get("signal_threshold")]), errors="coerce").iloc[0]
     if pd.notna(signal_threshold):
         parts.append(f"thr={float(signal_threshold):.4g}")
+    selected_loss = _safe_text(row.get("selected_loss"))
+    if selected_loss:
+        parts.append(f"loss={selected_loss}")
+    effective_metric = _safe_text(row.get("checkpoint_selection_effective_metric"))
+    if effective_metric:
+        parts.append(f"ckpt={effective_metric}")
+    preprocessing_scaler = _safe_text(row.get("preprocessing_scaler"))
+    if preprocessing_scaler:
+        parts.append(f"scale={preprocessing_scaler}")
+    fallback_used = _safe_bool(row.get("checkpoint_selection_fallback_used"))
+    if fallback_used:
+        parts.append("fallback")
     return " | ".join(parts) if parts else "n/a"
 
 
@@ -709,6 +741,17 @@ def _build_summary_json(
         "signal_threshold",
         "threshold_objective",
         "feature_importance_method",
+        "checkpoint_selection_metric",
+        "best_checkpoint_metric_value",
+        "checkpoint_selection_effective_metric",
+        "best_checkpoint_effective_metric_value",
+        "checkpoint_selection_fallback_used",
+        "selected_loss",
+        "regression_loss",
+        "use_balanced_classification_loss",
+        "preprocessing_scaler",
+        "winsorize_lower_quantile",
+        "winsorize_upper_quantile",
     ]
     summary: dict[str, Any] = {
         "ranking_metric": ranking_metric,
@@ -810,7 +853,7 @@ def _build_markdown_report(
 - Cost and holding-window sweeps reuse the same standardized signals and the same backtest engine, so the accounting logic stays identical to the main strategy evaluation.
 - Rule-threshold sensitivity is implemented by tightening or relaxing `min_signal_score` in the standardized rule-based signal layer. This measures robustness to stronger or weaker entry confidence, not a full redefinition of the raw heuristic itself.
 - Feature ablation retrains only predictive baselines and the deep-learning model, regenerates their signals, and reruns the same backtest logic. Rule-based heuristics are excluded from ablation because they do not consume the engineered feature matrix.
-- The comparison tables preserve baseline-specific metadata such as `source_subtype`, `prediction_mode`, `calibration_method`, `signal_threshold`, and `threshold_objective`, so the report stays aligned with the upgraded baseline pipeline rather than collapsing everything into one generic ML bucket.
+- The comparison tables preserve model-family metadata such as `source_subtype`, `prediction_mode`, `calibration_method`, `signal_threshold`, `threshold_objective`, checkpoint-selection fields, and loss/preprocessing settings, so upgraded baseline and deep-learning runs can be compared without collapsing everything into one generic ML bucket.
 
 ## Family Comparison
 

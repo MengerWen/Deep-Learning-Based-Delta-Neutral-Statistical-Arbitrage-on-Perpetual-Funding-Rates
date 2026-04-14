@@ -89,6 +89,12 @@ After the baseline upgrade, the robustness tables also preserve the strategy con
   Shows the threshold that actually converted scores into traded signals.
 - `threshold_objective`
   Shows which validation objective selected that threshold.
+- `checkpoint_selection_effective_metric`
+  Shows how the saved checkpoint was actually chosen after any fallback logic.
+- `selected_loss`
+  Shows the penalized linear or deep-learning loss that produced the saved model.
+- `preprocessing_scaler`
+  Shows whether the upstream predictive pipeline used standard or robust scaling.
 
 ## File / Module Ownership
 

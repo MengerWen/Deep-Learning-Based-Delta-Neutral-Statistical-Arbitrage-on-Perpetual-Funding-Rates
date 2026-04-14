@@ -76,9 +76,16 @@ def _signal_summary(frame: pd.DataFrame) -> dict[str, Any]:
         "task",
         "signal_threshold",
         "threshold_objective",
+        "selected_threshold_objective_value",
         "prediction_mode",
         "calibration_method",
         "feature_importance_method",
+        "checkpoint_selection_metric",
+        "checkpoint_selection_effective_metric",
+        "checkpoint_selection_fallback_used",
+        "selected_loss",
+        "regression_loss",
+        "preprocessing_scaler",
     ]
     strategy_summary = (
         frame[strategy_columns]
@@ -97,6 +104,14 @@ def _signal_summary(frame: pd.DataFrame) -> dict[str, Any]:
         "calibration_methods": sorted(frame["calibration_method"].dropna().astype(str).unique().tolist()),
         "feature_importance_methods": sorted(frame["feature_importance_method"].dropna().astype(str).unique().tolist()),
         "threshold_objectives": sorted(frame["threshold_objective"].dropna().astype(str).unique().tolist()),
+        "checkpoint_selection_metrics": sorted(frame["checkpoint_selection_metric"].dropna().astype(str).unique().tolist()),
+        "checkpoint_selection_effective_metrics": sorted(
+            frame["checkpoint_selection_effective_metric"].dropna().astype(str).unique().tolist()
+        ),
+        "selected_losses": sorted(frame["selected_loss"].dropna().astype(str).unique().tolist()),
+        "regression_losses": sorted(frame["regression_loss"].dropna().astype(str).unique().tolist()),
+        "preprocessing_scalers": sorted(frame["preprocessing_scaler"].dropna().astype(str).unique().tolist()),
+        "checkpoint_selection_fallback_count": int(frame["checkpoint_selection_fallback_used"].fillna(False).astype(bool).sum()),
         "splits": frame["split"].value_counts().to_dict(),
         "directions": frame["suggested_direction"].value_counts().to_dict(),
         "strategy_summary": strategy_summary,

@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 import torch
 from torch import nn
+from torch.nn import functional as F
 from torch.optim import Adam
 from torch.utils.data import DataLoader, Dataset
 
@@ -163,6 +164,197 @@ class GRUSequenceModel(nn.Module):
             encoded = torch.cat([hidden_state[-2], hidden_state[-1]], dim=1)
         else:
             encoded = hidden_state[-1]
+        return self.head(self.dropout(encoded)).squeeze(-1)
+
+
+class CausalConv1d(nn.Module):
+    """One-dimensional convolution with left padding only so time remains causal."""
+
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int,
+        *,
+        dilation: int,
+    ) -> None:
+        super().__init__()
+        self.left_padding = (kernel_size - 1) * dilation
+        self.conv = nn.Conv1d(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            dilation=dilation,
+        )
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        padded = F.pad(inputs, (self.left_padding, 0))
+        return self.conv(padded)
+
+
+class TCNResidualBlock(nn.Module):
+    """Compact residual TCN block with causal dilated convolutions."""
+
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        *,
+        kernel_size: int,
+        dilation: int,
+        dropout: float,
+        use_residual: bool,
+    ) -> None:
+        super().__init__()
+        self.conv1 = CausalConv1d(
+            in_channels,
+            out_channels,
+            kernel_size,
+            dilation=dilation,
+        )
+        self.conv2 = CausalConv1d(
+            out_channels,
+            out_channels,
+            kernel_size,
+            dilation=dilation,
+        )
+        self.activation = nn.GELU()
+        self.dropout = nn.Dropout(dropout)
+        self.residual = (
+            nn.Conv1d(in_channels, out_channels, kernel_size=1)
+            if use_residual and in_channels != out_channels
+            else nn.Identity()
+        )
+        self.use_residual = use_residual
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        residual = self.residual(inputs)
+        outputs = self.conv1(inputs)
+        outputs = self.activation(outputs)
+        outputs = self.dropout(outputs)
+        outputs = self.conv2(outputs)
+        outputs = self.activation(outputs)
+        outputs = self.dropout(outputs)
+        if self.use_residual:
+            outputs = outputs + residual
+        return outputs
+
+
+class TCNSequenceModel(nn.Module):
+    """Lightweight causal temporal convolution network with a scalar output head."""
+
+    def __init__(
+        self,
+        input_size: int,
+        hidden_channels: int,
+        num_blocks: int,
+        kernel_size: int,
+        dilation_base: int,
+        dropout: float,
+        use_residual: bool,
+    ) -> None:
+        super().__init__()
+        blocks: list[nn.Module] = []
+        in_channels = input_size
+        for block_index in range(num_blocks):
+            dilation = int(dilation_base ** block_index)
+            blocks.append(
+                TCNResidualBlock(
+                    in_channels=in_channels,
+                    out_channels=hidden_channels,
+                    kernel_size=kernel_size,
+                    dilation=dilation,
+                    dropout=dropout,
+                    use_residual=use_residual,
+                )
+            )
+            in_channels = hidden_channels
+        self.network = nn.ModuleList(blocks)
+        self.dropout = nn.Dropout(dropout)
+        self.head = nn.Linear(hidden_channels, 1)
+
+    def encode_sequence(self, inputs: torch.Tensor) -> torch.Tensor:
+        outputs = inputs.transpose(1, 2)
+        for block in self.network:
+            outputs = block(outputs)
+        return outputs.transpose(1, 2)
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        encoded_sequence = self.encode_sequence(inputs)
+        encoded = encoded_sequence[:, -1, :]
+        return self.head(self.dropout(encoded)).squeeze(-1)
+
+
+def _sinusoidal_positional_encoding(
+    sequence_length: int,
+    d_model: int,
+    *,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> torch.Tensor:
+    positions = torch.arange(sequence_length, device=device, dtype=dtype).unsqueeze(1)
+    div_terms = torch.exp(
+        torch.arange(0, d_model, 2, device=device, dtype=dtype)
+        * (-math.log(10_000.0) / max(d_model, 1))
+    )
+    encoding = torch.zeros(sequence_length, d_model, device=device, dtype=dtype)
+    encoding[:, 0::2] = torch.sin(positions * div_terms)
+    encoding[:, 1::2] = torch.cos(positions * div_terms[: encoding[:, 1::2].shape[1]])
+    return encoding.unsqueeze(0)
+
+
+class TransformerEncoderSequenceModel(nn.Module):
+    """Compact causal TransformerEncoder with final-token or mean pooling."""
+
+    def __init__(
+        self,
+        input_size: int,
+        d_model: int,
+        nhead: int,
+        num_layers: int,
+        dim_feedforward: int,
+        dropout: float,
+        pooling: str,
+    ) -> None:
+        super().__init__()
+        self.pooling = pooling
+        self.input_projection = nn.Linear(input_size, d_model)
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=d_model,
+            nhead=nhead,
+            dim_feedforward=dim_feedforward,
+            dropout=dropout,
+            activation="gelu",
+            batch_first=True,
+        )
+        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+        self.dropout = nn.Dropout(dropout)
+        self.head = nn.Linear(d_model, 1)
+
+    @staticmethod
+    def causal_mask(sequence_length: int, device: torch.device) -> torch.Tensor:
+        return torch.triu(
+            torch.ones(sequence_length, sequence_length, device=device, dtype=torch.bool),
+            diagonal=1,
+        )
+
+    def encode_sequence(self, inputs: torch.Tensor) -> torch.Tensor:
+        projected = self.input_projection(inputs)
+        projected = projected + _sinusoidal_positional_encoding(
+            projected.shape[1],
+            projected.shape[2],
+            device=projected.device,
+            dtype=projected.dtype,
+        )
+        mask = self.causal_mask(projected.shape[1], projected.device)
+        return self.encoder(projected, mask=mask)
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        encoded_sequence = self.encode_sequence(inputs)
+        if self.pooling == "mean":
+            encoded = encoded_sequence.mean(dim=1)
+        else:
+            encoded = encoded_sequence[:, -1, :]
         return self.head(self.dropout(encoded)).squeeze(-1)
 
 
@@ -423,8 +615,29 @@ def build_sequence_model(input_size: int, settings: DeepLearningSettings) -> nn.
         return LSTMSequenceModel(**common_kwargs)
     if model_name == "gru":
         return GRUSequenceModel(**common_kwargs)
+    if model_name == "tcn":
+        return TCNSequenceModel(
+            input_size=input_size,
+            hidden_channels=settings.model.tcn_hidden_channels,
+            num_blocks=settings.model.tcn_num_blocks,
+            kernel_size=settings.model.tcn_kernel_size,
+            dilation_base=settings.model.tcn_dilation_base,
+            dropout=settings.model.dropout,
+            use_residual=settings.model.tcn_use_residual,
+        )
+    if model_name == "transformer_encoder":
+        return TransformerEncoderSequenceModel(
+            input_size=input_size,
+            d_model=settings.model.transformer_d_model,
+            nhead=settings.model.transformer_nhead,
+            num_layers=settings.model.transformer_num_layers,
+            dim_feedforward=settings.model.transformer_dim_feedforward,
+            dropout=settings.model.dropout,
+            pooling=settings.model.transformer_pooling,
+        )
     raise ValueError(
-        f"Unsupported deep-learning model '{settings.model.name}'. Supported models: 'lstm', 'gru'."
+        "Unsupported deep-learning model "
+        f"'{settings.model.name}'. Supported models: 'lstm', 'gru', 'tcn', 'transformer_encoder'."
     )
 
 
@@ -836,6 +1049,46 @@ def _save_frame_if_not_empty(frame: pd.DataFrame, path: Path) -> str | None:
     return str(path)
 
 
+def _selected_hyperparameters(settings: DeepLearningSettings) -> dict[str, Any]:
+    selected = {
+        "lookback_steps": settings.sequence.lookback_steps,
+        "learning_rate": settings.training.learning_rate,
+        "weight_decay": settings.training.weight_decay,
+        "batch_size": settings.training.batch_size,
+        "model_name": settings.model.name,
+        "dropout": settings.model.dropout,
+    }
+    if settings.model.name in {"lstm", "gru"}:
+        selected.update(
+            {
+                "hidden_size": settings.model.hidden_size,
+                "num_layers": settings.model.num_layers,
+                "bidirectional": settings.model.bidirectional,
+            }
+        )
+    elif settings.model.name == "tcn":
+        selected.update(
+            {
+                "tcn_hidden_channels": settings.model.tcn_hidden_channels,
+                "tcn_num_blocks": settings.model.tcn_num_blocks,
+                "tcn_kernel_size": settings.model.tcn_kernel_size,
+                "tcn_dilation_base": settings.model.tcn_dilation_base,
+                "tcn_use_residual": settings.model.tcn_use_residual,
+            }
+        )
+    elif settings.model.name == "transformer_encoder":
+        selected.update(
+            {
+                "transformer_d_model": settings.model.transformer_d_model,
+                "transformer_nhead": settings.model.transformer_nhead,
+                "transformer_num_layers": settings.model.transformer_num_layers,
+                "transformer_dim_feedforward": settings.model.transformer_dim_feedforward,
+                "transformer_pooling": settings.model.transformer_pooling,
+            }
+        )
+    return selected
+
+
 def _build_trial_settings(
     settings: DeepLearningSettings,
     candidate: dict[str, Any],
@@ -852,6 +1105,24 @@ def _build_trial_settings(
         trial.model.num_layers = int(candidate["num_layers"])
     if "dropout" in candidate:
         trial.model.dropout = float(candidate["dropout"])
+    if "tcn_hidden_channels" in candidate:
+        trial.model.tcn_hidden_channels = int(candidate["tcn_hidden_channels"])
+    if "tcn_num_blocks" in candidate:
+        trial.model.tcn_num_blocks = int(candidate["tcn_num_blocks"])
+    if "tcn_kernel_size" in candidate:
+        trial.model.tcn_kernel_size = int(candidate["tcn_kernel_size"])
+    if "tcn_dilation_base" in candidate:
+        trial.model.tcn_dilation_base = int(candidate["tcn_dilation_base"])
+    if "transformer_d_model" in candidate:
+        trial.model.transformer_d_model = int(candidate["transformer_d_model"])
+    if "transformer_nhead" in candidate:
+        trial.model.transformer_nhead = int(candidate["transformer_nhead"])
+    if "transformer_num_layers" in candidate:
+        trial.model.transformer_num_layers = int(candidate["transformer_num_layers"])
+    if "transformer_dim_feedforward" in candidate:
+        trial.model.transformer_dim_feedforward = int(candidate["transformer_dim_feedforward"])
+    if "transformer_pooling" in candidate:
+        trial.model.transformer_pooling = str(candidate["transformer_pooling"])
     if "learning_rate" in candidate:
         trial.training.learning_rate = float(candidate["learning_rate"])
     if "weight_decay" in candidate:
@@ -1569,16 +1840,7 @@ def run_deep_learning_pipeline(settings: DeepLearningSettings) -> DeepLearningAr
         raise ValueError("No validation sequences were generated for the configured deep-learning task.")
 
     fit_row_indices = list(range(0, max(sample_indices["train"]) + 1))
-    selected_hyperparameters = {
-        "lookback_steps": effective_settings.sequence.lookback_steps,
-        "hidden_size": effective_settings.model.hidden_size,
-        "num_layers": effective_settings.model.num_layers,
-        "dropout": effective_settings.model.dropout,
-        "learning_rate": effective_settings.training.learning_rate,
-        "weight_decay": effective_settings.training.weight_decay,
-        "batch_size": effective_settings.training.batch_size,
-        "model_name": effective_settings.model.name,
-    }
+    selected_hyperparameters = _selected_hyperparameters(effective_settings)
     fit_result = _fit_model_for_indices(
         frame,
         feature_columns,
@@ -1686,24 +1948,34 @@ def run_deep_learning_pipeline(settings: DeepLearningSettings) -> DeepLearningAr
             selected_hyperparameters=selected_hyperparameters,
         )
 
-    metrics = evaluate_prediction_table(
-        predictions,
-        top_quantile=effective_settings.threshold_search.top_quantile,
-    )
-    metadata_columns = {
+    prediction_metadata_columns = {
         "selected_threshold": fit_result["best_threshold"],
+        "selected_threshold_objective": effective_settings.threshold_search.objective if effective_settings.threshold_search.enabled else None,
+        "selected_threshold_objective_value": fit_result["best_threshold_objective_value"],
         "threshold_objective": effective_settings.threshold_search.objective if effective_settings.threshold_search.enabled else None,
         "checkpoint_selection_metric": effective_settings.training.selection_metric,
         "best_checkpoint_metric_value": fit_result["best_selection_value"],
         "checkpoint_selection_effective_metric": fit_result["best_selection_effective_metric"],
         "best_checkpoint_effective_metric_value": fit_result["best_selection_effective_value"],
         "checkpoint_selection_fallback_used": fit_result["best_selection_fallback_used"],
+        "selected_loss": fit_result["loss_metadata"].get("loss_name"),
         "prediction_mode": effective_settings.prediction.mode,
         "regression_loss": effective_settings.training.regression_loss if effective_settings.target.task == "regression" else None,
         "use_balanced_classification_loss": effective_settings.training.use_balanced_classification_loss if effective_settings.target.task == "classification" else None,
         "preprocessing_scaler": effective_settings.preprocessing.scaler,
         "winsorize_lower_quantile": effective_settings.preprocessing.winsorize_lower_quantile,
         "winsorize_upper_quantile": effective_settings.preprocessing.winsorize_upper_quantile,
+    }
+    for column, value in prediction_metadata_columns.items():
+        predictions[column] = value
+
+    metrics = evaluate_prediction_table(
+        predictions,
+        top_quantile=effective_settings.threshold_search.top_quantile,
+    )
+    metadata_columns = {
+        **prediction_metadata_columns,
+        "threshold_objective": effective_settings.threshold_search.objective if effective_settings.threshold_search.enabled else None,
     }
     for column, value in metadata_columns.items():
         metrics[column] = value

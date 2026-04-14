@@ -34,10 +34,22 @@ PERIODS_PER_YEAR_1H = 24 * 365
 OPTIONAL_SIGNAL_DEFAULTS = {
     "signal_threshold": np.nan,
     "threshold_objective": None,
+    "selected_threshold_objective_value": np.nan,
     "prediction_mode": None,
     "calibration_method": None,
     "feature_importance_method": None,
     "selected_hyperparameters_json": "{}",
+    "checkpoint_selection_metric": None,
+    "best_checkpoint_metric_value": np.nan,
+    "checkpoint_selection_effective_metric": None,
+    "best_checkpoint_effective_metric_value": np.nan,
+    "checkpoint_selection_fallback_used": False,
+    "selected_loss": None,
+    "regression_loss": None,
+    "use_balanced_classification_loss": False,
+    "preprocessing_scaler": None,
+    "winsorize_lower_quantile": np.nan,
+    "winsorize_upper_quantile": np.nan,
 }
 
 
@@ -76,10 +88,22 @@ class OpenPosition:
     expected_return_bps: float | None
     signal_threshold: float | None
     threshold_objective: str | None
+    selected_threshold_objective_value: float | None
     prediction_mode: str | None
     calibration_method: str | None
     feature_importance_method: str | None
     selected_hyperparameters_json: str
+    checkpoint_selection_metric: str | None
+    best_checkpoint_metric_value: float | None
+    checkpoint_selection_effective_metric: str | None
+    best_checkpoint_effective_metric_value: float | None
+    checkpoint_selection_fallback_used: bool | None
+    selected_loss: str | None
+    regression_loss: str | None
+    use_balanced_classification_loss: bool | None
+    preprocessing_scaler: str | None
+    winsorize_lower_quantile: float | None
+    winsorize_upper_quantile: float | None
     confidence: float | None
     metadata_json: str
     direction: str
@@ -207,6 +231,26 @@ def _safe_text(value: Any) -> str | None:
     return text or None
 
 
+def _safe_bool(value: Any) -> bool | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    try:
+        if pd.isna(value):
+            return None
+    except TypeError:
+        pass
+    if isinstance(value, (int, np.integer)):
+        return bool(value)
+    text = str(value).strip().lower()
+    if text in {"true", "1", "yes"}:
+        return True
+    if text in {"false", "0", "no"}:
+        return False
+    return None
+
+
 def _constant_signal_value(values: pd.Series) -> Any:
     non_null = values.dropna()
     if non_null.empty:
@@ -227,16 +271,38 @@ def _signal_threshold_metadata(values: pd.Series) -> tuple[float | None, str]:
     return None, "varying"
 
 
+def _constant_numeric_value(values: pd.Series) -> float | None:
+    numeric = pd.to_numeric(values, errors="coerce").dropna()
+    if numeric.empty:
+        return None
+    rounded = pd.unique(numeric.round(10))
+    if len(rounded) == 1:
+        return float(rounded[0])
+    return None
+
+
 def _strategy_signal_metadata(strategy_frame: pd.DataFrame) -> dict[str, Any]:
     signal_threshold, signal_threshold_mode = _signal_threshold_metadata(strategy_frame["signal_threshold"])
     return {
         "signal_threshold": signal_threshold,
         "signal_threshold_mode": signal_threshold_mode,
         "threshold_objective": _safe_text(_constant_signal_value(strategy_frame["threshold_objective"])),
+        "selected_threshold_objective_value": _constant_numeric_value(strategy_frame["selected_threshold_objective_value"]),
         "prediction_mode": _safe_text(_constant_signal_value(strategy_frame["prediction_mode"])),
         "calibration_method": _safe_text(_constant_signal_value(strategy_frame["calibration_method"])),
         "feature_importance_method": _safe_text(_constant_signal_value(strategy_frame["feature_importance_method"])),
         "selected_hyperparameters_json": _safe_text(_constant_signal_value(strategy_frame["selected_hyperparameters_json"])),
+        "checkpoint_selection_metric": _safe_text(_constant_signal_value(strategy_frame["checkpoint_selection_metric"])),
+        "best_checkpoint_metric_value": _constant_numeric_value(strategy_frame["best_checkpoint_metric_value"]),
+        "checkpoint_selection_effective_metric": _safe_text(_constant_signal_value(strategy_frame["checkpoint_selection_effective_metric"])),
+        "best_checkpoint_effective_metric_value": _constant_numeric_value(strategy_frame["best_checkpoint_effective_metric_value"]),
+        "checkpoint_selection_fallback_used": _safe_bool(_constant_signal_value(strategy_frame["checkpoint_selection_fallback_used"])),
+        "selected_loss": _safe_text(_constant_signal_value(strategy_frame["selected_loss"])),
+        "regression_loss": _safe_text(_constant_signal_value(strategy_frame["regression_loss"])),
+        "use_balanced_classification_loss": _safe_bool(_constant_signal_value(strategy_frame["use_balanced_classification_loss"])),
+        "preprocessing_scaler": _safe_text(_constant_signal_value(strategy_frame["preprocessing_scaler"])),
+        "winsorize_lower_quantile": _constant_numeric_value(strategy_frame["winsorize_lower_quantile"]),
+        "winsorize_upper_quantile": _constant_numeric_value(strategy_frame["winsorize_upper_quantile"]),
     }
 
 
@@ -378,10 +444,22 @@ def _open_position(row: pd.Series, market: pd.DataFrame, entry_market_index: int
         expected_return_bps=_safe_float(row.get("expected_return_bps")),
         signal_threshold=_safe_float(row.get("signal_threshold")),
         threshold_objective=_safe_text(row.get("threshold_objective")),
+        selected_threshold_objective_value=_safe_float(row.get("selected_threshold_objective_value")),
         prediction_mode=_safe_text(row.get("prediction_mode")),
         calibration_method=_safe_text(row.get("calibration_method")),
         feature_importance_method=_safe_text(row.get("feature_importance_method")),
         selected_hyperparameters_json=_safe_text(row.get("selected_hyperparameters_json")) or "{}",
+        checkpoint_selection_metric=_safe_text(row.get("checkpoint_selection_metric")),
+        best_checkpoint_metric_value=_safe_float(row.get("best_checkpoint_metric_value")),
+        checkpoint_selection_effective_metric=_safe_text(row.get("checkpoint_selection_effective_metric")),
+        best_checkpoint_effective_metric_value=_safe_float(row.get("best_checkpoint_effective_metric_value")),
+        checkpoint_selection_fallback_used=_safe_bool(row.get("checkpoint_selection_fallback_used")),
+        selected_loss=_safe_text(row.get("selected_loss")),
+        regression_loss=_safe_text(row.get("regression_loss")),
+        use_balanced_classification_loss=_safe_bool(row.get("use_balanced_classification_loss")),
+        preprocessing_scaler=_safe_text(row.get("preprocessing_scaler")),
+        winsorize_lower_quantile=_safe_float(row.get("winsorize_lower_quantile")),
+        winsorize_upper_quantile=_safe_float(row.get("winsorize_upper_quantile")),
         confidence=_safe_float(row.get("confidence")),
         metadata_json=str(row.get("metadata_json", "{}")),
         direction=str(row["suggested_direction"]),
@@ -469,10 +547,22 @@ def _close_position(
         "expected_return_bps_at_entry": position.expected_return_bps,
         "signal_threshold_at_entry": position.signal_threshold,
         "threshold_objective_at_entry": position.threshold_objective,
+        "selected_threshold_objective_value_at_entry": position.selected_threshold_objective_value,
         "prediction_mode_at_entry": position.prediction_mode,
         "calibration_method_at_entry": position.calibration_method,
         "feature_importance_method_at_entry": position.feature_importance_method,
         "selected_hyperparameters_json_at_entry": position.selected_hyperparameters_json,
+        "checkpoint_selection_metric_at_entry": position.checkpoint_selection_metric,
+        "best_checkpoint_metric_value_at_entry": position.best_checkpoint_metric_value,
+        "checkpoint_selection_effective_metric_at_entry": position.checkpoint_selection_effective_metric,
+        "best_checkpoint_effective_metric_value_at_entry": position.best_checkpoint_effective_metric_value,
+        "checkpoint_selection_fallback_used_at_entry": position.checkpoint_selection_fallback_used,
+        "selected_loss_at_entry": position.selected_loss,
+        "regression_loss_at_entry": position.regression_loss,
+        "use_balanced_classification_loss_at_entry": position.use_balanced_classification_loss,
+        "preprocessing_scaler_at_entry": position.preprocessing_scaler,
+        "winsorize_lower_quantile_at_entry": position.winsorize_lower_quantile,
+        "winsorize_upper_quantile_at_entry": position.winsorize_upper_quantile,
         "confidence_at_entry": position.confidence,
         "metadata_json_at_entry": position.metadata_json,
         "perp_entry_price_raw": float(position.perp_entry_price_raw),
@@ -705,10 +795,22 @@ def summarize_strategy_backtest(
         "signal_threshold": metadata.get("signal_threshold"),
         "signal_threshold_mode": metadata.get("signal_threshold_mode"),
         "threshold_objective": metadata.get("threshold_objective"),
+        "selected_threshold_objective_value": metadata.get("selected_threshold_objective_value"),
         "prediction_mode": metadata.get("prediction_mode"),
         "calibration_method": metadata.get("calibration_method"),
         "feature_importance_method": metadata.get("feature_importance_method"),
         "selected_hyperparameters_json": metadata.get("selected_hyperparameters_json"),
+        "checkpoint_selection_metric": metadata.get("checkpoint_selection_metric"),
+        "best_checkpoint_metric_value": metadata.get("best_checkpoint_metric_value"),
+        "checkpoint_selection_effective_metric": metadata.get("checkpoint_selection_effective_metric"),
+        "best_checkpoint_effective_metric_value": metadata.get("best_checkpoint_effective_metric_value"),
+        "checkpoint_selection_fallback_used": metadata.get("checkpoint_selection_fallback_used"),
+        "selected_loss": metadata.get("selected_loss"),
+        "regression_loss": metadata.get("regression_loss"),
+        "use_balanced_classification_loss": metadata.get("use_balanced_classification_loss"),
+        "preprocessing_scaler": metadata.get("preprocessing_scaler"),
+        "winsorize_lower_quantile": metadata.get("winsorize_lower_quantile"),
+        "winsorize_upper_quantile": metadata.get("winsorize_upper_quantile"),
         "trade_count": trade_count,
         "active_position_count": active_signal_count,
         "cumulative_return": float(total_return),
@@ -737,6 +839,8 @@ def _split_trade_summary(trade_log: pd.DataFrame) -> pd.DataFrame:
         "source_subtype",
         "prediction_mode",
         "calibration_method",
+        "checkpoint_selection_effective_metric",
+        "selected_loss",
         "trade_count",
         "win_rate",
         "average_trade_return_bps",
@@ -757,6 +861,10 @@ def _split_trade_summary(trade_log: pd.DataFrame) -> pd.DataFrame:
                 "source_subtype": _safe_text(_constant_signal_value(group["source_subtype"])),
                 "prediction_mode": _safe_text(_constant_signal_value(group["prediction_mode_at_entry"])),
                 "calibration_method": _safe_text(_constant_signal_value(group["calibration_method_at_entry"])),
+                "checkpoint_selection_effective_metric": _safe_text(
+                    _constant_signal_value(group["checkpoint_selection_effective_metric_at_entry"])
+                ),
+                "selected_loss": _safe_text(_constant_signal_value(group["selected_loss_at_entry"])),
                 "trade_count": int(len(group)),
                 "win_rate": float((group["net_pnl_usd"] > 0).mean()) if len(group) else 0.0,
                 "average_trade_return_bps": float(group["net_return_bps"].mean()) if len(group) else 0.0,
@@ -916,6 +1024,10 @@ def _build_markdown_report(
         manifest_lines += f"- Active signal count: `{signal_manifest.get('summary', {}).get('active_signal_count', 'n/a')}`\n"
         manifest_lines += f"- Signal prediction modes: `{signal_manifest.get('summary', {}).get('prediction_modes', [])}`\n"
         manifest_lines += f"- Signal calibration methods: `{signal_manifest.get('summary', {}).get('calibration_methods', [])}`\n"
+        manifest_lines += f"- Signal checkpoint metrics: `{signal_manifest.get('summary', {}).get('checkpoint_selection_metrics', [])}`\n"
+        manifest_lines += f"- Signal effective checkpoint metrics: `{signal_manifest.get('summary', {}).get('checkpoint_selection_effective_metrics', [])}`\n"
+        manifest_lines += f"- Signal selected losses: `{signal_manifest.get('summary', {}).get('selected_losses', [])}`\n"
+        manifest_lines += f"- Signal preprocessing scalers: `{signal_manifest.get('summary', {}).get('preprocessing_scalers', [])}`\n"
     if market_manifest is not None:
         manifest_lines += f"- Canonical market rows: `{market_manifest.get('canonical_row_count', 'n/a')}`\n"
 
@@ -926,6 +1038,9 @@ def _build_markdown_report(
                 "source_subtype",
                 "prediction_mode",
                 "calibration_method",
+                "checkpoint_selection_effective_metric",
+                "selected_loss",
+                "preprocessing_scaler",
                 "signal_threshold",
                 "trade_count",
                 "cumulative_return",
@@ -1055,9 +1170,21 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
                 "signal_threshold",
                 "signal_threshold_mode",
                 "threshold_objective",
+                "selected_threshold_objective_value",
                 "prediction_mode",
                 "calibration_method",
                 "feature_importance_method",
+                "checkpoint_selection_metric",
+                "best_checkpoint_metric_value",
+                "checkpoint_selection_effective_metric",
+                "best_checkpoint_effective_metric_value",
+                "checkpoint_selection_fallback_used",
+                "selected_loss",
+                "regression_loss",
+                "use_balanced_classification_loss",
+                "preprocessing_scaler",
+                "winsorize_lower_quantile",
+                "winsorize_upper_quantile",
                 "trade_count",
                 "cumulative_return",
                 "annualized_return",
@@ -1146,6 +1273,18 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
             "calibration_methods": []
             if strategy_metrics.empty
             else sorted(strategy_metrics["calibration_method"].dropna().astype(str).unique().tolist()),
+            "checkpoint_selection_metrics": []
+            if strategy_metrics.empty
+            else sorted(strategy_metrics["checkpoint_selection_metric"].dropna().astype(str).unique().tolist()),
+            "checkpoint_selection_effective_metrics": []
+            if strategy_metrics.empty
+            else sorted(strategy_metrics["checkpoint_selection_effective_metric"].dropna().astype(str).unique().tolist()),
+            "selected_losses": []
+            if strategy_metrics.empty
+            else sorted(strategy_metrics["selected_loss"].dropna().astype(str).unique().tolist()),
+            "preprocessing_scalers": []
+            if strategy_metrics.empty
+            else sorted(strategy_metrics["preprocessing_scaler"].dropna().astype(str).unique().tolist()),
             "source_subtypes": []
             if strategy_metrics.empty
             else sorted(strategy_metrics["source_subtype"].dropna().astype(str).unique().tolist()),

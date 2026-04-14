@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from funding_arb.config.loader import get_command_settings, load_command_settings
+from pathlib import Path
+
+from funding_arb.config.loader import get_command_settings, load_command_settings, load_settings
 from funding_arb.config.models import (
     BacktestSettings,
     BaselineSettings,
@@ -72,6 +74,19 @@ def test_train_dl_default_config_loads_typed_model() -> None:
     assert config.threshold_search.enabled is True
     assert config.preprocessing.scaler == "robust"
     assert config.prediction.mode == "static"
+
+
+def test_additional_dl_model_configs_load_typed_models() -> None:
+    gru = load_settings(Path("configs/models/gru.yaml"), DeepLearningSettings)
+    tcn = load_settings(Path("configs/models/tcn.yaml"), DeepLearningSettings)
+    transformer = load_settings(Path("configs/models/transformer.yaml"), DeepLearningSettings)
+
+    assert gru.model.name == "gru"
+    assert gru.output.run_name == "gru_regression_24h_default"
+    assert tcn.model.name == "tcn"
+    assert tcn.model.tcn_num_blocks == 4
+    assert transformer.model.name == "transformer_encoder"
+    assert transformer.model.transformer_nhead == 4
 
 
 def test_generate_signals_default_config_loads_typed_model() -> None:

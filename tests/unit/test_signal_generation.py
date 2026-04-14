@@ -67,6 +67,23 @@ def _dl_frame() -> pd.DataFrame:
             'predicted_label': [1, 0],
             'actual_label': [1, 0],
             'actual_return_bps': [2.8, -2.1],
+            'selected_threshold_objective': ['avg_signal_return_bps', 'avg_signal_return_bps'],
+            'selected_threshold_objective_value': [1.25, 1.25],
+            'prediction_mode': ['static', 'static'],
+            'calibration_method': ['none', 'none'],
+            'feature_importance_method': ['ablation_validation', 'ablation_validation'],
+            'selected_hyperparameters_json': ['{"model_name":"lstm"}', '{"model_name":"lstm"}'],
+            'checkpoint_selection_metric': ['validation_avg_signal_return_bps', 'validation_avg_signal_return_bps'],
+            'best_checkpoint_metric_value': [None, None],
+            'checkpoint_selection_effective_metric': ['validation_loss', 'validation_loss'],
+            'best_checkpoint_effective_metric_value': [0.95, 0.95],
+            'checkpoint_selection_fallback_used': [True, True],
+            'selected_loss': ['huber', 'huber'],
+            'regression_loss': ['huber', 'huber'],
+            'use_balanced_classification_loss': [False, False],
+            'preprocessing_scaler': ['robust', 'robust'],
+            'winsorize_lower_quantile': [0.01, 0.01],
+            'winsorize_upper_quantile': [0.99, 0.99],
         }
     )
 
@@ -134,6 +151,10 @@ def test_adapt_deep_learning_predictions_sets_expected_return_and_deep_learning_
         signals = adapt_deep_learning_predictions(settings)
         assert signals['source_subtype'].tolist() == ['deep_learning', 'deep_learning']
         assert float(signals.loc[signals['should_trade'] == 1, 'expected_return_bps'].iloc[0]) == 3.2
+        assert signals['checkpoint_selection_effective_metric'].iloc[0] == 'validation_loss'
+        assert bool(signals['checkpoint_selection_fallback_used'].iloc[0]) is True
+        assert signals['selected_loss'].iloc[0] == 'huber'
+        assert signals['preprocessing_scaler'].iloc[0] == 'robust'
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
@@ -151,5 +172,20 @@ def test_run_signal_generation_writes_artifacts_and_manifest() -> None:
         assert 'static' in manifest['summary']['prediction_modes']
         assert 'sigmoid' in manifest['summary']['calibration_methods']
         assert len(manifest['summary']['strategy_summary']) == 3
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+def test_run_signal_generation_preserves_dl_metadata_in_manifest() -> None:
+    tmp_dir = _make_temp_dir()
+    try:
+        settings = _settings(tmp_dir, 'dl')
+        run_signal_generation(settings)
+        manifest_path = tmp_dir / 'signals_out' / 'binance' / 'btcusdt' / '1h' / 'dl' / 'signals_manifest.json'
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        assert 'validation_loss' in manifest['summary']['checkpoint_selection_effective_metrics']
+        assert 'huber' in manifest['summary']['selected_losses']
+        assert 'robust' in manifest['summary']['preprocessing_scalers']
+        assert manifest['summary']['checkpoint_selection_fallback_count'] == 2
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)

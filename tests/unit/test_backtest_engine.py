@@ -93,10 +93,22 @@ def test_realized_equity_curve_and_summary_metrics() -> None:
             "signal_threshold": 1.5,
             "signal_threshold_mode": "constant",
             "threshold_objective": "avg_signal_return_bps",
+            "selected_threshold_objective_value": 0.8,
             "prediction_mode": "static",
             "calibration_method": "none",
             "feature_importance_method": "not_applicable",
             "selected_hyperparameters_json": "{}",
+            "checkpoint_selection_metric": "validation_avg_signal_return_bps",
+            "best_checkpoint_metric_value": None,
+            "checkpoint_selection_effective_metric": "validation_loss",
+            "best_checkpoint_effective_metric_value": 0.95,
+            "checkpoint_selection_fallback_used": True,
+            "selected_loss": "huber",
+            "regression_loss": "huber",
+            "use_balanced_classification_loss": False,
+            "preprocessing_scaler": "robust",
+            "winsorize_lower_quantile": 0.01,
+            "winsorize_upper_quantile": 0.99,
         },
     )
 
@@ -111,6 +123,10 @@ def test_realized_equity_curve_and_summary_metrics() -> None:
     assert summary["signal_threshold"] == pytest.approx(1.5)
     assert summary["prediction_mode"] == "static"
     assert summary["threshold_objective"] == "avg_signal_return_bps"
+    assert summary["checkpoint_selection_effective_metric"] == "validation_loss"
+    assert summary["checkpoint_selection_fallback_used"] is True
+    assert summary["selected_loss"] == "huber"
+    assert summary["preprocessing_scaler"] == "robust"
 
 
 def test_trade_return_boxplot_handles_empty_trade_log() -> None:

@@ -30,10 +30,22 @@ Every normalized signal row contains these columns:
 - `expected_return_bps`
 - `signal_threshold`
 - `threshold_objective`
+- `selected_threshold_objective_value`
 - `prediction_mode`
 - `calibration_method`
 - `feature_importance_method`
 - `selected_hyperparameters_json`
+- `checkpoint_selection_metric`
+- `best_checkpoint_metric_value`
+- `checkpoint_selection_effective_metric`
+- `best_checkpoint_effective_metric_value`
+- `checkpoint_selection_fallback_used`
+- `selected_loss`
+- `regression_loss`
+- `use_balanced_classification_loss`
+- `preprocessing_scaler`
+- `winsorize_lower_quantile`
+- `winsorize_upper_quantile`
 - `suggested_direction`
 - `confidence`
 - `should_trade`
@@ -52,6 +64,8 @@ Interpretation:
   The threshold actually applied upstream when converting scores into tradeable signals.
 - `threshold_objective`
   The validation objective used to choose that threshold when threshold search is enabled.
+- `selected_threshold_objective_value`
+  The best validation objective value achieved by the selected threshold when the upstream artifact provides it.
 - `prediction_mode`
   Whether the source used static scoring or a more chronological expanding/rolling prediction path.
 - `calibration_method`
@@ -60,6 +74,14 @@ Interpretation:
   The preferred feature-importance diagnostic attached to that model family.
 - `selected_hyperparameters_json`
   Serialized chosen hyperparameters from the upstream baseline training artifact.
+- `checkpoint_selection_metric`
+  The configured checkpoint-selection metric used upstream.
+- `checkpoint_selection_effective_metric`
+  The actual metric used to compare checkpoints after any fallback logic. This is especially useful for deep-learning runs where a trading-oriented metric can be undefined when validation produces zero signals.
+- `selected_loss`, `regression_loss`
+  Training-loss metadata propagated from the upstream model artifact.
+- `preprocessing_scaler`, `winsorize_lower_quantile`, `winsorize_upper_quantile`
+  Training-only preprocessing choices propagated into the signal layer so downstream backtests and robustness tables can explain the model setup rather than only its score.
 - `suggested_direction`
   `short_perp_long_spot` when the source says trade, otherwise `flat`.
 - `confidence`
@@ -115,7 +137,7 @@ Each run writes:
 - optional CSV copy
 - `signals_manifest.json`
 
-The manifest includes summary stats such as row count, active signal count, strategies present, source subtype breakdown, and strategy-level metadata previews for thresholds, calibration, and prediction mode.
+The manifest includes summary stats such as row count, active signal count, strategies present, source subtype breakdown, and strategy-level metadata previews for thresholds, calibration, prediction mode, checkpoint-selection mode, and selected loss/preprocessing settings.
 
 ## CLI
 

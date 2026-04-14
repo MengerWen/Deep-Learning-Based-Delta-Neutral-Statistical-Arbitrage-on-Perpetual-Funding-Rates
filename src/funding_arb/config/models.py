@@ -477,10 +477,20 @@ class DeepLearningModelSettings(SettingsBase):
     num_layers: int = 2
     dropout: float = 0.1
     bidirectional: bool = False
+    tcn_hidden_channels: int = 64
+    tcn_num_blocks: int = 4
+    tcn_kernel_size: int = 3
+    tcn_dilation_base: int = 2
+    tcn_use_residual: bool = True
+    transformer_d_model: int = 64
+    transformer_nhead: int = 4
+    transformer_num_layers: int = 2
+    transformer_dim_feedforward: int = 128
+    transformer_pooling: str = "last"
 
     @model_validator(mode="after")
     def validate_model_name(self) -> "DeepLearningModelSettings":
-        valid_names = {"lstm", "gru"}
+        valid_names = {"lstm", "gru", "tcn", "transformer_encoder"}
         if self.name not in valid_names:
             raise ValueError(
                 f"Deep-learning model.name must be one of {sorted(valid_names)}, got '{self.name}'."
@@ -489,6 +499,31 @@ class DeepLearningModelSettings(SettingsBase):
             raise ValueError("Deep-learning hidden_size must be positive.")
         if self.num_layers <= 0:
             raise ValueError("Deep-learning num_layers must be positive.")
+        if self.tcn_hidden_channels <= 0:
+            raise ValueError("Deep-learning tcn_hidden_channels must be positive.")
+        if self.tcn_num_blocks <= 0:
+            raise ValueError("Deep-learning tcn_num_blocks must be positive.")
+        if self.tcn_kernel_size <= 1:
+            raise ValueError("Deep-learning tcn_kernel_size must be greater than 1.")
+        if self.tcn_dilation_base <= 0:
+            raise ValueError("Deep-learning tcn_dilation_base must be positive.")
+        if self.transformer_d_model <= 0:
+            raise ValueError("Deep-learning transformer_d_model must be positive.")
+        if self.transformer_nhead <= 0:
+            raise ValueError("Deep-learning transformer_nhead must be positive.")
+        if self.transformer_num_layers <= 0:
+            raise ValueError("Deep-learning transformer_num_layers must be positive.")
+        if self.transformer_dim_feedforward <= 0:
+            raise ValueError("Deep-learning transformer_dim_feedforward must be positive.")
+        if self.transformer_d_model % self.transformer_nhead != 0:
+            raise ValueError(
+                "Deep-learning transformer_d_model must be divisible by transformer_nhead."
+            )
+        valid_pooling = {"last", "mean"}
+        if self.transformer_pooling not in valid_pooling:
+            raise ValueError(
+                f"Deep-learning transformer_pooling must be one of {sorted(valid_pooling)}, got '{self.transformer_pooling}'."
+            )
         return self
 
 

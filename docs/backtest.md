@@ -43,9 +43,16 @@ Required signal fields:
 - `expected_return_bps`
 - `signal_threshold`
 - `threshold_objective`
+- `selected_threshold_objective_value`
 - `prediction_mode`
 - `calibration_method`
 - `feature_importance_method`
+- `checkpoint_selection_metric`
+- `checkpoint_selection_effective_metric`
+- `checkpoint_selection_fallback_used`
+- `selected_loss`
+- `regression_loss`
+- `preprocessing_scaler`
 - `suggested_direction`
 - `confidence`
 - `should_trade`
@@ -58,10 +65,10 @@ Required market fields:
 - `spot_open`, `spot_close`
 - `funding_rate`
 
-Important note for the upgraded baseline flow:
+Important note for the upgraded baseline and deep-learning flows:
 
-- the backtester now preserves baseline-specific metadata such as `source_subtype`, selected threshold, prediction mode, calibration choice, and feature-importance method
-- these fields are written into trade logs and strategy summary tables so later robustness reports can compare not just "ML vs rules", but which baseline configuration actually produced the result
+- the backtester now preserves model metadata such as `source_subtype`, selected threshold, prediction mode, calibration choice, feature-importance method, checkpoint-selection fields, and selected loss/preprocessing settings
+- these fields are written into trade logs and strategy summary tables so later robustness reports can compare not just "ML vs rules vs DL", but which concrete modeling configuration actually produced the result
 
 ## Position Model
 

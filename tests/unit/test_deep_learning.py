@@ -9,10 +9,13 @@ from funding_arb.models.deep_learning import (
     GRUSequenceModel,
     LSTMSequenceModel,
     SequenceDataset,
+    TCNSequenceModel,
+    TransformerEncoderSequenceModel,
     _apply_threshold,
     _loss_function,
     _selection_resolution,
     _select_threshold,
+    build_sequence_model,
     build_sequence_indices,
 )
 
@@ -135,6 +138,58 @@ def test_gru_sequence_model_forward_shape_is_batch_scalar() -> None:
     assert output.shape == (4,)
 
 
+def test_tcn_sequence_model_forward_shape_is_batch_scalar() -> None:
+    model = TCNSequenceModel(
+        input_size=5,
+        hidden_channels=8,
+        num_blocks=3,
+        kernel_size=3,
+        dilation_base=2,
+        dropout=0.0,
+        use_residual=True,
+    )
+    batch = torch.randn(4, 12, 5)
+
+    output = model(batch)
+
+    assert output.shape == (4,)
+
+
+def test_transformer_encoder_sequence_model_forward_shape_is_batch_scalar() -> None:
+    model = TransformerEncoderSequenceModel(
+        input_size=5,
+        d_model=8,
+        nhead=2,
+        num_layers=2,
+        dim_feedforward=16,
+        dropout=0.0,
+        pooling="last",
+    )
+    batch = torch.randn(4, 12, 5)
+
+    output = model(batch)
+
+    assert output.shape == (4,)
+
+
+def test_build_sequence_model_dispatches_supported_architectures() -> None:
+    settings = _settings()
+    settings.model.name = "lstm"
+    assert isinstance(build_sequence_model(5, settings), LSTMSequenceModel)
+
+    settings.model.name = "gru"
+    assert isinstance(build_sequence_model(5, settings), GRUSequenceModel)
+
+    settings.model.name = "tcn"
+    assert isinstance(build_sequence_model(5, settings), TCNSequenceModel)
+
+    settings.model.name = "transformer_encoder"
+    settings.model.transformer_d_model = 8
+    settings.model.transformer_nhead = 2
+    settings.model.transformer_dim_feedforward = 16
+    assert isinstance(build_sequence_model(5, settings), TransformerEncoderSequenceModel)
+
+
 def test_loss_function_supports_huber_regression() -> None:
     settings = _settings()
     settings.training.regression_loss = "huber"
@@ -190,3 +245,45 @@ def test_selection_metric_falls_back_to_validation_loss_when_signal_metric_is_mi
     assert selection["effective_metric"] == "validation_loss"
     assert selection["effective_value"] == 1.25
     assert selection["fallback_used"] is True
+
+
+def test_tcn_encode_sequence_is_causal() -> None:
+    model = TCNSequenceModel(
+        input_size=3,
+        hidden_channels=8,
+        num_blocks=3,
+        kernel_size=3,
+        dilation_base=2,
+        dropout=0.0,
+        use_residual=True,
+    )
+    model.eval()
+    batch_a = torch.randn(1, 8, 3)
+    batch_b = batch_a.clone()
+    batch_b[:, 5:, :] = batch_b[:, 5:, :] + 10.0
+
+    encoded_a = model.encode_sequence(batch_a)
+    encoded_b = model.encode_sequence(batch_b)
+
+    assert torch.allclose(encoded_a[:, :5, :], encoded_b[:, :5, :], atol=1e-6)
+
+
+def test_transformer_encoder_is_causal_over_sequence_positions() -> None:
+    model = TransformerEncoderSequenceModel(
+        input_size=3,
+        d_model=8,
+        nhead=2,
+        num_layers=2,
+        dim_feedforward=16,
+        dropout=0.0,
+        pooling="last",
+    )
+    model.eval()
+    batch_a = torch.randn(1, 8, 3)
+    batch_b = batch_a.clone()
+    batch_b[:, 5:, :] = batch_b[:, 5:, :] + 10.0
+
+    encoded_a = model.encode_sequence(batch_a)
+    encoded_b = model.encode_sequence(batch_b)
+
+    assert torch.allclose(encoded_a[:, :5, :], encoded_b[:, :5, :], atol=1e-6)
