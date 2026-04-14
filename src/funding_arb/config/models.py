@@ -207,6 +207,93 @@ class BaselineFeatureSelectionSettings(SettingsBase):
     drop_constant_features: bool = True
 
 
+class BaselineTimeSeriesCVSettings(SettingsBase):
+    enabled: bool = True
+    n_splits: int = 4
+    gap: int = 0
+    mode: str = "expanding"
+    min_train_size: int = 2000
+    rolling_window_size: int | None = None
+    classification_metric: str = "average_precision"
+    regression_metric: str = "neg_rmse"
+
+    @model_validator(mode="after")
+    def validate_time_series_cv(self) -> "BaselineTimeSeriesCVSettings":
+        valid_modes = {"expanding", "rolling"}
+        if self.mode not in valid_modes:
+            raise ValueError(
+                f"Baseline tuning mode must be one of {sorted(valid_modes)}, got '{self.mode}'."
+            )
+        if self.n_splits < 2:
+            raise ValueError("Baseline tuning requires at least 2 splits.")
+        if self.gap < 0:
+            raise ValueError("Baseline tuning gap must be non-negative.")
+        if self.min_train_size <= 0:
+            raise ValueError("Baseline tuning min_train_size must be positive.")
+        if self.mode == "rolling" and self.rolling_window_size is None:
+            raise ValueError(
+                "Baseline tuning rolling mode requires rolling_window_size."
+            )
+        return self
+
+
+class BaselineThresholdSearchSettings(SettingsBase):
+    enabled: bool = True
+    objective: str = "avg_signal_return_bps"
+    probability_grid: list[float] = Field(default_factory=list)
+    regression_threshold_grid_bps: list[float] = Field(default_factory=list)
+    top_quantile: float = 0.1
+    rule_search_enabled: bool = True
+
+    @model_validator(mode="after")
+    def validate_threshold_search(self) -> "BaselineThresholdSearchSettings":
+        if not 0.0 < self.top_quantile <= 0.5:
+            raise ValueError("Baseline threshold_search.top_quantile must be in (0, 0.5].")
+        return self
+
+
+class BaselineImputationSettings(SettingsBase):
+    remaining_strategy: str = "median"
+    forward_fill_columns: list[str] = Field(default_factory=list)
+    forward_fill_prefixes: list[str] = Field(default_factory=list)
+    add_missing_indicators: bool = True
+    indicator_columns: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_imputation(self) -> "BaselineImputationSettings":
+        valid_strategies = {"median"}
+        if self.remaining_strategy not in valid_strategies:
+            raise ValueError(
+                "Baseline imputation remaining_strategy currently supports only 'median'."
+            )
+        return self
+
+
+class BaselineWalkForwardSettings(SettingsBase):
+    mode: str = "static"
+    refit_every_n_periods: int = 168
+    rolling_window_size: int | None = None
+    expanding_window_start: int = 2000
+    use_validation_history_for_test: bool = True
+
+    @model_validator(mode="after")
+    def validate_walk_forward(self) -> "BaselineWalkForwardSettings":
+        valid_modes = {"static", "expanding", "rolling"}
+        if self.mode not in valid_modes:
+            raise ValueError(
+                f"Baseline walk-forward mode must be one of {sorted(valid_modes)}, got '{self.mode}'."
+            )
+        if self.refit_every_n_periods <= 0:
+            raise ValueError("Baseline walk-forward refit_every_n_periods must be positive.")
+        if self.expanding_window_start <= 0:
+            raise ValueError("Baseline walk-forward expanding_window_start must be positive.")
+        if self.mode == "rolling" and self.rolling_window_size is None:
+            raise ValueError(
+                "Baseline walk-forward rolling mode requires rolling_window_size."
+            )
+        return self
+
+
 class RuleBaselineSpec(SettingsBase):
     name: str
     kind: str
@@ -217,28 +304,80 @@ class RuleBaselineSpec(SettingsBase):
     spread_threshold: float = 0.0
     regime_column: str | None = None
     regime_value: float | int | None = 1
+    funding_threshold_grid_bps: list[float] = Field(default_factory=list)
+    spread_threshold_grid: list[float] = Field(default_factory=list)
 
 
-class ClassificationBaselineSettings(SettingsBase):
+class ClassificationModelVariantSettings(SettingsBase):
     enabled: bool = True
     name: str = "logistic_regression"
     estimator: str = "logistic_regression"
     probability_threshold: float = 0.5
+    probability_threshold_grid: list[float] = Field(default_factory=list)
     standardize: bool = True
     max_iter: int = 1500
     c: float = 1.0
+    penalty: str = "l2"
+    solver: str | None = None
+    l1_ratio: float | None = None
     class_weight: str | None = "balanced"
     random_state: int = 42
+    param_grid: dict[str, list[Any]] = Field(default_factory=dict)
+    calibration_method: str = "none"
+    calibration_cv_splits: int = 3
+    calibration_ensemble: bool = True
+
+    @model_validator(mode="after")
+    def validate_classification_model(self) -> "ClassificationModelVariantSettings":
+        valid_estimators = {
+            "logistic_regression",
+            "logistic_l1",
+            "logistic_elastic_net",
+        }
+        if self.estimator not in valid_estimators:
+            raise ValueError(
+                f"Unsupported classification estimator '{self.estimator}'. Expected one of {sorted(valid_estimators)}."
+            )
+        valid_calibration = {"none", "sigmoid", "isotonic"}
+        if self.calibration_method not in valid_calibration:
+            raise ValueError(
+                f"Unsupported calibration_method '{self.calibration_method}'. Expected one of {sorted(valid_calibration)}."
+            )
+        return self
 
 
-class RegressionBaselineSettings(SettingsBase):
+class ClassificationBaselineSettings(ClassificationModelVariantSettings):
+    additional_models: list[ClassificationModelVariantSettings] = Field(
+        default_factory=list
+    )
+
+
+class RegressionModelVariantSettings(SettingsBase):
     enabled: bool = True
     name: str = "ridge_regression"
     estimator: str = "ridge"
     standardize: bool = True
     alpha: float = 1.0
+    l1_ratio: float = 0.5
     trade_threshold_bps: float = 0.0
+    trade_threshold_grid_bps: list[float] = Field(default_factory=list)
     random_state: int = 42
+    param_grid: dict[str, list[Any]] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_regression_model(self) -> "RegressionModelVariantSettings":
+        valid_estimators = {"ridge", "elastic_net"}
+        if self.estimator not in valid_estimators:
+            raise ValueError(
+                f"Unsupported regression estimator '{self.estimator}'. Expected one of {sorted(valid_estimators)}."
+            )
+        return self
+
+
+class RegressionBaselineSettings(RegressionModelVariantSettings):
+    additional_models: list[RegressionModelVariantSettings] = Field(
+        default_factory=list
+    )
 
 
 class TreeBaselineSettings(SettingsBase):
@@ -249,8 +388,15 @@ class TreeBaselineSettings(SettingsBase):
     max_depth: int | None = 6
     min_samples_leaf: int = 50
     classification_probability_threshold: float = 0.5
+    classification_probability_threshold_grid: list[float] = Field(default_factory=list)
     regression_trade_threshold_bps: float = 0.0
+    regression_trade_threshold_grid_bps: list[float] = Field(default_factory=list)
     random_state: int = 42
+    classifier_param_grid: dict[str, list[Any]] = Field(default_factory=dict)
+    regressor_param_grid: dict[str, list[Any]] = Field(default_factory=dict)
+    calibration_method: str = "none"
+    calibration_cv_splits: int = 3
+    calibration_ensemble: bool = True
 
 
 class BaselinePredictiveSettings(SettingsBase):
@@ -275,6 +421,18 @@ class BaselineSettings(SettingsBase):
     target: BaselineTargetSettings = Field(default_factory=BaselineTargetSettings)
     feature_selection: BaselineFeatureSelectionSettings = Field(
         default_factory=BaselineFeatureSelectionSettings
+    )
+    tuning: BaselineTimeSeriesCVSettings = Field(
+        default_factory=BaselineTimeSeriesCVSettings
+    )
+    threshold_search: BaselineThresholdSearchSettings = Field(
+        default_factory=BaselineThresholdSearchSettings
+    )
+    imputation: BaselineImputationSettings = Field(
+        default_factory=BaselineImputationSettings
+    )
+    prediction: BaselineWalkForwardSettings = Field(
+        default_factory=BaselineWalkForwardSettings
     )
     rules: list[RuleBaselineSpec] = Field(default_factory=list)
     predictive: BaselinePredictiveSettings = Field(

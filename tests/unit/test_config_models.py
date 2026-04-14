@@ -53,6 +53,11 @@ def test_train_baseline_default_config_loads_typed_model() -> None:
     assert config.input.dataset_path.endswith("btcusdt_supervised_dataset.parquet")
     assert config.target.classification_column == "target_is_profitable_24h"
     assert config.predictive.classification.enabled is True
+    assert config.tuning.gap == 24
+    assert config.threshold_search.objective == "avg_signal_return_bps"
+    assert config.imputation.add_missing_indicators is True
+    assert len(config.predictive.classification.additional_models) >= 2
+    assert config.predictive.classification.calibration_method == "sigmoid"
     assert len(config.rules) >= 1
 
 

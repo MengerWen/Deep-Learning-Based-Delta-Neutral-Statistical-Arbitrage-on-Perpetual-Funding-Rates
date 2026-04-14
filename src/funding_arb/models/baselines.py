@@ -1,22 +1,30 @@
-"""Baseline strategy and predictive-model pipeline for the funding-rate arbitrage project."""
+"""Baseline strategy and predictive-model pipeline for the funding-rate arbitrage project.
+
+This baseline layer stays lightweight, but it treats the task as a low-signal
+time-series trading problem instead of a generic IID prediction benchmark.
+"""
 
 from __future__ import annotations
 
 import json
 import math
 from dataclasses import dataclass
+from itertools import product
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
 import pandas as pd
 from joblib import dump, load
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LogisticRegression, Ridge
+from sklearn.inspection import permutation_importance
+from sklearn.linear_model import ElasticNet, LogisticRegression, Ridge
 from sklearn.metrics import (
     accuracy_score,
     average_precision_score,
+    brier_score_loss,
     f1_score,
     mean_absolute_error,
     mean_squared_error,
@@ -28,7 +36,13 @@ from sklearn.metrics import (
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from funding_arb.config.models import BaselineSettings, RuleBaselineSpec
+from funding_arb.config.models import (
+    BaselineSettings,
+    ClassificationModelVariantSettings,
+    RegressionModelVariantSettings,
+    RuleBaselineSpec,
+    TreeBaselineSettings,
+)
 from funding_arb.utils.paths import ensure_directory, repo_path
 
 
@@ -52,13 +66,27 @@ class BaselineArtifacts:
 
 def describe_baseline_job(config: BaselineSettings | dict[str, Any]) -> str:
     """Return a human-readable summary of the baseline training job."""
-    settings = config if isinstance(config, BaselineSettings) else BaselineSettings.model_validate(config)
+    settings = (
+        config
+        if isinstance(config, BaselineSettings)
+        else BaselineSettings.model_validate(config)
+    )
     rule_count = sum(1 for rule in settings.rules if rule.enabled)
     predictive_names: list[str] = []
     if settings.predictive.classification.enabled:
         predictive_names.append(settings.predictive.classification.name)
+        predictive_names.extend(
+            model.name
+            for model in settings.predictive.classification.additional_models
+            if model.enabled
+        )
     if settings.predictive.regression.enabled:
         predictive_names.append(settings.predictive.regression.name)
+        predictive_names.extend(
+            model.name
+            for model in settings.predictive.regression.additional_models
+            if model.enabled
+        )
     if settings.predictive.tree.enabled:
         predictive_names.extend(
             [
@@ -66,9 +94,12 @@ def describe_baseline_job(config: BaselineSettings | dict[str, Any]) -> str:
                 settings.predictive.tree.regressor_name,
             ]
         )
+    tuning_mode = settings.tuning.mode if settings.tuning.enabled else "disabled"
+    prediction_mode = settings.prediction.mode
     return (
         f"Baseline training ready for {settings.input.symbol} on {settings.input.provider} at "
         f"{settings.input.frequency}, using {rule_count} rule models and {len(predictive_names)} predictive models. "
+        f"Time-series tuning is {tuning_mode}; prediction mode is {prediction_mode}. "
         f"Artifacts will be written under {settings.output.model_dir}/{settings.input.provider}/"
         f"{settings.input.symbol.lower()}/{settings.input.frequency}/{settings.output.run_name}."
     )
@@ -76,11 +107,16 @@ def describe_baseline_job(config: BaselineSettings | dict[str, Any]) -> str:
 
 def describe_baseline_evaluation_job(config: BaselineSettings | dict[str, Any]) -> str:
     """Return a human-readable summary of the baseline evaluation job."""
-    settings = config if isinstance(config, BaselineSettings) else BaselineSettings.model_validate(config)
+    settings = (
+        config
+        if isinstance(config, BaselineSettings)
+        else BaselineSettings.model_validate(config)
+    )
     return (
         f"Baseline evaluation ready for {settings.input.symbol} on {settings.input.provider} at "
         f"{settings.input.frequency}, loading trained artifacts from {settings.output.model_dir}/{settings.input.provider}/"
-        f"{settings.input.symbol.lower()}/{settings.input.frequency}/{settings.output.run_name}."
+        f"{settings.input.symbol.lower()}/{settings.input.frequency}/{settings.output.run_name}. "
+        f"Prediction mode is {settings.prediction.mode}."
     )
 
 
@@ -105,7 +141,10 @@ def _load_supervised_dataset(settings: BaselineSettings) -> pd.DataFrame:
     frame = frame.sort_values(timestamp_column).reset_index(drop=True)
     ready_column = settings.target.ready_column
     split_column = settings.target.split_column
-    frame = frame[(frame[ready_column] == 1) & frame[split_column].isin(["train", "validation", "test"])].copy()
+    frame = frame[
+        (frame[ready_column] == 1)
+        & frame[split_column].isin(["train", "validation", "test"])
+    ].copy()
     if frame.empty:
         raise ValueError("No supervised-ready rows were found for baseline modeling.")
     return frame
@@ -115,7 +154,9 @@ def select_feature_columns(frame: pd.DataFrame, settings: BaselineSettings) -> l
     """Select leakage-safe numeric feature columns for predictive baselines."""
     feature_settings = settings.feature_selection
     if feature_settings.include_columns:
-        columns = [column for column in feature_settings.include_columns if column in frame.columns]
+        columns = [
+            column for column in feature_settings.include_columns if column in frame.columns
+        ]
     else:
         columns = frame.select_dtypes(include=["number", "bool"]).columns.tolist()
     excluded_columns = set(feature_settings.exclude_columns)
@@ -123,7 +164,9 @@ def select_feature_columns(frame: pd.DataFrame, settings: BaselineSettings) -> l
         column
         for column in columns
         if column not in excluded_columns
-        and not any(column.startswith(prefix) for prefix in feature_settings.exclude_prefixes)
+        and not any(
+            column.startswith(prefix) for prefix in feature_settings.exclude_prefixes
+        )
     ]
     if not columns:
         raise ValueError("Feature selection removed every candidate feature column.")
@@ -133,7 +176,8 @@ def select_feature_columns(frame: pd.DataFrame, settings: BaselineSettings) -> l
     columns = [
         column
         for column in columns
-        if float(missing_fraction[column]) <= float(feature_settings.max_missing_fraction)
+        if float(missing_fraction[column])
+        <= float(feature_settings.max_missing_fraction)
     ]
     if feature_settings.drop_constant_features:
         non_constant: list[str] = []
@@ -144,7 +188,9 @@ def select_feature_columns(frame: pd.DataFrame, settings: BaselineSettings) -> l
                 non_constant.append(column)
         columns = non_constant
     if not columns:
-        raise ValueError("No usable feature columns remain after missing-value and variance filtering.")
+        raise ValueError(
+            "No usable feature columns remain after missing-value and variance filtering."
+        )
     return sorted(columns)
 
 
@@ -198,264 +244,774 @@ def _sum_or_none(series: pd.Series) -> float | None:
     return _safe_float(series.sum())
 
 
+def _to_jsonable(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {str(key): _to_jsonable(inner) for key, inner in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_to_jsonable(item) for item in value]
+    if isinstance(value, (np.integer, np.int64)):
+        return int(value)
+    if isinstance(value, (np.floating, np.float64, np.float32)):
+        return float(value)
+    if isinstance(value, (np.bool_,)):
+        return bool(value)
+    if isinstance(value, Path):
+        return str(value)
+    return value
+
+
+def _json_dumps(value: Any) -> str:
+    return json.dumps(_to_jsonable(value), ensure_ascii=True, sort_keys=True)
+
+
 def _feature_matrix(frame: pd.DataFrame, feature_columns: list[str]) -> pd.DataFrame:
     return frame[feature_columns].replace([np.inf, -np.inf], np.nan)
 
-def _build_classifier_pipeline(settings: BaselineSettings) -> Pipeline:
-    classifier_settings = settings.predictive.classification
-    steps: list[tuple[str, Any]] = [("imputer", SimpleImputer(strategy="median"))]
-    if classifier_settings.standardize:
+
+def _matches_prefix(column: str, prefixes: list[str]) -> bool:
+    return any(column.startswith(prefix) for prefix in prefixes)
+
+
+def _build_modeling_frame(
+    frame: pd.DataFrame,
+    feature_columns: list[str],
+    settings: BaselineSettings,
+) -> tuple[pd.DataFrame, list[str], dict[str, Any]]:
+    """Build a modeling frame with leakage-safe forward-fill and optional indicators."""
+
+    feature_frame = frame[feature_columns].replace([np.inf, -np.inf], np.nan).copy()
+    original_missing = feature_frame.isna()
+    imputation_settings = settings.imputation
+    designated_ffill_columns = {
+        column
+        for column in feature_columns
+        if column in set(imputation_settings.forward_fill_columns)
+        or _matches_prefix(column, imputation_settings.forward_fill_prefixes)
+    }
+    for column in sorted(designated_ffill_columns):
+        feature_frame[column] = feature_frame[column].ffill()
+
+    indicator_columns: list[str] = []
+    if imputation_settings.add_missing_indicators:
+        if imputation_settings.indicator_columns:
+            candidate_indicator_columns = [
+                column
+                for column in imputation_settings.indicator_columns
+                if column in feature_frame.columns
+            ]
+        else:
+            candidate_indicator_columns = feature_columns
+        for column in candidate_indicator_columns:
+            if bool(original_missing[column].any()):
+                indicator_name = f"{column}__missing"
+                feature_frame[indicator_name] = original_missing[column].astype(int)
+                indicator_columns.append(indicator_name)
+
+    non_feature_columns = [column for column in frame.columns if column not in feature_columns]
+    modeling_frame = pd.concat(
+        [frame[non_feature_columns].copy(), feature_frame.copy()],
+        axis=1,
+    )
+    final_feature_columns = feature_columns + indicator_columns
+    metadata = {
+        "forward_fill_columns": sorted(designated_ffill_columns),
+        "missing_indicator_columns": indicator_columns,
+        "remaining_imputation_strategy": imputation_settings.remaining_strategy,
+    }
+    return modeling_frame, final_feature_columns, metadata
+
+
+def make_time_series_folds(
+    n_samples: int,
+    *,
+    n_splits: int,
+    gap: int,
+    mode: str,
+    min_train_size: int,
+    rolling_window_size: int | None,
+) -> list[tuple[np.ndarray, np.ndarray]]:
+    """Create expanding or rolling chronological folds for tuning/calibration."""
+
+    if n_samples <= 0 or n_splits < 2:
+        return []
+    available = n_samples - min_train_size - gap
+    if available <= 0:
+        return []
+    fold_size = max(1, available // n_splits)
+    folds: list[tuple[np.ndarray, np.ndarray]] = []
+    for split_index in range(n_splits):
+        train_end = min_train_size + split_index * fold_size
+        validation_start = train_end + gap
+        if validation_start >= n_samples:
+            break
+        validation_end = (
+            n_samples
+            if split_index == n_splits - 1
+            else min(n_samples, validation_start + fold_size)
+        )
+        if validation_start >= validation_end:
+            continue
+        train_start = (
+            max(0, train_end - int(rolling_window_size or train_end))
+            if mode == "rolling"
+            else 0
+        )
+        train_index = np.arange(train_start, train_end, dtype=int)
+        validation_index = np.arange(validation_start, validation_end, dtype=int)
+        if len(train_index) == 0 or len(validation_index) == 0:
+            continue
+        folds.append((train_index, validation_index))
+    return folds
+
+
+def _tuning_folds(frame: pd.DataFrame, settings: BaselineSettings) -> list[tuple[np.ndarray, np.ndarray]]:
+    return make_time_series_folds(
+        len(frame),
+        n_splits=settings.tuning.n_splits,
+        gap=settings.tuning.gap,
+        mode=settings.tuning.mode,
+        min_train_size=settings.tuning.min_train_size,
+        rolling_window_size=settings.tuning.rolling_window_size,
+    )
+
+
+def _base_classifier_params(
+    model: ClassificationModelVariantSettings,
+) -> dict[str, Any]:
+    return {
+        "estimator": model.estimator,
+        "c": model.c,
+        "max_iter": model.max_iter,
+        "class_weight": model.class_weight,
+        "random_state": model.random_state,
+        "penalty": model.penalty,
+        "solver": model.solver,
+        "l1_ratio": model.l1_ratio,
+    }
+
+
+def _base_regression_params(
+    model: RegressionModelVariantSettings,
+) -> dict[str, Any]:
+    return {
+        "estimator": model.estimator,
+        "alpha": model.alpha,
+        "l1_ratio": model.l1_ratio,
+        "random_state": model.random_state,
+    }
+
+
+def _tree_classifier_base_params(settings: TreeBaselineSettings) -> dict[str, Any]:
+    return {
+        "n_estimators": settings.n_estimators,
+        "max_depth": settings.max_depth,
+        "min_samples_leaf": settings.min_samples_leaf,
+        "random_state": settings.random_state,
+    }
+
+
+def _tree_regressor_base_params(settings: TreeBaselineSettings) -> dict[str, Any]:
+    return {
+        "n_estimators": settings.n_estimators,
+        "max_depth": settings.max_depth,
+        "min_samples_leaf": settings.min_samples_leaf,
+        "random_state": settings.random_state,
+    }
+
+
+def _grid_candidates(
+    base_params: dict[str, Any],
+    param_grid: dict[str, list[Any]],
+) -> list[dict[str, Any]]:
+    usable_grid = {
+        key: values for key, values in param_grid.items() if isinstance(values, list) and values
+    }
+    if not usable_grid:
+        return [base_params]
+    keys = sorted(usable_grid)
+    values = [usable_grid[key] for key in keys]
+    candidates: list[dict[str, Any]] = []
+    for combo in product(*values):
+        candidate = dict(base_params)
+        candidate.update(dict(zip(keys, combo, strict=False)))
+        candidates.append(candidate)
+    return candidates
+
+
+def _build_classifier_pipeline(
+    settings: BaselineSettings,
+    model: ClassificationModelVariantSettings,
+    params: dict[str, Any] | None = None,
+) -> Pipeline:
+    combined = dict(_base_classifier_params(model))
+    if params:
+        combined.update(params)
+    estimator_name = str(combined.get("estimator", model.estimator))
+    penalty = str(combined.get("penalty") or model.penalty)
+    solver = combined.get("solver")
+    l1_ratio = combined.get("l1_ratio")
+    if estimator_name == "logistic_regression":
+        penalty = "l2"
+        solver = solver or "lbfgs"
+        l1_ratio = None
+    elif estimator_name == "logistic_l1":
+        penalty = "l1"
+        solver = solver or "liblinear"
+        l1_ratio = None
+    elif estimator_name == "logistic_elastic_net":
+        penalty = "elasticnet"
+        solver = solver or "saga"
+        if l1_ratio is None:
+            l1_ratio = 0.5
+    else:
+        raise ValueError(f"Unsupported classifier estimator '{estimator_name}'.")
+
+    steps: list[tuple[str, Any]] = [
+        ("imputer", SimpleImputer(strategy=settings.imputation.remaining_strategy))
+    ]
+    if model.standardize:
         steps.append(("scaler", StandardScaler()))
     steps.append(
         (
             "model",
             LogisticRegression(
-                C=classifier_settings.c,
-                class_weight=classifier_settings.class_weight,
-                max_iter=classifier_settings.max_iter,
-                random_state=classifier_settings.random_state,
+                C=float(combined.get("c", model.c)),
+                class_weight=combined.get("class_weight", model.class_weight),
+                max_iter=int(combined.get("max_iter", model.max_iter)),
+                random_state=int(combined.get("random_state", model.random_state)),
+                penalty=penalty,
+                solver=str(solver),
+                l1_ratio=None if l1_ratio is None else float(l1_ratio),
             ),
         )
     )
     return Pipeline(steps)
 
 
-def _build_regression_pipeline(settings: BaselineSettings) -> Pipeline:
-    regression_settings = settings.predictive.regression
-    steps: list[tuple[str, Any]] = [("imputer", SimpleImputer(strategy="median"))]
-    if regression_settings.standardize:
+def _build_regression_pipeline(
+    settings: BaselineSettings,
+    model: RegressionModelVariantSettings,
+    params: dict[str, Any] | None = None,
+) -> Pipeline:
+    combined = dict(_base_regression_params(model))
+    if params:
+        combined.update(params)
+    estimator_name = str(combined.get("estimator", model.estimator))
+    steps: list[tuple[str, Any]] = [
+        ("imputer", SimpleImputer(strategy=settings.imputation.remaining_strategy))
+    ]
+    if model.standardize:
         steps.append(("scaler", StandardScaler()))
-    steps.append(("model", Ridge(alpha=regression_settings.alpha)))
+    if estimator_name == "ridge":
+        estimator = Ridge(alpha=float(combined.get("alpha", model.alpha)))
+    elif estimator_name == "elastic_net":
+        estimator = ElasticNet(
+            alpha=float(combined.get("alpha", model.alpha)),
+            l1_ratio=float(combined.get("l1_ratio", model.l1_ratio)),
+            max_iter=5000,
+            random_state=int(combined.get("random_state", model.random_state)),
+        )
+    else:
+        raise ValueError(f"Unsupported regression estimator '{estimator_name}'.")
+    steps.append(("model", estimator))
     return Pipeline(steps)
 
 
-def _build_tree_classifier(settings: BaselineSettings) -> Pipeline:
-    tree_settings = settings.predictive.tree
+def _build_tree_classifier(
+    settings: BaselineSettings,
+    params: dict[str, Any] | None = None,
+) -> Pipeline:
+    combined = dict(_tree_classifier_base_params(settings.predictive.tree))
+    if params:
+        combined.update(params)
     return Pipeline(
         [
-            ("imputer", SimpleImputer(strategy="median")),
+            ("imputer", SimpleImputer(strategy=settings.imputation.remaining_strategy)),
             (
                 "model",
                 RandomForestClassifier(
-                    n_estimators=tree_settings.n_estimators,
-                    max_depth=tree_settings.max_depth,
-                    min_samples_leaf=tree_settings.min_samples_leaf,
+                    n_estimators=int(combined["n_estimators"]),
+                    max_depth=(
+                        None
+                        if combined.get("max_depth") is None
+                        else int(combined["max_depth"])
+                    ),
+                    min_samples_leaf=int(combined["min_samples_leaf"]),
                     class_weight="balanced_subsample",
                     n_jobs=-1,
-                    random_state=tree_settings.random_state,
+                    random_state=int(combined["random_state"]),
                 ),
             ),
         ]
     )
 
 
-def _build_tree_regressor(settings: BaselineSettings) -> Pipeline:
-    tree_settings = settings.predictive.tree
+def _build_tree_regressor(
+    settings: BaselineSettings,
+    params: dict[str, Any] | None = None,
+) -> Pipeline:
+    combined = dict(_tree_regressor_base_params(settings.predictive.tree))
+    if params:
+        combined.update(params)
     return Pipeline(
         [
-            ("imputer", SimpleImputer(strategy="median")),
+            ("imputer", SimpleImputer(strategy=settings.imputation.remaining_strategy)),
             (
                 "model",
                 RandomForestRegressor(
-                    n_estimators=tree_settings.n_estimators,
-                    max_depth=tree_settings.max_depth,
-                    min_samples_leaf=tree_settings.min_samples_leaf,
+                    n_estimators=int(combined["n_estimators"]),
+                    max_depth=(
+                        None
+                        if combined.get("max_depth") is None
+                        else int(combined["max_depth"])
+                    ),
+                    min_samples_leaf=int(combined["min_samples_leaf"]),
                     n_jobs=-1,
-                    random_state=tree_settings.random_state,
+                    random_state=int(combined["random_state"]),
                 ),
             ),
         ]
     )
 
 
-def _rule_prediction_frame(
-    frame: pd.DataFrame,
+def _classification_cv_score(
+    y_true: pd.Series,
+    probabilities: np.ndarray,
+    predicted_labels: np.ndarray,
+    metric: str,
+) -> float | None:
+    if y_true.nunique(dropna=True) < 2:
+        return None
+    metric_name = metric.lower()
+    if metric_name == "average_precision":
+        return _safe_float(average_precision_score(y_true, probabilities))
+    if metric_name == "roc_auc":
+        return _safe_float(roc_auc_score(y_true, probabilities))
+    if metric_name == "f1":
+        return _safe_float(f1_score(y_true, predicted_labels, zero_division=0))
+    if metric_name == "precision":
+        return _safe_float(precision_score(y_true, predicted_labels, zero_division=0))
+    if metric_name == "brier_neg":
+        return _safe_float(-brier_score_loss(y_true, probabilities))
+    raise ValueError(f"Unsupported classification tuning metric '{metric}'.")
+
+
+def _regression_cv_score(
+    y_true: pd.Series,
+    predicted_values: np.ndarray,
+    metric: str,
+) -> float | None:
+    metric_name = metric.lower()
+    if metric_name == "neg_rmse":
+        return _safe_float(-math.sqrt(mean_squared_error(y_true, predicted_values)))
+    if metric_name == "neg_mae":
+        return _safe_float(-mean_absolute_error(y_true, predicted_values))
+    if metric_name == "pearson_corr":
+        if float(y_true.std(ddof=0)) == 0.0 or float(np.std(predicted_values)) == 0.0:
+            return None
+        return _safe_float(np.corrcoef(y_true, predicted_values)[0, 1])
+    if metric_name == "r2":
+        return _safe_float(r2_score(y_true, predicted_values))
+    raise ValueError(f"Unsupported regression tuning metric '{metric}'.")
+
+
+def _tune_classifier_params(
     settings: BaselineSettings,
-    rule: RuleBaselineSpec,
-) -> pd.DataFrame:
-    timestamp_column = settings.target.timestamp_column
-    split_column = settings.target.split_column
-    classification_column = settings.target.classification_column
-    regression_column = settings.target.regression_column
-
-    if rule.kind == "funding_threshold":
-        decision_score = frame[rule.funding_column].astype(float)
-        signal_threshold = float(rule.funding_threshold_bps)
-        signal = decision_score >= signal_threshold
-    elif rule.kind == "spread_zscore_threshold":
-        decision_score = frame[rule.spread_column].astype(float)
-        signal_threshold = float(rule.spread_threshold)
-        signal = decision_score >= signal_threshold
-    elif rule.kind == "combined_threshold":
-        funding_margin = frame[rule.funding_column].astype(float) - float(rule.funding_threshold_bps)
-        spread_margin = frame[rule.spread_column].astype(float) - float(rule.spread_threshold)
-        decision_score = funding_margin.add(spread_margin, fill_value=0.0)
-        signal_threshold = 0.0
-        signal = (funding_margin >= 0.0) & (spread_margin >= 0.0)
-    else:
-        raise ValueError(f"Unsupported rule baseline kind: {rule.kind}")
-
-    if rule.regime_column is not None:
-        signal = signal & frame[rule.regime_column].eq(rule.regime_value)
-
-    predictions = pd.DataFrame(
-        {
-            "timestamp": frame[timestamp_column],
-            "split": frame[split_column],
-            "model_name": rule.name,
-            "model_family": "rule_based",
-            "task": "classification",
-            "signal_direction": "short_perp_long_spot",
-            "signal": signal.astype(int),
-            "decision_score": decision_score.astype(float),
-            "signal_threshold": float(signal_threshold),
-            "signal_strength": decision_score.astype(float) - float(signal_threshold),
-            "predicted_probability": np.nan,
-            "predicted_return_bps": np.nan,
-            "predicted_label": signal.astype(int),
-            "actual_label": pd.to_numeric(frame[classification_column], errors="coerce"),
-            "actual_return_bps": pd.to_numeric(frame[regression_column], errors="coerce"),
-        }
-    )
-    return predictions
-
-
-def _fit_or_load_model(
-    estimator: Pipeline,
     train_frame: pd.DataFrame,
     feature_columns: list[str],
     target_column: str,
-    artifact_path: Path,
-    train_models: bool,
+    model: ClassificationModelVariantSettings,
+) -> tuple[dict[str, Any], pd.DataFrame]:
+    base_params = _base_classifier_params(model)
+    candidate_params = _grid_candidates(base_params, model.param_grid)
+    if not settings.tuning.enabled or len(candidate_params) == 1:
+        return base_params, pd.DataFrame(
+            [{"params_json": _json_dumps(base_params), "mean_cv_score": None}]
+        )
+
+    X = _feature_matrix(train_frame, feature_columns)
+    y = pd.to_numeric(train_frame[target_column], errors="coerce").astype(int)
+    folds = _tuning_folds(train_frame, settings)
+    if not folds:
+        return base_params, pd.DataFrame(
+            [{"params_json": _json_dumps(base_params), "mean_cv_score": None}]
+        )
+
+    rows: list[dict[str, Any]] = []
+    for params in candidate_params:
+        fold_scores: list[float] = []
+        for inner_train_index, inner_validation_index in folds:
+            y_inner_train = y.iloc[inner_train_index]
+            y_inner_validation = y.iloc[inner_validation_index]
+            if y_inner_train.nunique(dropna=True) < 2 or y_inner_validation.nunique(
+                dropna=True
+            ) < 2:
+                continue
+            estimator = _build_classifier_pipeline(settings, model, params)
+            estimator.fit(X.iloc[inner_train_index], y_inner_train)
+            probabilities = estimator.predict_proba(X.iloc[inner_validation_index])[:, 1]
+            predicted_labels = (probabilities >= 0.5).astype(int)
+            score = _classification_cv_score(
+                y_inner_validation,
+                probabilities,
+                predicted_labels,
+                settings.tuning.classification_metric,
+            )
+            if score is not None:
+                fold_scores.append(float(score))
+        rows.append(
+            {
+                "params_json": _json_dumps(params),
+                "mean_cv_score": _safe_float(np.mean(fold_scores))
+                if fold_scores
+                else None,
+                "std_cv_score": _safe_float(np.std(fold_scores, ddof=0))
+                if fold_scores
+                else None,
+                "fold_count": len(fold_scores),
+            }
+        )
+    results = pd.DataFrame(rows)
+    ranked = results.copy()
+    ranked["_rank_score"] = ranked["mean_cv_score"].fillna(-np.inf)
+    ranked = ranked.sort_values(
+        ["_rank_score", "fold_count"], ascending=[False, False]
+    ).reset_index(drop=True)
+    selected = json.loads(ranked.iloc[0]["params_json"])
+    return selected, results.drop(columns="_rank_score", errors="ignore")
+
+
+def _tune_regression_params(
+    settings: BaselineSettings,
+    train_frame: pd.DataFrame,
+    feature_columns: list[str],
+    target_column: str,
+    model: RegressionModelVariantSettings,
+) -> tuple[dict[str, Any], pd.DataFrame]:
+    base_params = _base_regression_params(model)
+    candidate_params = _grid_candidates(base_params, model.param_grid)
+    if not settings.tuning.enabled or len(candidate_params) == 1:
+        return base_params, pd.DataFrame(
+            [{"params_json": _json_dumps(base_params), "mean_cv_score": None}]
+        )
+
+    X = _feature_matrix(train_frame, feature_columns)
+    y = pd.to_numeric(train_frame[target_column], errors="coerce").astype(float)
+    folds = _tuning_folds(train_frame, settings)
+    if not folds:
+        return base_params, pd.DataFrame(
+            [{"params_json": _json_dumps(base_params), "mean_cv_score": None}]
+        )
+
+    rows: list[dict[str, Any]] = []
+    for params in candidate_params:
+        fold_scores: list[float] = []
+        for inner_train_index, inner_validation_index in folds:
+            estimator = _build_regression_pipeline(settings, model, params)
+            estimator.fit(X.iloc[inner_train_index], y.iloc[inner_train_index])
+            predicted_values = estimator.predict(X.iloc[inner_validation_index])
+            score = _regression_cv_score(
+                y.iloc[inner_validation_index],
+                predicted_values,
+                settings.tuning.regression_metric,
+            )
+            if score is not None:
+                fold_scores.append(float(score))
+        rows.append(
+            {
+                "params_json": _json_dumps(params),
+                "mean_cv_score": _safe_float(np.mean(fold_scores))
+                if fold_scores
+                else None,
+                "std_cv_score": _safe_float(np.std(fold_scores, ddof=0))
+                if fold_scores
+                else None,
+                "fold_count": len(fold_scores),
+            }
+        )
+    results = pd.DataFrame(rows)
+    ranked = results.copy()
+    ranked["_rank_score"] = ranked["mean_cv_score"].fillna(-np.inf)
+    ranked = ranked.sort_values(
+        ["_rank_score", "fold_count"], ascending=[False, False]
+    ).reset_index(drop=True)
+    selected = json.loads(ranked.iloc[0]["params_json"])
+    return selected, results.drop(columns="_rank_score", errors="ignore")
+
+
+def _tune_tree_classifier_params(
+    settings: BaselineSettings,
+    train_frame: pd.DataFrame,
+    feature_columns: list[str],
+    target_column: str,
+) -> tuple[dict[str, Any], pd.DataFrame]:
+    base_params = _tree_classifier_base_params(settings.predictive.tree)
+    candidate_params = _grid_candidates(
+        base_params, settings.predictive.tree.classifier_param_grid
+    )
+    if not settings.tuning.enabled or len(candidate_params) == 1:
+        return base_params, pd.DataFrame(
+            [{"params_json": _json_dumps(base_params), "mean_cv_score": None}]
+        )
+
+    X = _feature_matrix(train_frame, feature_columns)
+    y = pd.to_numeric(train_frame[target_column], errors="coerce").astype(int)
+    folds = _tuning_folds(train_frame, settings)
+    if not folds:
+        return base_params, pd.DataFrame(
+            [{"params_json": _json_dumps(base_params), "mean_cv_score": None}]
+        )
+
+    rows: list[dict[str, Any]] = []
+    for params in candidate_params:
+        fold_scores: list[float] = []
+        for inner_train_index, inner_validation_index in folds:
+            y_inner_train = y.iloc[inner_train_index]
+            y_inner_validation = y.iloc[inner_validation_index]
+            if y_inner_train.nunique(dropna=True) < 2 or y_inner_validation.nunique(
+                dropna=True
+            ) < 2:
+                continue
+            estimator = _build_tree_classifier(settings, params)
+            estimator.fit(X.iloc[inner_train_index], y_inner_train)
+            probabilities = estimator.predict_proba(X.iloc[inner_validation_index])[:, 1]
+            predicted_labels = (probabilities >= 0.5).astype(int)
+            score = _classification_cv_score(
+                y_inner_validation,
+                probabilities,
+                predicted_labels,
+                settings.tuning.classification_metric,
+            )
+            if score is not None:
+                fold_scores.append(float(score))
+        rows.append(
+            {
+                "params_json": _json_dumps(params),
+                "mean_cv_score": _safe_float(np.mean(fold_scores))
+                if fold_scores
+                else None,
+                "std_cv_score": _safe_float(np.std(fold_scores, ddof=0))
+                if fold_scores
+                else None,
+                "fold_count": len(fold_scores),
+            }
+        )
+    results = pd.DataFrame(rows)
+    ranked = results.copy()
+    ranked["_rank_score"] = ranked["mean_cv_score"].fillna(-np.inf)
+    ranked = ranked.sort_values(
+        ["_rank_score", "fold_count"], ascending=[False, False]
+    ).reset_index(drop=True)
+    selected = json.loads(ranked.iloc[0]["params_json"])
+    return selected, results.drop(columns="_rank_score", errors="ignore")
+
+
+def _tune_tree_regressor_params(
+    settings: BaselineSettings,
+    train_frame: pd.DataFrame,
+    feature_columns: list[str],
+    target_column: str,
+) -> tuple[dict[str, Any], pd.DataFrame]:
+    base_params = _tree_regressor_base_params(settings.predictive.tree)
+    candidate_params = _grid_candidates(
+        base_params, settings.predictive.tree.regressor_param_grid
+    )
+    if not settings.tuning.enabled or len(candidate_params) == 1:
+        return base_params, pd.DataFrame(
+            [{"params_json": _json_dumps(base_params), "mean_cv_score": None}]
+        )
+
+    X = _feature_matrix(train_frame, feature_columns)
+    y = pd.to_numeric(train_frame[target_column], errors="coerce").astype(float)
+    folds = _tuning_folds(train_frame, settings)
+    if not folds:
+        return base_params, pd.DataFrame(
+            [{"params_json": _json_dumps(base_params), "mean_cv_score": None}]
+        )
+
+    rows: list[dict[str, Any]] = []
+    for params in candidate_params:
+        fold_scores: list[float] = []
+        for inner_train_index, inner_validation_index in folds:
+            estimator = _build_tree_regressor(settings, params)
+            estimator.fit(X.iloc[inner_train_index], y.iloc[inner_train_index])
+            predicted_values = estimator.predict(X.iloc[inner_validation_index])
+            score = _regression_cv_score(
+                y.iloc[inner_validation_index],
+                predicted_values,
+                settings.tuning.regression_metric,
+            )
+            if score is not None:
+                fold_scores.append(float(score))
+        rows.append(
+            {
+                "params_json": _json_dumps(params),
+                "mean_cv_score": _safe_float(np.mean(fold_scores))
+                if fold_scores
+                else None,
+                "std_cv_score": _safe_float(np.std(fold_scores, ddof=0))
+                if fold_scores
+                else None,
+                "fold_count": len(fold_scores),
+            }
+        )
+    results = pd.DataFrame(rows)
+    ranked = results.copy()
+    ranked["_rank_score"] = ranked["mean_cv_score"].fillna(-np.inf)
+    ranked = ranked.sort_values(
+        ["_rank_score", "fold_count"], ascending=[False, False]
+    ).reset_index(drop=True)
+    selected = json.loads(ranked.iloc[0]["params_json"])
+    return selected, results.drop(columns="_rank_score", errors="ignore")
+
+
+def _fit_classifier_with_calibration(
+    settings: BaselineSettings,
+    train_frame: pd.DataFrame,
+    feature_columns: list[str],
+    target_column: str,
+    model_spec: ClassificationModelVariantSettings,
+    selected_params: dict[str, Any],
+    *,
+    tree_mode: bool = False,
+) -> tuple[Any, Pipeline, str]:
+    X_train = _feature_matrix(train_frame, feature_columns)
+    y_train = pd.to_numeric(train_frame[target_column], errors="coerce").astype(int)
+    if tree_mode:
+        base_builder: Callable[[dict[str, Any]], Pipeline] = (
+            lambda params: _build_tree_classifier(settings, params)
+        )
+        calibration_method = settings.predictive.tree.calibration_method
+        calibration_cv_splits = settings.predictive.tree.calibration_cv_splits
+        calibration_ensemble = settings.predictive.tree.calibration_ensemble
+    else:
+        base_builder = lambda params: _build_classifier_pipeline(settings, model_spec, params)
+        calibration_method = model_spec.calibration_method
+        calibration_cv_splits = model_spec.calibration_cv_splits
+        calibration_ensemble = model_spec.calibration_ensemble
+
+    diagnostic_model = base_builder(selected_params)
+    diagnostic_model.fit(X_train, y_train)
+    if calibration_method == "none" or y_train.nunique(dropna=True) < 2:
+        return diagnostic_model, diagnostic_model, "none"
+
+    calibration_folds = make_time_series_folds(
+        len(train_frame),
+        n_splits=calibration_cv_splits,
+        gap=settings.tuning.gap,
+        mode=settings.tuning.mode,
+        min_train_size=max(
+            10,
+            min(
+                settings.tuning.min_train_size,
+                max(2, len(train_frame) // max(calibration_cv_splits + 1, 2)),
+            ),
+        ),
+        rolling_window_size=settings.tuning.rolling_window_size,
+    )
+    if not calibration_folds:
+        return diagnostic_model, diagnostic_model, "none"
+
+    calibrated_model = CalibratedClassifierCV(
+        estimator=base_builder(selected_params),
+        method=calibration_method,
+        cv=calibration_folds,
+        ensemble=calibration_ensemble,
+    )
+    calibrated_model.fit(X_train, y_train)
+    return calibrated_model, diagnostic_model, calibration_method
+
+
+def _fit_regressor(
+    settings: BaselineSettings,
+    train_frame: pd.DataFrame,
+    feature_columns: list[str],
+    target_column: str,
+    model_spec: RegressionModelVariantSettings,
+    selected_params: dict[str, Any],
+    *,
+    tree_mode: bool = False,
 ) -> Pipeline:
-    if train_models:
-        estimator.fit(_feature_matrix(train_frame, feature_columns), train_frame[target_column])
-        dump(estimator, artifact_path)
-        return estimator
-    if not artifact_path.exists():
-        raise FileNotFoundError(f"Missing trained model artifact: {artifact_path}")
-    loaded_estimator = load(artifact_path)
-    if not isinstance(loaded_estimator, Pipeline):
-        raise TypeError(f"Model artifact at {artifact_path} is not a scikit-learn Pipeline.")
-    return loaded_estimator
-
-
-def _extract_linear_coefficients(model: Pipeline, feature_columns: list[str]) -> pd.DataFrame | None:
-    estimator = model.named_steps.get("model")
-    if estimator is None or not hasattr(estimator, "coef_"):
-        return None
-    coefficients = np.asarray(estimator.coef_)
-    if coefficients.ndim > 1:
-        coefficients = coefficients[0]
-    frame = pd.DataFrame(
-        {
-            "feature": feature_columns,
-            "coefficient": coefficients.astype(float),
-        }
+    X_train = _feature_matrix(train_frame, feature_columns)
+    y_train = pd.to_numeric(train_frame[target_column], errors="coerce").astype(float)
+    estimator = (
+        _build_tree_regressor(settings, selected_params)
+        if tree_mode
+        else _build_regression_pipeline(settings, model_spec, selected_params)
     )
-    frame["abs_coefficient"] = frame["coefficient"].abs()
-    return frame.sort_values("abs_coefficient", ascending=False).reset_index(drop=True)
+    estimator.fit(X_train, y_train)
+    return estimator
 
 
-def _extract_tree_importances(model: Pipeline, feature_columns: list[str]) -> pd.DataFrame | None:
-    estimator = model.named_steps.get("model")
-    if estimator is None or not hasattr(estimator, "feature_importances_"):
-        return None
-    frame = pd.DataFrame(
-        {
-            "feature": feature_columns,
-            "importance": np.asarray(estimator.feature_importances_, dtype=float),
+def _score_column(predictions: pd.DataFrame) -> pd.Series:
+    if "predicted_probability" in predictions.columns and not predictions[
+        "predicted_probability"
+    ].isna().all():
+        return pd.to_numeric(predictions["predicted_probability"], errors="coerce")
+    if "predicted_return_bps" in predictions.columns and not predictions[
+        "predicted_return_bps"
+    ].isna().all():
+        return pd.to_numeric(predictions["predicted_return_bps"], errors="coerce")
+    return pd.to_numeric(predictions["decision_score"], errors="coerce")
+
+
+def _top_quantile_returns(
+    predictions: pd.DataFrame,
+    *,
+    top_quantile: float,
+) -> pd.Series:
+    usable = predictions.dropna(subset=["actual_return_bps"]).copy()
+    if usable.empty:
+        return pd.Series(dtype=float)
+    usable["_score"] = _score_column(usable)
+    usable = usable.dropna(subset=["_score"]).sort_values("_score", ascending=False)
+    if usable.empty:
+        return pd.Series(dtype=float)
+    top_count = max(1, int(math.ceil(len(usable) * float(top_quantile))))
+    return pd.to_numeric(
+        usable["actual_return_bps"].head(top_count), errors="coerce"
+    ).dropna()
+
+
+def _signal_return_summary(signaled_returns: pd.Series) -> dict[str, Any]:
+    if signaled_returns.empty:
+        return {
+            "avg_signal_return_bps": None,
+            "median_signal_return_bps": None,
+            "cumulative_signal_return_bps": None,
+            "signal_hit_rate": None,
+            "signal_return_std_bps": None,
+            "signal_sharpe_like": None,
         }
-    )
-    return frame.sort_values("importance", ascending=False).reset_index(drop=True)
+    std = signaled_returns.std(ddof=0)
+    return {
+        "avg_signal_return_bps": _mean_or_none(signaled_returns),
+        "median_signal_return_bps": _median_or_none(signaled_returns),
+        "cumulative_signal_return_bps": _sum_or_none(signaled_returns),
+        "signal_hit_rate": _safe_float((signaled_returns > 0.0).mean()),
+        "signal_return_std_bps": _safe_float(std),
+        "signal_sharpe_like": (
+            _safe_float(signaled_returns.mean() / std) if std and std > 0.0 else None
+        ),
+    }
 
 
-def _write_diagnostics(
-    diagnostics_dir: Path,
-    model_name: str,
-    diagnostic_frame: pd.DataFrame | None,
-) -> str | None:
-    if diagnostic_frame is None:
-        return None
-    diagnostic_path = diagnostics_dir / f"{model_name}_diagnostics.csv"
-    diagnostic_frame.to_csv(diagnostic_path, index=False)
-    return str(diagnostic_path)
-
-def _predict_classifier(
-    frame: pd.DataFrame,
-    settings: BaselineSettings,
-    model_name: str,
-    model_family: str,
-    model: Pipeline,
-    feature_columns: list[str],
-    probability_threshold: float,
-) -> pd.DataFrame:
-    probabilities = model.predict_proba(_feature_matrix(frame, feature_columns))[:, 1]
-    predicted_label = (probabilities >= probability_threshold).astype(int)
-    return pd.DataFrame(
-        {
-            "timestamp": frame[settings.target.timestamp_column],
-            "split": frame[settings.target.split_column],
-            "model_name": model_name,
-            "model_family": model_family,
-            "task": "classification",
-            "signal_direction": "short_perp_long_spot",
-            "signal": predicted_label.astype(int),
-            "decision_score": probabilities.astype(float),
-            "signal_threshold": float(probability_threshold),
-            "signal_strength": probabilities.astype(float) - float(probability_threshold),
-            "predicted_probability": probabilities.astype(float),
-            "predicted_return_bps": np.nan,
-            "predicted_label": predicted_label.astype(int),
-            "actual_label": pd.to_numeric(frame[settings.target.classification_column], errors="coerce"),
-            "actual_return_bps": pd.to_numeric(frame[settings.target.regression_column], errors="coerce"),
-        }
-    )
-
-
-def _predict_regressor(
-    frame: pd.DataFrame,
-    settings: BaselineSettings,
-    model_name: str,
-    model_family: str,
-    model: Pipeline,
-    feature_columns: list[str],
-    trade_threshold_bps: float,
-) -> pd.DataFrame:
-    predicted_return = model.predict(_feature_matrix(frame, feature_columns)).astype(float)
-    signal = predicted_return >= float(trade_threshold_bps)
-    return pd.DataFrame(
-        {
-            "timestamp": frame[settings.target.timestamp_column],
-            "split": frame[settings.target.split_column],
-            "model_name": model_name,
-            "model_family": model_family,
-            "task": "regression",
-            "signal_direction": "short_perp_long_spot",
-            "signal": signal.astype(int),
-            "decision_score": predicted_return.astype(float),
-            "signal_threshold": float(trade_threshold_bps),
-            "signal_strength": predicted_return.astype(float) - float(trade_threshold_bps),
-            "predicted_probability": np.nan,
-            "predicted_return_bps": predicted_return.astype(float),
-            "predicted_label": signal.astype(int),
-            "actual_label": pd.to_numeric(frame[settings.target.classification_column], errors="coerce"),
-            "actual_return_bps": pd.to_numeric(frame[settings.target.regression_column], errors="coerce"),
-        }
-    )
-
-
-def _classification_metrics(predictions: pd.DataFrame) -> dict[str, Any]:
+def _classification_metrics(
+    predictions: pd.DataFrame,
+    *,
+    top_quantile: float = 0.1,
+) -> dict[str, Any]:
     usable = predictions.dropna(subset=["actual_label"]).copy()
     if usable.empty:
         return {}
     y_true = usable["actual_label"].astype(int)
     y_pred = usable["predicted_label"].astype(int)
-    y_score = usable["predicted_probability"].copy()
-    if y_score.isna().all():
-        y_score = usable["decision_score"].astype(float)
+    y_score = _score_column(usable)
 
-    signaled = usable[usable["signal"] == 1]["actual_return_bps"].dropna()
+    signaled = usable[usable["signal"] == 1].copy()
+    signaled_returns = pd.to_numeric(signaled["actual_return_bps"], errors="coerce").dropna()
+    top_returns = _top_quantile_returns(usable, top_quantile=top_quantile)
+
     metrics = {
         "row_count": int(len(usable)),
         "actual_positive_count": int(y_true.sum()),
@@ -468,27 +1024,51 @@ def _classification_metrics(predictions: pd.DataFrame) -> dict[str, Any]:
         "f1": _safe_float(f1_score(y_true, y_pred, zero_division=0)),
         "signal_count": int((usable["signal"] == 1).sum()),
         "signal_rate": _safe_float((usable["signal"] == 1).mean()),
-        "avg_signal_return_bps": _mean_or_none(signaled),
-        "median_signal_return_bps": _median_or_none(signaled),
-        "cumulative_signal_return_bps": _sum_or_none(signaled),
-        "signal_hit_rate": _safe_float((signaled > 0.0).mean()) if not signaled.empty else None,
+        "precision_among_signaled": _safe_float(signaled["actual_label"].mean())
+        if not signaled.empty
+        else None,
+        "top_quantile_count": int(len(top_returns)),
+        "top_quantile_avg_return_bps": _mean_or_none(top_returns),
+        "top_quantile_cumulative_return_bps": _sum_or_none(top_returns),
     }
+    metrics.update(_signal_return_summary(signaled_returns))
     if y_true.nunique() >= 2 and y_score.nunique(dropna=True) >= 2:
         metrics["roc_auc"] = _safe_float(roc_auc_score(y_true, y_score))
-        metrics["average_precision"] = _safe_float(average_precision_score(y_true, y_score))
+        metrics["average_precision"] = _safe_float(
+            average_precision_score(y_true, y_score)
+        )
+        metrics["brier_score"] = (
+            _safe_float(
+                brier_score_loss(
+                    y_true,
+                    pd.to_numeric(usable["predicted_probability"], errors="coerce"),
+                )
+            )
+            if not usable["predicted_probability"].isna().all()
+            else None
+        )
     else:
         metrics["roc_auc"] = None
         metrics["average_precision"] = None
+        metrics["brier_score"] = None
     return metrics
 
 
-def _regression_metrics(predictions: pd.DataFrame) -> dict[str, Any]:
-    usable = predictions.dropna(subset=["actual_return_bps", "predicted_return_bps"]).copy()
+def _regression_metrics(
+    predictions: pd.DataFrame,
+    *,
+    top_quantile: float = 0.1,
+) -> dict[str, Any]:
+    usable = predictions.dropna(
+        subset=["actual_return_bps", "predicted_return_bps"]
+    ).copy()
     if usable.empty:
         return {}
     y_true = usable["actual_return_bps"].astype(float)
     y_pred = usable["predicted_return_bps"].astype(float)
-    signaled = usable[usable["signal"] == 1]["actual_return_bps"].dropna()
+    signaled = usable[usable["signal"] == 1].copy()
+    signaled_returns = pd.to_numeric(signaled["actual_return_bps"], errors="coerce").dropna()
+    top_returns = _top_quantile_returns(usable, top_quantile=top_quantile)
     metrics = {
         "row_count": int(len(usable)),
         "mae": _safe_float(mean_absolute_error(y_true, y_pred)),
@@ -498,27 +1078,37 @@ def _regression_metrics(predictions: pd.DataFrame) -> dict[str, Any]:
         "predicted_positive_rate": _safe_float((y_pred >= 0.0).mean()),
         "signal_count": int((usable["signal"] == 1).sum()),
         "signal_rate": _safe_float((usable["signal"] == 1).mean()),
-        "avg_signal_return_bps": _mean_or_none(signaled),
-        "median_signal_return_bps": _median_or_none(signaled),
-        "cumulative_signal_return_bps": _sum_or_none(signaled),
-        "signal_hit_rate": _safe_float((signaled > 0.0).mean()) if not signaled.empty else None,
+        "precision_among_signaled": _safe_float(signaled["actual_label"].mean())
+        if not signaled.empty
+        else None,
+        "top_quantile_count": int(len(top_returns)),
+        "top_quantile_avg_return_bps": _mean_or_none(top_returns),
+        "top_quantile_cumulative_return_bps": _sum_or_none(top_returns),
     }
-    if y_true.std(ddof=0) > 0.0 and y_pred.std(ddof=0) > 0.0:
-        metrics["pearson_corr"] = _safe_float(np.corrcoef(y_true, y_pred)[0, 1])
-    else:
-        metrics["pearson_corr"] = None
+    metrics.update(_signal_return_summary(signaled_returns))
+    metrics["pearson_corr"] = (
+        _safe_float(np.corrcoef(y_true, y_pred)[0, 1])
+        if y_true.std(ddof=0) > 0.0 and y_pred.std(ddof=0) > 0.0
+        else None
+    )
     return metrics
 
 
-def evaluate_prediction_table(predictions: pd.DataFrame) -> pd.DataFrame:
+def evaluate_prediction_table(
+    predictions: pd.DataFrame,
+    *,
+    top_quantile: float = 0.1,
+) -> pd.DataFrame:
     """Aggregate split-aware metrics from a combined prediction table."""
+
     rows: list[dict[str, Any]] = []
     grouped = predictions.groupby(["model_name", "model_family", "task", "split"], sort=True)
     for (model_name, model_family, task, split), group in grouped:
-        if task == "regression":
-            metrics = _regression_metrics(group)
-        else:
-            metrics = _classification_metrics(group)
+        metrics = (
+            _regression_metrics(group, top_quantile=top_quantile)
+            if task == "regression"
+            else _classification_metrics(group, top_quantile=top_quantile)
+        )
         row = {
             "model_name": model_name,
             "model_family": model_family,
@@ -527,18 +1117,36 @@ def evaluate_prediction_table(predictions: pd.DataFrame) -> pd.DataFrame:
         }
         row.update(metrics)
         rows.append(row)
-    return pd.DataFrame(rows).sort_values(["task", "model_family", "model_name", "split"]).reset_index(drop=True)
+    return (
+        pd.DataFrame(rows)
+        .sort_values(["task", "model_family", "model_name", "split"])
+        .reset_index(drop=True)
+    )
 
 
 def _build_leaderboard(metrics: pd.DataFrame) -> pd.DataFrame:
     if metrics.empty:
         return metrics.copy()
     leaderboard = metrics[metrics["split"].isin(["validation", "test"])].copy()
-    sort_keys = ["task", "split", "avg_signal_return_bps", "f1", "pearson_corr"]
+    sort_keys = [
+        "task",
+        "split",
+        "avg_signal_return_bps",
+        "cumulative_signal_return_bps",
+        "signal_sharpe_like",
+        "top_quantile_avg_return_bps",
+        "f1",
+        "pearson_corr",
+    ]
     available_keys = [key for key in sort_keys if key in leaderboard.columns]
     if available_keys:
-        leaderboard = leaderboard.sort_values(available_keys, ascending=False, na_position="last")
+        leaderboard = leaderboard.sort_values(
+            available_keys,
+            ascending=[False] * len(available_keys),
+            na_position="last",
+        )
     return leaderboard.reset_index(drop=True)
+
 
 def _table_to_markdown(frame: pd.DataFrame) -> str:
     if frame.empty:
@@ -549,219 +1157,1602 @@ def _table_to_markdown(frame: pd.DataFrame) -> str:
         return frame.to_string(index=False)
 
 
+def _rule_candidate_specs(rule: RuleBaselineSpec) -> list[RuleBaselineSpec]:
+    if rule.kind == "funding_threshold":
+        grid = rule.funding_threshold_grid_bps or [rule.funding_threshold_bps]
+        return [
+            rule.model_copy(update={"funding_threshold_bps": float(threshold)})
+            for threshold in grid
+        ]
+    if rule.kind == "spread_zscore_threshold":
+        grid = rule.spread_threshold_grid or [rule.spread_threshold]
+        return [
+            rule.model_copy(update={"spread_threshold": float(threshold)})
+            for threshold in grid
+        ]
+    if rule.kind == "combined_threshold":
+        funding_grid = rule.funding_threshold_grid_bps or [rule.funding_threshold_bps]
+        spread_grid = rule.spread_threshold_grid or [rule.spread_threshold]
+        return [
+            rule.model_copy(
+                update={
+                    "funding_threshold_bps": float(funding_threshold),
+                    "spread_threshold": float(spread_threshold),
+                }
+            )
+            for funding_threshold, spread_threshold in product(funding_grid, spread_grid)
+        ]
+    raise ValueError(f"Unsupported rule baseline kind: {rule.kind}")
+
+
+def _apply_rule_logic(
+    frame: pd.DataFrame,
+    rule: RuleBaselineSpec,
+) -> tuple[pd.Series, pd.Series, float]:
+    if rule.kind == "funding_threshold":
+        decision_score = pd.to_numeric(frame[rule.funding_column], errors="coerce").astype(float)
+        signal_threshold = float(rule.funding_threshold_bps)
+        signal = decision_score >= signal_threshold
+    elif rule.kind == "spread_zscore_threshold":
+        decision_score = pd.to_numeric(frame[rule.spread_column], errors="coerce").astype(float)
+        signal_threshold = float(rule.spread_threshold)
+        signal = decision_score >= signal_threshold
+    elif rule.kind == "combined_threshold":
+        funding_margin = pd.to_numeric(frame[rule.funding_column], errors="coerce").astype(float) - float(
+            rule.funding_threshold_bps
+        )
+        spread_margin = pd.to_numeric(frame[rule.spread_column], errors="coerce").astype(float) - float(
+            rule.spread_threshold
+        )
+        decision_score = funding_margin.add(spread_margin, fill_value=0.0)
+        signal_threshold = 0.0
+        signal = (funding_margin >= 0.0) & (spread_margin >= 0.0)
+    else:
+        raise ValueError(f"Unsupported rule baseline kind: {rule.kind}")
+    if rule.regime_column is not None:
+        signal = signal & frame[rule.regime_column].eq(rule.regime_value)
+    return signal.astype(int), decision_score.astype(float), float(signal_threshold)
+
+
+def _rule_prediction_frame(
+    frame: pd.DataFrame,
+    settings: BaselineSettings,
+    rule: RuleBaselineSpec,
+) -> pd.DataFrame:
+    signal, decision_score, signal_threshold = _apply_rule_logic(frame, rule)
+    return pd.DataFrame(
+        {
+            "timestamp": frame[settings.target.timestamp_column],
+            "split": frame[settings.target.split_column],
+            "model_name": rule.name,
+            "model_family": "rule_based",
+            "task": "classification",
+            "signal_direction": "short_perp_long_spot",
+            "signal": signal.astype(int),
+            "decision_score": decision_score.astype(float),
+            "signal_threshold": float(signal_threshold),
+            "signal_strength": decision_score.astype(float) - float(signal_threshold),
+            "predicted_probability": np.nan,
+            "predicted_return_bps": np.nan,
+            "predicted_label": signal.astype(int),
+            "actual_label": pd.to_numeric(
+                frame[settings.target.classification_column], errors="coerce"
+            ),
+            "actual_return_bps": pd.to_numeric(
+                frame[settings.target.regression_column], errors="coerce"
+            ),
+            "selected_hyperparameters_json": _json_dumps({}),
+            "selected_threshold_objective": None,
+            "calibration_method": "none",
+            "feature_importance_method": "not_applicable",
+            "prediction_mode": "static",
+        }
+    )
+
+
+def _metric_value_for_threshold(
+    predictions: pd.DataFrame,
+    *,
+    objective: str,
+    top_quantile: float,
+) -> float:
+    metrics = evaluate_prediction_table(predictions, top_quantile=top_quantile)
+    if metrics.empty:
+        return -np.inf
+    value = metrics.iloc[0].get(objective)
+    safe_value = _safe_float(value)
+    return -np.inf if safe_value is None else float(safe_value)
+
+
+def _select_rule_spec(
+    validation_frame: pd.DataFrame,
+    settings: BaselineSettings,
+    rule: RuleBaselineSpec,
+) -> tuple[RuleBaselineSpec, pd.DataFrame]:
+    candidates = _rule_candidate_specs(rule)
+    if (
+        not settings.threshold_search.enabled
+        or not settings.threshold_search.rule_search_enabled
+        or validation_frame.empty
+        or len(candidates) == 1
+    ):
+        return rule, pd.DataFrame(
+            [
+                {
+                    "candidate_name": rule.name,
+                    "params_json": _json_dumps(rule.model_dump()),
+                    "objective_value": None,
+                    "selected": True,
+                }
+            ]
+        )
+
+    rows: list[dict[str, Any]] = []
+    best_candidate = rule
+    best_score = -np.inf
+    for candidate in candidates:
+        candidate_predictions = _rule_prediction_frame(validation_frame, settings, candidate)
+        score = _metric_value_for_threshold(
+            candidate_predictions,
+            objective=settings.threshold_search.objective,
+            top_quantile=settings.threshold_search.top_quantile,
+        )
+        rows.append(
+            {
+                "candidate_name": candidate.name,
+                "params_json": _json_dumps(
+                    {
+                        "funding_threshold_bps": candidate.funding_threshold_bps,
+                        "spread_threshold": candidate.spread_threshold,
+                    }
+                ),
+                "objective_value": _safe_float(score),
+            }
+        )
+        if score > best_score:
+            best_score = score
+            best_candidate = candidate
+    selected_json = _json_dumps(
+        {
+            "funding_threshold_bps": best_candidate.funding_threshold_bps,
+            "spread_threshold": best_candidate.spread_threshold,
+        }
+    )
+    for row in rows:
+        row["selected"] = row["params_json"] == selected_json
+    return best_candidate, pd.DataFrame(rows).sort_values(
+        "objective_value", ascending=False, na_position="last"
+    )
+
+
+def _base_prediction_columns(
+    frame: pd.DataFrame,
+    settings: BaselineSettings,
+    *,
+    model_name: str,
+    model_family: str,
+    task: str,
+    calibration_method: str,
+    prediction_mode: str,
+    selected_params: dict[str, Any],
+    threshold_objective: str | None,
+    feature_importance_method: str,
+) -> dict[str, Any]:
+    return {
+        "timestamp": frame[settings.target.timestamp_column],
+        "split": frame[settings.target.split_column],
+        "model_name": model_name,
+        "model_family": model_family,
+        "task": task,
+        "signal_direction": "short_perp_long_spot",
+        "actual_label": pd.to_numeric(
+            frame[settings.target.classification_column], errors="coerce"
+        ),
+        "actual_return_bps": pd.to_numeric(
+            frame[settings.target.regression_column], errors="coerce"
+        ),
+        "selected_hyperparameters_json": _json_dumps(selected_params),
+        "selected_threshold_objective": threshold_objective,
+        "calibration_method": calibration_method,
+        "feature_importance_method": feature_importance_method,
+        "prediction_mode": prediction_mode,
+    }
+
+
+def _classifier_score_frame(
+    frame: pd.DataFrame,
+    settings: BaselineSettings,
+    *,
+    model_name: str,
+    model_family: str,
+    probabilities: np.ndarray,
+    calibration_method: str,
+    prediction_mode: str,
+    selected_params: dict[str, Any],
+    threshold_objective: str | None,
+    feature_importance_method: str,
+) -> pd.DataFrame:
+    base = _base_prediction_columns(
+        frame,
+        settings,
+        model_name=model_name,
+        model_family=model_family,
+        task="classification",
+        calibration_method=calibration_method,
+        prediction_mode=prediction_mode,
+        selected_params=selected_params,
+        threshold_objective=threshold_objective,
+        feature_importance_method=feature_importance_method,
+    )
+    return pd.DataFrame(
+        {
+            **base,
+            "decision_score": probabilities.astype(float),
+            "predicted_probability": probabilities.astype(float),
+            "predicted_return_bps": np.nan,
+        }
+    )
+
+
+def _apply_classifier_threshold(
+    score_frame: pd.DataFrame,
+    probability_threshold: float,
+) -> pd.DataFrame:
+    predictions = score_frame.copy()
+    predicted_label = (
+        pd.to_numeric(predictions["predicted_probability"], errors="coerce")
+        >= float(probability_threshold)
+    ).astype(int)
+    predictions["signal"] = predicted_label.astype(int)
+    predictions["predicted_label"] = predicted_label.astype(int)
+    predictions["signal_threshold"] = float(probability_threshold)
+    predictions["signal_strength"] = (
+        pd.to_numeric(predictions["decision_score"], errors="coerce")
+        - float(probability_threshold)
+    )
+    return predictions
+
+
+def _regression_score_frame(
+    frame: pd.DataFrame,
+    settings: BaselineSettings,
+    *,
+    model_name: str,
+    model_family: str,
+    predicted_return: np.ndarray,
+    prediction_mode: str,
+    selected_params: dict[str, Any],
+    threshold_objective: str | None,
+    feature_importance_method: str,
+) -> pd.DataFrame:
+    base = _base_prediction_columns(
+        frame,
+        settings,
+        model_name=model_name,
+        model_family=model_family,
+        task="regression",
+        calibration_method="none",
+        prediction_mode=prediction_mode,
+        selected_params=selected_params,
+        threshold_objective=threshold_objective,
+        feature_importance_method=feature_importance_method,
+    )
+    return pd.DataFrame(
+        {
+            **base,
+            "decision_score": predicted_return.astype(float),
+            "predicted_probability": np.nan,
+            "predicted_return_bps": predicted_return.astype(float),
+        }
+    )
+
+
+def _apply_regression_threshold(
+    score_frame: pd.DataFrame,
+    trade_threshold_bps: float,
+) -> pd.DataFrame:
+    predictions = score_frame.copy()
+    signal = (
+        pd.to_numeric(predictions["predicted_return_bps"], errors="coerce")
+        >= float(trade_threshold_bps)
+    ).astype(int)
+    predictions["signal"] = signal.astype(int)
+    predictions["predicted_label"] = signal.astype(int)
+    predictions["signal_threshold"] = float(trade_threshold_bps)
+    predictions["signal_strength"] = (
+        pd.to_numeric(predictions["decision_score"], errors="coerce")
+        - float(trade_threshold_bps)
+    )
+    return predictions
+
+
+def _default_probability_grid() -> list[float]:
+    return [round(value, 2) for value in np.linspace(0.45, 0.85, 9)]
+
+
+def _default_regression_threshold_grid() -> list[float]:
+    return [-5.0, 0.0, 2.5, 5.0, 7.5, 10.0]
+
+
+def _select_classifier_threshold(
+    validation_score_frame: pd.DataFrame,
+    settings: BaselineSettings,
+    *,
+    default_threshold: float,
+    threshold_grid: list[float],
+) -> tuple[float, float | None, pd.DataFrame]:
+    candidates = sorted(
+        {
+            float(value)
+            for value in (
+                threshold_grid
+                or settings.threshold_search.probability_grid
+                or _default_probability_grid()
+            )
+        }
+        | {float(default_threshold)}
+    )
+    if not settings.threshold_search.enabled or validation_score_frame.empty:
+        return float(default_threshold), None, pd.DataFrame(
+            [
+                {
+                    "threshold": float(default_threshold),
+                    "objective_value": None,
+                    "selected": True,
+                }
+            ]
+        )
+    rows: list[dict[str, Any]] = []
+    best_threshold = float(default_threshold)
+    best_score = -np.inf
+    for threshold in candidates:
+        candidate_frame = _apply_classifier_threshold(validation_score_frame, threshold)
+        objective_value = _metric_value_for_threshold(
+            candidate_frame,
+            objective=settings.threshold_search.objective,
+            top_quantile=settings.threshold_search.top_quantile,
+        )
+        rows.append(
+            {
+                "threshold": float(threshold),
+                "objective_value": _safe_float(objective_value),
+            }
+        )
+        if objective_value > best_score:
+            best_score = objective_value
+            best_threshold = float(threshold)
+    for row in rows:
+        row["selected"] = float(row["threshold"]) == float(best_threshold)
+    return best_threshold, _safe_float(best_score), pd.DataFrame(rows)
+
+
+def _select_regression_threshold(
+    validation_score_frame: pd.DataFrame,
+    settings: BaselineSettings,
+    *,
+    default_threshold: float,
+    threshold_grid: list[float],
+) -> tuple[float, float | None, pd.DataFrame]:
+    candidates = sorted(
+        {
+            float(value)
+            for value in (
+                threshold_grid
+                or settings.threshold_search.regression_threshold_grid_bps
+                or _default_regression_threshold_grid()
+            )
+        }
+        | {float(default_threshold)}
+    )
+    if not settings.threshold_search.enabled or validation_score_frame.empty:
+        return float(default_threshold), None, pd.DataFrame(
+            [
+                {
+                    "threshold": float(default_threshold),
+                    "objective_value": None,
+                    "selected": True,
+                }
+            ]
+        )
+    rows: list[dict[str, Any]] = []
+    best_threshold = float(default_threshold)
+    best_score = -np.inf
+    for threshold in candidates:
+        candidate_frame = _apply_regression_threshold(validation_score_frame, threshold)
+        objective_value = _metric_value_for_threshold(
+            candidate_frame,
+            objective=settings.threshold_search.objective,
+            top_quantile=settings.threshold_search.top_quantile,
+        )
+        rows.append(
+            {
+                "threshold": float(threshold),
+                "objective_value": _safe_float(objective_value),
+            }
+        )
+        if objective_value > best_score:
+            best_score = objective_value
+            best_threshold = float(threshold)
+    for row in rows:
+        row["selected"] = float(row["threshold"]) == float(best_threshold)
+    return best_threshold, _safe_float(best_score), pd.DataFrame(rows)
+
+
+def _walk_forward_history(
+    frame: pd.DataFrame,
+    settings: BaselineSettings,
+    *,
+    cutoff_timestamp: pd.Timestamp,
+    target_column: str,
+    current_split: str,
+) -> pd.DataFrame:
+    history = frame[
+        (frame[settings.target.timestamp_column] < cutoff_timestamp)
+        & frame[target_column].notna()
+    ].copy()
+    if current_split == "test" and not settings.prediction.use_validation_history_for_test:
+        history = history[history[settings.target.split_column] != "validation"].copy()
+    if settings.prediction.mode == "rolling" and settings.prediction.rolling_window_size:
+        history = history.tail(settings.prediction.rolling_window_size).copy()
+    return history
+
+
+def _generate_classifier_scores(
+    frame: pd.DataFrame,
+    settings: BaselineSettings,
+    *,
+    prediction_model: Any,
+    feature_columns: list[str],
+    target_column: str,
+    model_name: str,
+    model_family: str,
+    selected_params: dict[str, Any],
+    calibration_method: str,
+    threshold_objective: str | None,
+    tree_mode: bool = False,
+    model_spec: ClassificationModelVariantSettings | None = None,
+) -> pd.DataFrame:
+    relevant = frame.dropna(subset=[target_column]).copy()
+    if relevant.empty:
+        return pd.DataFrame()
+    if settings.prediction.mode == "static":
+        probabilities = prediction_model.predict_proba(
+            _feature_matrix(relevant, feature_columns)
+        )[:, 1]
+        return _classifier_score_frame(
+            relevant,
+            settings,
+            model_name=model_name,
+            model_family=model_family,
+            probabilities=probabilities,
+            calibration_method=calibration_method,
+            prediction_mode="static",
+            selected_params=selected_params,
+            threshold_objective=threshold_objective,
+            feature_importance_method="permutation_validation",
+        )
+
+    train_mask = relevant[settings.target.split_column].eq("train")
+    train_rows = relevant[train_mask].copy()
+    non_train_rows = relevant[~train_mask].copy().sort_values(settings.target.timestamp_column)
+    score_frames: list[pd.DataFrame] = []
+    if not train_rows.empty:
+        train_probabilities = prediction_model.predict_proba(
+            _feature_matrix(train_rows, feature_columns)
+        )[:, 1]
+        score_frames.append(
+            _classifier_score_frame(
+                train_rows,
+                settings,
+                model_name=model_name,
+                model_family=model_family,
+                probabilities=train_probabilities,
+                calibration_method=calibration_method,
+                prediction_mode="train_fit",
+                selected_params=selected_params,
+                threshold_objective=threshold_objective,
+                feature_importance_method="permutation_validation",
+            )
+        )
+
+    chunk_size = int(settings.prediction.refit_every_n_periods)
+    for chunk_start in range(0, len(non_train_rows), chunk_size):
+        chunk = non_train_rows.iloc[chunk_start : chunk_start + chunk_size].copy()
+        history = _walk_forward_history(
+            relevant,
+            settings,
+            cutoff_timestamp=chunk[settings.target.timestamp_column].iloc[0],
+            target_column=target_column,
+            current_split=str(chunk[settings.target.split_column].iloc[0]),
+        )
+        if history.empty or history[target_column].nunique(dropna=True) < 2:
+            chunk_model = prediction_model
+            chunk_calibration = calibration_method
+        else:
+            spec_to_use = model_spec or settings.predictive.classification
+            chunk_model, _, chunk_calibration = _fit_classifier_with_calibration(
+                settings,
+                history,
+                feature_columns,
+                target_column,
+                spec_to_use,
+                selected_params,
+                tree_mode=tree_mode,
+            )
+        probabilities = chunk_model.predict_proba(_feature_matrix(chunk, feature_columns))[:, 1]
+        score_frames.append(
+            _classifier_score_frame(
+                chunk,
+                settings,
+                model_name=model_name,
+                model_family=model_family,
+                probabilities=probabilities,
+                calibration_method=chunk_calibration,
+                prediction_mode=settings.prediction.mode,
+                selected_params=selected_params,
+                threshold_objective=threshold_objective,
+                feature_importance_method="permutation_validation",
+            )
+        )
+    return (
+        pd.concat(score_frames, ignore_index=True)
+        .sort_values(["timestamp", "split"])
+        .reset_index(drop=True)
+    )
+
+
+def _generate_regression_scores(
+    frame: pd.DataFrame,
+    settings: BaselineSettings,
+    *,
+    prediction_model: Pipeline,
+    feature_columns: list[str],
+    target_column: str,
+    model_name: str,
+    model_family: str,
+    selected_params: dict[str, Any],
+    threshold_objective: str | None,
+    tree_mode: bool = False,
+    model_spec: RegressionModelVariantSettings | None = None,
+) -> pd.DataFrame:
+    relevant = frame.dropna(subset=[target_column]).copy()
+    if relevant.empty:
+        return pd.DataFrame()
+    if settings.prediction.mode == "static":
+        predicted_return = prediction_model.predict(_feature_matrix(relevant, feature_columns))
+        return _regression_score_frame(
+            relevant,
+            settings,
+            model_name=model_name,
+            model_family=model_family,
+            predicted_return=predicted_return,
+            prediction_mode="static",
+            selected_params=selected_params,
+            threshold_objective=threshold_objective,
+            feature_importance_method="permutation_validation",
+        )
+
+    train_mask = relevant[settings.target.split_column].eq("train")
+    train_rows = relevant[train_mask].copy()
+    non_train_rows = relevant[~train_mask].copy().sort_values(settings.target.timestamp_column)
+    score_frames: list[pd.DataFrame] = []
+    if not train_rows.empty:
+        train_predictions = prediction_model.predict(_feature_matrix(train_rows, feature_columns))
+        score_frames.append(
+            _regression_score_frame(
+                train_rows,
+                settings,
+                model_name=model_name,
+                model_family=model_family,
+                predicted_return=train_predictions,
+                prediction_mode="train_fit",
+                selected_params=selected_params,
+                threshold_objective=threshold_objective,
+                feature_importance_method="permutation_validation",
+            )
+        )
+
+    chunk_size = int(settings.prediction.refit_every_n_periods)
+    for chunk_start in range(0, len(non_train_rows), chunk_size):
+        chunk = non_train_rows.iloc[chunk_start : chunk_start + chunk_size].copy()
+        history = _walk_forward_history(
+            relevant,
+            settings,
+            cutoff_timestamp=chunk[settings.target.timestamp_column].iloc[0],
+            target_column=target_column,
+            current_split=str(chunk[settings.target.split_column].iloc[0]),
+        )
+        if history.empty:
+            chunk_model = prediction_model
+        else:
+            spec_to_use = model_spec or settings.predictive.regression
+            chunk_model = _fit_regressor(
+                settings,
+                history,
+                feature_columns,
+                target_column,
+                spec_to_use,
+                selected_params,
+                tree_mode=tree_mode,
+            )
+        predicted_return = chunk_model.predict(_feature_matrix(chunk, feature_columns))
+        score_frames.append(
+            _regression_score_frame(
+                chunk,
+                settings,
+                model_name=model_name,
+                model_family=model_family,
+                predicted_return=predicted_return,
+                prediction_mode=settings.prediction.mode,
+                selected_params=selected_params,
+                threshold_objective=threshold_objective,
+                feature_importance_method="permutation_validation",
+            )
+        )
+    return (
+        pd.concat(score_frames, ignore_index=True)
+        .sort_values(["timestamp", "split"])
+        .reset_index(drop=True)
+    )
+
+
+def _extract_linear_coefficients(model: Any, feature_columns: list[str]) -> pd.DataFrame | None:
+    estimator = model.named_steps.get("model") if isinstance(model, Pipeline) else None
+    if estimator is None or not hasattr(estimator, "coef_"):
+        return None
+    coefficients = np.asarray(estimator.coef_)
+    if coefficients.ndim > 1:
+        coefficients = coefficients[0]
+    frame = pd.DataFrame({"feature": feature_columns, "coefficient": coefficients.astype(float)})
+    frame["abs_coefficient"] = frame["coefficient"].abs()
+    return frame.sort_values("abs_coefficient", ascending=False).reset_index(drop=True)
+
+
+def _extract_tree_importances(model: Any, feature_columns: list[str]) -> pd.DataFrame | None:
+    estimator = model.named_steps.get("model") if isinstance(model, Pipeline) else None
+    if estimator is None or not hasattr(estimator, "feature_importances_"):
+        return None
+    frame = pd.DataFrame(
+        {"feature": feature_columns, "importance": np.asarray(estimator.feature_importances_, dtype=float)}
+    )
+    return frame.sort_values("importance", ascending=False).reset_index(drop=True)
+
+
+def _permutation_importance_frame(
+    model: Any,
+    evaluation_frame: pd.DataFrame,
+    feature_columns: list[str],
+    settings: BaselineSettings,
+    *,
+    task: str,
+) -> pd.DataFrame | None:
+    if evaluation_frame.empty:
+        return None
+    X_eval = _feature_matrix(evaluation_frame, feature_columns)
+    if task == "classification":
+        y_eval = pd.to_numeric(
+            evaluation_frame[settings.target.classification_column], errors="coerce"
+        ).astype(int)
+        if y_eval.nunique(dropna=True) < 2:
+            return None
+        scoring = "average_precision"
+    else:
+        y_eval = pd.to_numeric(
+            evaluation_frame[settings.target.regression_column], errors="coerce"
+        ).astype(float)
+        scoring = "neg_mean_squared_error"
+    importance = permutation_importance(
+        model,
+        X_eval,
+        y_eval,
+        n_repeats=5,
+        random_state=42,
+        scoring=scoring,
+        n_jobs=1,
+    )
+    frame = pd.DataFrame(
+        {
+            "feature": feature_columns,
+            "importance_mean": importance.importances_mean.astype(float),
+            "importance_std": importance.importances_std.astype(float),
+        }
+    )
+    frame["abs_importance_mean"] = frame["importance_mean"].abs()
+    return frame.sort_values("abs_importance_mean", ascending=False).reset_index(drop=True)
+
+
+def _calibration_table(
+    predictions: pd.DataFrame,
+    *,
+    split_name: str,
+    n_bins: int = 10,
+) -> pd.DataFrame | None:
+    subset = predictions[
+        (predictions["split"] == split_name)
+        & predictions["predicted_probability"].notna()
+        & predictions["actual_label"].notna()
+    ].copy()
+    if subset.empty or subset["actual_label"].nunique(dropna=True) < 2:
+        return None
+    try:
+        subset["probability_bin"] = pd.qcut(
+            subset["predicted_probability"],
+            q=min(n_bins, subset["predicted_probability"].nunique(dropna=True)),
+            duplicates="drop",
+        )
+    except ValueError:
+        return None
+    grouped = subset.groupby("probability_bin", observed=False)
+    return (
+        grouped.agg(
+            count=("actual_label", "size"),
+            avg_predicted_probability=("predicted_probability", "mean"),
+            observed_positive_rate=("actual_label", "mean"),
+            avg_realized_return_bps=("actual_return_bps", "mean"),
+        )
+        .reset_index()
+        .sort_values("avg_predicted_probability")
+        .reset_index(drop=True)
+    )
+
+
+def _write_diagnostic_frame(
+    diagnostics_dir: Path,
+    model_name: str,
+    suffix: str,
+    frame: pd.DataFrame | None,
+) -> str | None:
+    if frame is None or frame.empty:
+        return None
+    path = diagnostics_dir / f"{model_name}_{suffix}.csv"
+    frame.to_csv(path, index=False)
+    return str(path)
+
+
+def _legacy_bundle(obj: Any) -> dict[str, Any]:
+    return {
+        "prediction_model": obj,
+        "diagnostic_model": obj,
+        "selected_params": {},
+        "selected_threshold": None,
+        "threshold_objective": None,
+        "threshold_objective_value": None,
+        "calibration_method": "none",
+        "prediction_mode": "static",
+        "tuning_metric": None,
+        "legacy_artifact": True,
+    }
+
+
+def _save_model_bundle(path: Path, bundle: dict[str, Any]) -> None:
+    dump(bundle, path)
+
+
+def _load_model_bundle(path: Path) -> dict[str, Any]:
+    loaded = load(path)
+    if isinstance(loaded, dict):
+        return loaded
+    return _legacy_bundle(loaded)
+
+
+def _build_model_report_summary(model_records: list[dict[str, Any]]) -> pd.DataFrame:
+    if not model_records:
+        return pd.DataFrame()
+    return pd.DataFrame(model_records).sort_values(
+        ["task", "model_family", "model_name"]
+    ).reset_index(drop=True)
+
+
 def _write_markdown_report(
     settings: BaselineSettings,
     feature_columns: list[str],
     metrics: pd.DataFrame,
     leaderboard: pd.DataFrame,
+    model_summary: pd.DataFrame,
     output_dir: Path,
 ) -> str | None:
     if not settings.output.write_markdown_report:
         return None
     report_path = output_dir / "baseline_report.md"
-    task_columns = ["model_name", "split", "signal_count", "signal_rate", "avg_signal_return_bps"]
-    classification_columns = task_columns + ["accuracy", "precision", "recall", "f1", "roc_auc"]
-    regression_columns = task_columns + ["mae", "rmse", "r2", "pearson_corr"]
-    classification_table = metrics[metrics["task"] == "classification"].copy()
-    regression_table = metrics[metrics["task"] == "regression"].copy()
+    classification_columns = [
+        "model_name",
+        "split",
+        "signal_count",
+        "signal_rate",
+        "avg_signal_return_bps",
+        "signal_hit_rate",
+        "precision_among_signaled",
+        "top_quantile_avg_return_bps",
+        "accuracy",
+        "precision",
+        "recall",
+        "f1",
+        "roc_auc",
+        "average_precision",
+        "brier_score",
+    ]
+    regression_columns = [
+        "model_name",
+        "split",
+        "signal_count",
+        "signal_rate",
+        "avg_signal_return_bps",
+        "signal_hit_rate",
+        "precision_among_signaled",
+        "top_quantile_avg_return_bps",
+        "mae",
+        "rmse",
+        "r2",
+        "pearson_corr",
+        "directional_accuracy",
+    ]
+    summary_columns = [
+        "model_name",
+        "task",
+        "model_family",
+        "prediction_mode",
+        "calibration_method",
+        "feature_importance_method",
+        "selected_threshold",
+        "threshold_objective",
+        "threshold_objective_value",
+        "tuning_metric",
+        "selected_params_json",
+    ]
     lines = [
         "# Baseline Models Report",
         "",
         f"- Dataset: `{settings.input.dataset_path}`",
         f"- Classification target: `{settings.target.classification_column}`",
         f"- Regression target: `{settings.target.regression_column}`",
-        f"- Feature count: `{len(feature_columns)}`",
+        f"- Feature count after indicators: `{len(feature_columns)}`",
+        f"- Time-series tuning mode: `{settings.tuning.mode if settings.tuning.enabled else 'disabled'}`",
+        f"- Prediction mode: `{settings.prediction.mode}`",
+        f"- Threshold objective: `{settings.threshold_search.objective}`",
+        f"- Remaining imputation strategy: `{settings.imputation.remaining_strategy}`",
         f"- Output directory: `{output_dir}`",
         "",
         "## Validation/Test Leaderboard",
         "",
         _table_to_markdown(leaderboard),
         "",
+        "## Model Configuration Summary",
+        "",
+        _table_to_markdown(
+            model_summary[[column for column in summary_columns if column in model_summary.columns]]
+        ),
+        "",
         "## Classification and Rule Baselines",
         "",
-        _table_to_markdown(classification_table[[column for column in classification_columns if column in classification_table.columns]]),
+        _table_to_markdown(
+            metrics[metrics["task"] == "classification"][
+                [column for column in classification_columns if column in metrics.columns]
+            ]
+        ),
         "",
         "## Regression Baselines",
         "",
-        _table_to_markdown(regression_table[[column for column in regression_columns if column in regression_table.columns]]),
+        _table_to_markdown(
+            metrics[metrics["task"] == "regression"][
+                [column for column in regression_columns if column in metrics.columns]
+            ]
+        ),
         "",
         "## Notes",
         "",
-        "- Signals are aligned to the post-cost supervised dataset created by the label pipeline.",
-        "- Rule-based baselines benchmark interpretable heuristics against simple ML predictors.",
-        "- Current post-cost profitable labels are intentionally sparse; signal-return metrics are therefore reported alongside classification metrics.",
+        "- Predictive models are tuned only on the train split using chronological inner folds.",
+        "- Thresholds are selected on validation using a trading-oriented objective, then applied unchanged to the full prediction table.",
+        "- Permutation importance on held-out data is the preferred importance diagnostic for final interpretation.",
+        "- Optional walk-forward mode re-fits on chronological history and is intended as a lighter realism upgrade before the dedicated backtest layer.",
     ]
     report_path.write_text("\n".join(lines), encoding="utf-8")
     return str(report_path)
 
 
-def run_baseline_pipeline(settings: BaselineSettings, train_models: bool = True) -> BaselineArtifacts:
+def run_baseline_pipeline(
+    settings: BaselineSettings,
+    train_models: bool = True,
+) -> BaselineArtifacts:
     """Train or evaluate baseline strategies and predictive models."""
+
     frame = _load_supervised_dataset(settings)
-    feature_columns = select_feature_columns(frame, settings)
+    raw_feature_columns = select_feature_columns(frame, settings)
+    modeling_frame, feature_columns, preprocessing_metadata = _build_modeling_frame(
+        frame, raw_feature_columns, settings
+    )
+
     output_dir = _output_dir(settings)
     models_dir = ensure_directory(output_dir / "models")
     diagnostics_dir = ensure_directory(output_dir / "diagnostics")
 
     feature_columns_path = output_dir / "feature_columns.json"
-    feature_columns_path.write_text(json.dumps(feature_columns, indent=2), encoding="utf-8")
+    feature_columns_path.write_text(
+        json.dumps(feature_columns, indent=2), encoding="utf-8"
+    )
 
     prediction_frames: list[pd.DataFrame] = []
     model_paths: dict[str, str] = {}
     diagnostic_paths: dict[str, str] = {}
+    model_records: list[dict[str, Any]] = []
+
+    split_column = settings.target.split_column
+    train_split = modeling_frame[modeling_frame[split_column] == "train"].copy()
+    validation_split = modeling_frame[modeling_frame[split_column] == "validation"].copy()
+    validation_available = not validation_split.empty
 
     for rule in settings.rules:
         if not rule.enabled:
             continue
-        prediction_frames.append(_rule_prediction_frame(frame, settings, rule))
+        selected_rule, threshold_search_frame = _select_rule_spec(
+            validation_split, settings, rule
+        )
+        threshold_search_path = _write_diagnostic_frame(
+            diagnostics_dir,
+            selected_rule.name,
+            "rule_threshold_search",
+            threshold_search_frame,
+        )
+        if threshold_search_path is not None:
+            diagnostic_paths[f"{selected_rule.name}:threshold_search"] = threshold_search_path
+        rule_predictions = _rule_prediction_frame(modeling_frame, settings, selected_rule)
+        if settings.threshold_search.enabled:
+            rule_predictions["selected_threshold_objective"] = (
+                settings.threshold_search.objective
+            )
+        prediction_frames.append(rule_predictions)
+        model_records.append(
+            {
+                "model_name": selected_rule.name,
+                "task": "classification",
+                "model_family": "rule_based",
+                "prediction_mode": "static",
+                "calibration_method": "none",
+                "feature_importance_method": "not_applicable",
+                "selected_threshold": (
+                    float(selected_rule.funding_threshold_bps)
+                    if selected_rule.kind == "funding_threshold"
+                    else (
+                        float(selected_rule.spread_threshold)
+                        if selected_rule.kind == "spread_zscore_threshold"
+                        else 0.0
+                    )
+                ),
+                "threshold_objective": settings.threshold_search.objective
+                if settings.threshold_search.enabled
+                else None,
+                "threshold_objective_value": None,
+                "tuning_metric": None,
+                "selected_params_json": _json_dumps(
+                    {
+                        "funding_threshold_bps": selected_rule.funding_threshold_bps,
+                        "spread_threshold": selected_rule.spread_threshold,
+                        "regime_column": selected_rule.regime_column,
+                        "regime_value": selected_rule.regime_value,
+                    }
+                ),
+            }
+        )
 
-    split_column = settings.target.split_column
-    train_split = frame[frame[split_column] == "train"].copy()
+    classification_models = [settings.predictive.classification] + [
+        model
+        for model in settings.predictive.classification.additional_models
+        if model.enabled
+    ]
+    regression_models = [settings.predictive.regression] + [
+        model
+        for model in settings.predictive.regression.additional_models
+        if model.enabled
+    ]
 
     if settings.predictive.classification.enabled:
         target_column = settings.target.classification_column
         classifier_train = train_split.dropna(subset=[target_column]).copy()
-        if classifier_train[target_column].nunique(dropna=True) >= 2:
-            classifier_path = models_dir / f"{settings.predictive.classification.name}.joblib"
-            classifier = _fit_or_load_model(
-                _build_classifier_pipeline(settings),
-                classifier_train,
-                feature_columns,
-                target_column,
-                classifier_path,
-                train_models,
-            )
-            model_paths[settings.predictive.classification.name] = str(classifier_path)
-            coefficients = _extract_linear_coefficients(classifier, feature_columns)
-            diagnostic_path = _write_diagnostics(
-                diagnostics_dir,
-                settings.predictive.classification.name,
-                coefficients,
-            )
-            if diagnostic_path is not None:
-                diagnostic_paths[settings.predictive.classification.name] = diagnostic_path
-            classifier_frame = frame.dropna(subset=[target_column]).copy()
-            prediction_frames.append(
-                _predict_classifier(
-                    classifier_frame,
+        for model_spec in classification_models:
+            if not model_spec.enabled:
+                continue
+            model_path = models_dir / f"{model_spec.name}.joblib"
+            cv_results_path = diagnostics_dir / f"{model_spec.name}_cv_results.csv"
+            threshold_path = diagnostics_dir / f"{model_spec.name}_threshold_search.csv"
+            if train_models:
+                selected_params, cv_results = _tune_classifier_params(
                     settings,
-                    settings.predictive.classification.name,
-                    "linear",
-                    classifier,
+                    classifier_train,
                     feature_columns,
-                    settings.predictive.classification.probability_threshold,
+                    target_column,
+                    model_spec,
                 )
+                cv_results.to_csv(cv_results_path, index=False)
+                prediction_model, diagnostic_model, calibration_used = _fit_classifier_with_calibration(
+                    settings,
+                    classifier_train,
+                    feature_columns,
+                    target_column,
+                    model_spec,
+                    selected_params,
+                )
+                validation_scores = _generate_classifier_scores(
+                    validation_split,
+                    settings,
+                    prediction_model=prediction_model,
+                    feature_columns=feature_columns,
+                    target_column=target_column,
+                    model_name=model_spec.name,
+                    model_family="linear",
+                    selected_params=selected_params,
+                    calibration_method=calibration_used,
+                    threshold_objective=settings.threshold_search.objective
+                    if settings.threshold_search.enabled
+                    else None,
+                    model_spec=model_spec,
+                )
+                selected_threshold, threshold_score, threshold_search = _select_classifier_threshold(
+                    validation_scores,
+                    settings,
+                    default_threshold=model_spec.probability_threshold,
+                    threshold_grid=model_spec.probability_threshold_grid,
+                )
+                threshold_search.to_csv(threshold_path, index=False)
+                bundle = {
+                    "prediction_model": prediction_model,
+                    "diagnostic_model": diagnostic_model,
+                    "selected_params": selected_params,
+                    "selected_threshold": selected_threshold,
+                    "threshold_objective": settings.threshold_search.objective
+                    if settings.threshold_search.enabled
+                    else None,
+                    "threshold_objective_value": threshold_score,
+                    "calibration_method": calibration_used,
+                    "prediction_mode": settings.prediction.mode,
+                    "tuning_metric": settings.tuning.classification_metric
+                    if settings.tuning.enabled
+                    else None,
+                }
+                _save_model_bundle(model_path, bundle)
+            else:
+                bundle = _load_model_bundle(model_path)
+                selected_params = dict(bundle.get("selected_params", {}))
+                prediction_model = bundle["prediction_model"]
+                diagnostic_model = bundle.get("diagnostic_model", prediction_model)
+                calibration_used = str(bundle.get("calibration_method", "none"))
+                selected_threshold = float(
+                    bundle.get("selected_threshold", model_spec.probability_threshold)
+                    or model_spec.probability_threshold
+                )
+                threshold_score = _safe_float(bundle.get("threshold_objective_value"))
+
+            model_paths[model_spec.name] = str(model_path)
+            if cv_results_path.exists():
+                diagnostic_paths[f"{model_spec.name}:cv_results"] = str(cv_results_path)
+            if threshold_path.exists():
+                diagnostic_paths[f"{model_spec.name}:threshold_search"] = str(threshold_path)
+
+            full_scores = _generate_classifier_scores(
+                modeling_frame,
+                settings,
+                prediction_model=prediction_model,
+                feature_columns=feature_columns,
+                target_column=target_column,
+                model_name=model_spec.name,
+                model_family="linear",
+                selected_params=selected_params,
+                calibration_method=calibration_used,
+                threshold_objective=bundle.get("threshold_objective"),
+                model_spec=model_spec,
+            )
+            predictions = _apply_classifier_threshold(full_scores, selected_threshold)
+            prediction_frames.append(predictions)
+
+            coefficient_path = _write_diagnostic_frame(
+                diagnostics_dir,
+                model_spec.name,
+                "coefficients",
+                _extract_linear_coefficients(diagnostic_model, feature_columns),
+            )
+            if coefficient_path is not None:
+                diagnostic_paths[f"{model_spec.name}:coefficients"] = coefficient_path
+            permutation_source = (
+                validation_split
+                if validation_available
+                else modeling_frame[modeling_frame[split_column] == "test"].copy()
+            )
+            permutation_path = _write_diagnostic_frame(
+                diagnostics_dir,
+                model_spec.name,
+                "permutation_importance",
+                _permutation_importance_frame(
+                    prediction_model,
+                    permutation_source.dropna(subset=[target_column]),
+                    feature_columns,
+                    settings,
+                    task="classification",
+                ),
+            )
+            if permutation_path is not None:
+                diagnostic_paths[f"{model_spec.name}:permutation"] = permutation_path
+            calibration_validation_path = _write_diagnostic_frame(
+                diagnostics_dir,
+                model_spec.name,
+                "calibration_validation",
+                _calibration_table(predictions, split_name="validation"),
+            )
+            if calibration_validation_path is not None:
+                diagnostic_paths[f"{model_spec.name}:calibration_validation"] = calibration_validation_path
+            calibration_test_path = _write_diagnostic_frame(
+                diagnostics_dir,
+                model_spec.name,
+                "calibration_test",
+                _calibration_table(predictions, split_name="test"),
+            )
+            if calibration_test_path is not None:
+                diagnostic_paths[f"{model_spec.name}:calibration_test"] = calibration_test_path
+
+            model_records.append(
+                {
+                    "model_name": model_spec.name,
+                    "task": "classification",
+                    "model_family": "linear",
+                    "prediction_mode": settings.prediction.mode,
+                    "calibration_method": calibration_used,
+                    "feature_importance_method": "permutation_validation",
+                    "selected_threshold": _safe_float(selected_threshold),
+                    "threshold_objective": bundle.get("threshold_objective"),
+                    "threshold_objective_value": threshold_score,
+                    "tuning_metric": bundle.get("tuning_metric"),
+                    "selected_params_json": _json_dumps(selected_params),
+                }
             )
 
     if settings.predictive.regression.enabled:
         target_column = settings.target.regression_column
         regressor_train = train_split.dropna(subset=[target_column]).copy()
-        if not regressor_train.empty:
-            regressor_path = models_dir / f"{settings.predictive.regression.name}.joblib"
-            regressor = _fit_or_load_model(
-                _build_regression_pipeline(settings),
-                regressor_train,
-                feature_columns,
-                target_column,
-                regressor_path,
-                train_models,
-            )
-            model_paths[settings.predictive.regression.name] = str(regressor_path)
-            coefficients = _extract_linear_coefficients(regressor, feature_columns)
-            diagnostic_path = _write_diagnostics(
-                diagnostics_dir,
-                settings.predictive.regression.name,
-                coefficients,
-            )
-            if diagnostic_path is not None:
-                diagnostic_paths[settings.predictive.regression.name] = diagnostic_path
-            regressor_frame = frame.dropna(subset=[target_column]).copy()
-            prediction_frames.append(
-                _predict_regressor(
-                    regressor_frame,
+        for model_spec in regression_models:
+            if not model_spec.enabled:
+                continue
+            model_path = models_dir / f"{model_spec.name}.joblib"
+            cv_results_path = diagnostics_dir / f"{model_spec.name}_cv_results.csv"
+            threshold_path = diagnostics_dir / f"{model_spec.name}_threshold_search.csv"
+            if train_models:
+                selected_params, cv_results = _tune_regression_params(
                     settings,
-                    settings.predictive.regression.name,
-                    "linear",
-                    regressor,
+                    regressor_train,
                     feature_columns,
-                    settings.predictive.regression.trade_threshold_bps,
+                    target_column,
+                    model_spec,
                 )
+                cv_results.to_csv(cv_results_path, index=False)
+                prediction_model = _fit_regressor(
+                    settings,
+                    regressor_train,
+                    feature_columns,
+                    target_column,
+                    model_spec,
+                    selected_params,
+                )
+                validation_scores = _generate_regression_scores(
+                    validation_split,
+                    settings,
+                    prediction_model=prediction_model,
+                    feature_columns=feature_columns,
+                    target_column=target_column,
+                    model_name=model_spec.name,
+                    model_family="linear",
+                    selected_params=selected_params,
+                    threshold_objective=settings.threshold_search.objective
+                    if settings.threshold_search.enabled
+                    else None,
+                    model_spec=model_spec,
+                )
+                selected_threshold, threshold_score, threshold_search = _select_regression_threshold(
+                    validation_scores,
+                    settings,
+                    default_threshold=model_spec.trade_threshold_bps,
+                    threshold_grid=model_spec.trade_threshold_grid_bps,
+                )
+                threshold_search.to_csv(threshold_path, index=False)
+                bundle = {
+                    "prediction_model": prediction_model,
+                    "diagnostic_model": prediction_model,
+                    "selected_params": selected_params,
+                    "selected_threshold": selected_threshold,
+                    "threshold_objective": settings.threshold_search.objective
+                    if settings.threshold_search.enabled
+                    else None,
+                    "threshold_objective_value": threshold_score,
+                    "calibration_method": "none",
+                    "prediction_mode": settings.prediction.mode,
+                    "tuning_metric": settings.tuning.regression_metric
+                    if settings.tuning.enabled
+                    else None,
+                }
+                _save_model_bundle(model_path, bundle)
+            else:
+                bundle = _load_model_bundle(model_path)
+                selected_params = dict(bundle.get("selected_params", {}))
+                prediction_model = bundle["prediction_model"]
+                selected_threshold = float(
+                    bundle.get("selected_threshold", model_spec.trade_threshold_bps)
+                    or model_spec.trade_threshold_bps
+                )
+                threshold_score = _safe_float(bundle.get("threshold_objective_value"))
+
+            model_paths[model_spec.name] = str(model_path)
+            if cv_results_path.exists():
+                diagnostic_paths[f"{model_spec.name}:cv_results"] = str(cv_results_path)
+            if threshold_path.exists():
+                diagnostic_paths[f"{model_spec.name}:threshold_search"] = str(threshold_path)
+
+            full_scores = _generate_regression_scores(
+                modeling_frame,
+                settings,
+                prediction_model=prediction_model,
+                feature_columns=feature_columns,
+                target_column=target_column,
+                model_name=model_spec.name,
+                model_family="linear",
+                selected_params=selected_params,
+                threshold_objective=bundle.get("threshold_objective"),
+                model_spec=model_spec,
+            )
+            predictions = _apply_regression_threshold(full_scores, selected_threshold)
+            prediction_frames.append(predictions)
+
+            coefficient_path = _write_diagnostic_frame(
+                diagnostics_dir,
+                model_spec.name,
+                "coefficients",
+                _extract_linear_coefficients(prediction_model, feature_columns),
+            )
+            if coefficient_path is not None:
+                diagnostic_paths[f"{model_spec.name}:coefficients"] = coefficient_path
+            permutation_source = (
+                validation_split
+                if validation_available
+                else modeling_frame[modeling_frame[split_column] == "test"].copy()
+            )
+            permutation_path = _write_diagnostic_frame(
+                diagnostics_dir,
+                model_spec.name,
+                "permutation_importance",
+                _permutation_importance_frame(
+                    prediction_model,
+                    permutation_source.dropna(subset=[target_column]),
+                    feature_columns,
+                    settings,
+                    task="regression",
+                ),
+            )
+            if permutation_path is not None:
+                diagnostic_paths[f"{model_spec.name}:permutation"] = permutation_path
+
+            model_records.append(
+                {
+                    "model_name": model_spec.name,
+                    "task": "regression",
+                    "model_family": "linear",
+                    "prediction_mode": settings.prediction.mode,
+                    "calibration_method": "none",
+                    "feature_importance_method": "permutation_validation",
+                    "selected_threshold": _safe_float(selected_threshold),
+                    "threshold_objective": bundle.get("threshold_objective"),
+                    "threshold_objective_value": threshold_score,
+                    "tuning_metric": bundle.get("tuning_metric"),
+                    "selected_params_json": _json_dumps(selected_params),
+                }
             )
 
     if settings.predictive.tree.enabled:
         class_target = settings.target.classification_column
         tree_classifier_train = train_split.dropna(subset=[class_target]).copy()
         if tree_classifier_train[class_target].nunique(dropna=True) >= 2:
-            tree_classifier_path = models_dir / f"{settings.predictive.tree.classifier_name}.joblib"
-            tree_classifier = _fit_or_load_model(
-                _build_tree_classifier(settings),
-                tree_classifier_train,
-                feature_columns,
-                class_target,
-                tree_classifier_path,
-                train_models,
-            )
-            model_paths[settings.predictive.tree.classifier_name] = str(tree_classifier_path)
-            diagnostic_path = _write_diagnostics(
-                diagnostics_dir,
-                settings.predictive.tree.classifier_name,
-                _extract_tree_importances(tree_classifier, feature_columns),
-            )
-            if diagnostic_path is not None:
-                diagnostic_paths[settings.predictive.tree.classifier_name] = diagnostic_path
-            classifier_frame = frame.dropna(subset=[class_target]).copy()
-            prediction_frames.append(
-                _predict_classifier(
-                    classifier_frame,
+            classifier_name = settings.predictive.tree.classifier_name
+            classifier_path = models_dir / f"{classifier_name}.joblib"
+            classifier_cv_path = diagnostics_dir / f"{classifier_name}_cv_results.csv"
+            classifier_threshold_path = diagnostics_dir / f"{classifier_name}_threshold_search.csv"
+            if train_models:
+                selected_params, cv_results = _tune_tree_classifier_params(
                     settings,
-                    settings.predictive.tree.classifier_name,
-                    "tree",
-                    tree_classifier,
+                    tree_classifier_train,
                     feature_columns,
-                    settings.predictive.tree.classification_probability_threshold,
+                    class_target,
                 )
+                cv_results.to_csv(classifier_cv_path, index=False)
+                prediction_model, diagnostic_model, calibration_used = _fit_classifier_with_calibration(
+                    settings,
+                    tree_classifier_train,
+                    feature_columns,
+                    class_target,
+                    settings.predictive.classification,
+                    selected_params,
+                    tree_mode=True,
+                )
+                validation_scores = _generate_classifier_scores(
+                    validation_split,
+                    settings,
+                    prediction_model=prediction_model,
+                    feature_columns=feature_columns,
+                    target_column=class_target,
+                    model_name=classifier_name,
+                    model_family="tree",
+                    selected_params=selected_params,
+                    calibration_method=calibration_used,
+                    threshold_objective=settings.threshold_search.objective
+                    if settings.threshold_search.enabled
+                    else None,
+                    tree_mode=True,
+                    model_spec=settings.predictive.classification,
+                )
+                selected_threshold, threshold_score, threshold_search = _select_classifier_threshold(
+                    validation_scores,
+                    settings,
+                    default_threshold=settings.predictive.tree.classification_probability_threshold,
+                    threshold_grid=settings.predictive.tree.classification_probability_threshold_grid,
+                )
+                threshold_search.to_csv(classifier_threshold_path, index=False)
+                bundle = {
+                    "prediction_model": prediction_model,
+                    "diagnostic_model": diagnostic_model,
+                    "selected_params": selected_params,
+                    "selected_threshold": selected_threshold,
+                    "threshold_objective": settings.threshold_search.objective
+                    if settings.threshold_search.enabled
+                    else None,
+                    "threshold_objective_value": threshold_score,
+                    "calibration_method": calibration_used,
+                    "prediction_mode": settings.prediction.mode,
+                    "tuning_metric": settings.tuning.classification_metric
+                    if settings.tuning.enabled
+                    else None,
+                }
+                _save_model_bundle(classifier_path, bundle)
+            else:
+                bundle = _load_model_bundle(classifier_path)
+                selected_params = dict(bundle.get("selected_params", {}))
+                prediction_model = bundle["prediction_model"]
+                diagnostic_model = bundle.get("diagnostic_model", prediction_model)
+                calibration_used = str(bundle.get("calibration_method", "none"))
+                selected_threshold = float(
+                    bundle.get(
+                        "selected_threshold",
+                        settings.predictive.tree.classification_probability_threshold,
+                    )
+                    or settings.predictive.tree.classification_probability_threshold
+                )
+                threshold_score = _safe_float(bundle.get("threshold_objective_value"))
+
+            model_paths[classifier_name] = str(classifier_path)
+            if classifier_cv_path.exists():
+                diagnostic_paths[f"{classifier_name}:cv_results"] = str(classifier_cv_path)
+            if classifier_threshold_path.exists():
+                diagnostic_paths[f"{classifier_name}:threshold_search"] = str(classifier_threshold_path)
+
+            full_scores = _generate_classifier_scores(
+                modeling_frame,
+                settings,
+                prediction_model=prediction_model,
+                feature_columns=feature_columns,
+                target_column=class_target,
+                model_name=classifier_name,
+                model_family="tree",
+                selected_params=selected_params,
+                calibration_method=calibration_used,
+                threshold_objective=bundle.get("threshold_objective"),
+                tree_mode=True,
+                model_spec=settings.predictive.classification,
+            )
+            predictions = _apply_classifier_threshold(full_scores, selected_threshold)
+            prediction_frames.append(predictions)
+
+            impurity_path = _write_diagnostic_frame(
+                diagnostics_dir,
+                classifier_name,
+                "impurity_importance",
+                _extract_tree_importances(diagnostic_model, feature_columns),
+            )
+            if impurity_path is not None:
+                diagnostic_paths[f"{classifier_name}:impurity"] = impurity_path
+            permutation_source = (
+                validation_split
+                if validation_available
+                else modeling_frame[modeling_frame[split_column] == "test"].copy()
+            )
+            permutation_path = _write_diagnostic_frame(
+                diagnostics_dir,
+                classifier_name,
+                "permutation_importance",
+                _permutation_importance_frame(
+                    prediction_model,
+                    permutation_source.dropna(subset=[class_target]),
+                    feature_columns,
+                    settings,
+                    task="classification",
+                ),
+            )
+            if permutation_path is not None:
+                diagnostic_paths[f"{classifier_name}:permutation"] = permutation_path
+            calibration_validation_path = _write_diagnostic_frame(
+                diagnostics_dir,
+                classifier_name,
+                "calibration_validation",
+                _calibration_table(predictions, split_name="validation"),
+            )
+            if calibration_validation_path is not None:
+                diagnostic_paths[f"{classifier_name}:calibration_validation"] = calibration_validation_path
+            calibration_test_path = _write_diagnostic_frame(
+                diagnostics_dir,
+                classifier_name,
+                "calibration_test",
+                _calibration_table(predictions, split_name="test"),
+            )
+            if calibration_test_path is not None:
+                diagnostic_paths[f"{classifier_name}:calibration_test"] = calibration_test_path
+
+            model_records.append(
+                {
+                    "model_name": classifier_name,
+                    "task": "classification",
+                    "model_family": "tree",
+                    "prediction_mode": settings.prediction.mode,
+                    "calibration_method": calibration_used,
+                    "feature_importance_method": "permutation_validation",
+                    "selected_threshold": _safe_float(selected_threshold),
+                    "threshold_objective": bundle.get("threshold_objective"),
+                    "threshold_objective_value": threshold_score,
+                    "tuning_metric": bundle.get("tuning_metric"),
+                    "selected_params_json": _json_dumps(selected_params),
+                }
             )
 
         reg_target = settings.target.regression_column
         tree_regressor_train = train_split.dropna(subset=[reg_target]).copy()
         if not tree_regressor_train.empty:
-            tree_regressor_path = models_dir / f"{settings.predictive.tree.regressor_name}.joblib"
-            tree_regressor = _fit_or_load_model(
-                _build_tree_regressor(settings),
-                tree_regressor_train,
-                feature_columns,
-                reg_target,
-                tree_regressor_path,
-                train_models,
-            )
-            model_paths[settings.predictive.tree.regressor_name] = str(tree_regressor_path)
-            diagnostic_path = _write_diagnostics(
-                diagnostics_dir,
-                settings.predictive.tree.regressor_name,
-                _extract_tree_importances(tree_regressor, feature_columns),
-            )
-            if diagnostic_path is not None:
-                diagnostic_paths[settings.predictive.tree.regressor_name] = diagnostic_path
-            regressor_frame = frame.dropna(subset=[reg_target]).copy()
-            prediction_frames.append(
-                _predict_regressor(
-                    regressor_frame,
+            regressor_name = settings.predictive.tree.regressor_name
+            regressor_path = models_dir / f"{regressor_name}.joblib"
+            regressor_cv_path = diagnostics_dir / f"{regressor_name}_cv_results.csv"
+            regressor_threshold_path = diagnostics_dir / f"{regressor_name}_threshold_search.csv"
+            if train_models:
+                selected_params, cv_results = _tune_tree_regressor_params(
                     settings,
-                    settings.predictive.tree.regressor_name,
-                    "tree",
-                    tree_regressor,
+                    tree_regressor_train,
                     feature_columns,
-                    settings.predictive.tree.regression_trade_threshold_bps,
+                    reg_target,
                 )
+                cv_results.to_csv(regressor_cv_path, index=False)
+                prediction_model = _fit_regressor(
+                    settings,
+                    tree_regressor_train,
+                    feature_columns,
+                    reg_target,
+                    settings.predictive.regression,
+                    selected_params,
+                    tree_mode=True,
+                )
+                validation_scores = _generate_regression_scores(
+                    validation_split,
+                    settings,
+                    prediction_model=prediction_model,
+                    feature_columns=feature_columns,
+                    target_column=reg_target,
+                    model_name=regressor_name,
+                    model_family="tree",
+                    selected_params=selected_params,
+                    threshold_objective=settings.threshold_search.objective
+                    if settings.threshold_search.enabled
+                    else None,
+                    tree_mode=True,
+                    model_spec=settings.predictive.regression,
+                )
+                selected_threshold, threshold_score, threshold_search = _select_regression_threshold(
+                    validation_scores,
+                    settings,
+                    default_threshold=settings.predictive.tree.regression_trade_threshold_bps,
+                    threshold_grid=settings.predictive.tree.regression_trade_threshold_grid_bps,
+                )
+                threshold_search.to_csv(regressor_threshold_path, index=False)
+                bundle = {
+                    "prediction_model": prediction_model,
+                    "diagnostic_model": prediction_model,
+                    "selected_params": selected_params,
+                    "selected_threshold": selected_threshold,
+                    "threshold_objective": settings.threshold_search.objective
+                    if settings.threshold_search.enabled
+                    else None,
+                    "threshold_objective_value": threshold_score,
+                    "calibration_method": "none",
+                    "prediction_mode": settings.prediction.mode,
+                    "tuning_metric": settings.tuning.regression_metric
+                    if settings.tuning.enabled
+                    else None,
+                }
+                _save_model_bundle(regressor_path, bundle)
+            else:
+                bundle = _load_model_bundle(regressor_path)
+                selected_params = dict(bundle.get("selected_params", {}))
+                prediction_model = bundle["prediction_model"]
+                selected_threshold = float(
+                    bundle.get(
+                        "selected_threshold",
+                        settings.predictive.tree.regression_trade_threshold_bps,
+                    )
+                    or settings.predictive.tree.regression_trade_threshold_bps
+                )
+                threshold_score = _safe_float(bundle.get("threshold_objective_value"))
+
+            model_paths[regressor_name] = str(regressor_path)
+            if regressor_cv_path.exists():
+                diagnostic_paths[f"{regressor_name}:cv_results"] = str(regressor_cv_path)
+            if regressor_threshold_path.exists():
+                diagnostic_paths[f"{regressor_name}:threshold_search"] = str(regressor_threshold_path)
+
+            full_scores = _generate_regression_scores(
+                modeling_frame,
+                settings,
+                prediction_model=prediction_model,
+                feature_columns=feature_columns,
+                target_column=reg_target,
+                model_name=regressor_name,
+                model_family="tree",
+                selected_params=selected_params,
+                threshold_objective=bundle.get("threshold_objective"),
+                tree_mode=True,
+                model_spec=settings.predictive.regression,
+            )
+            predictions = _apply_regression_threshold(full_scores, selected_threshold)
+            prediction_frames.append(predictions)
+
+            impurity_path = _write_diagnostic_frame(
+                diagnostics_dir,
+                regressor_name,
+                "impurity_importance",
+                _extract_tree_importances(prediction_model, feature_columns),
+            )
+            if impurity_path is not None:
+                diagnostic_paths[f"{regressor_name}:impurity"] = impurity_path
+            permutation_source = (
+                validation_split
+                if validation_available
+                else modeling_frame[modeling_frame[split_column] == "test"].copy()
+            )
+            permutation_path = _write_diagnostic_frame(
+                diagnostics_dir,
+                regressor_name,
+                "permutation_importance",
+                _permutation_importance_frame(
+                    prediction_model,
+                    permutation_source.dropna(subset=[reg_target]),
+                    feature_columns,
+                    settings,
+                    task="regression",
+                ),
+            )
+            if permutation_path is not None:
+                diagnostic_paths[f"{regressor_name}:permutation"] = permutation_path
+
+            model_records.append(
+                {
+                    "model_name": regressor_name,
+                    "task": "regression",
+                    "model_family": "tree",
+                    "prediction_mode": settings.prediction.mode,
+                    "calibration_method": "none",
+                    "feature_importance_method": "permutation_validation",
+                    "selected_threshold": _safe_float(selected_threshold),
+                    "threshold_objective": bundle.get("threshold_objective"),
+                    "threshold_objective_value": threshold_score,
+                    "tuning_metric": bundle.get("tuning_metric"),
+                    "selected_params_json": _json_dumps(selected_params),
+                }
             )
 
     if not prediction_frames:
         raise ValueError("No baseline models were enabled or trainable under the current config.")
 
-    predictions = pd.concat(prediction_frames, ignore_index=True)
+    predictions = pd.concat(prediction_frames, ignore_index=True, sort=False)
     predictions = predictions.sort_values(["model_name", "timestamp"]).reset_index(drop=True)
-    metrics = evaluate_prediction_table(predictions)
+    metrics = evaluate_prediction_table(
+        predictions, top_quantile=settings.threshold_search.top_quantile
+    )
     leaderboard = _build_leaderboard(metrics)
+    model_summary = _build_model_report_summary(model_records)
 
     predictions_path = output_dir / "baseline_predictions.parquet"
     metrics_path = output_dir / "baseline_metrics.parquet"
@@ -779,15 +2770,27 @@ def run_baseline_pipeline(settings: BaselineSettings, train_models: bool = True)
         metrics_csv_path = _write_frame(metrics, metrics_path.with_suffix(".csv"))
         leaderboard_csv_path = _write_frame(leaderboard, leaderboard_path.with_suffix(".csv"))
 
-    report_path = _write_markdown_report(settings, feature_columns, metrics, leaderboard, output_dir)
+    report_path = _write_markdown_report(
+        settings,
+        feature_columns,
+        metrics,
+        leaderboard,
+        model_summary,
+        output_dir,
+    )
 
     split_counts = {
-        split_name: int((frame[split_column] == split_name).sum()) for split_name in ["train", "validation", "test"]
+        split_name: int((frame[split_column] == split_name).sum())
+        for split_name in ["train", "validation", "test"]
     }
     manifest = {
         "input": settings.input.model_dump(),
         "target": settings.target.model_dump(),
         "feature_selection": settings.feature_selection.model_dump(),
+        "tuning": settings.tuning.model_dump(),
+        "threshold_search": settings.threshold_search.model_dump(),
+        "imputation": settings.imputation.model_dump(),
+        "prediction": settings.prediction.model_dump(),
         "rules": [rule.model_dump() for rule in settings.rules if rule.enabled],
         "predictive": settings.predictive.model_dump(),
         "train_models": train_models,
@@ -795,6 +2798,7 @@ def run_baseline_pipeline(settings: BaselineSettings, train_models: bool = True)
         "split_counts": split_counts,
         "feature_count": len(feature_columns),
         "feature_columns_path": str(feature_columns_path),
+        "preprocessing": preprocessing_metadata,
         "predictions_path": predictions_primary_path,
         "predictions_csv_path": predictions_csv_path,
         "metrics_path": metrics_primary_path,
@@ -804,6 +2808,7 @@ def run_baseline_pipeline(settings: BaselineSettings, train_models: bool = True)
         "report_path": report_path,
         "model_paths": model_paths,
         "diagnostic_paths": diagnostic_paths,
+        "model_summary": _to_jsonable(model_records),
     }
     manifest_path = output_dir / "baseline_manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
