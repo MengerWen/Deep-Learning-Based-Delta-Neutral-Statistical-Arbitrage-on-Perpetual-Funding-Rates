@@ -13,7 +13,7 @@ The frontend is intentionally lightweight:
 - project overview and architecture story
 - key data-quality and backtest charts
 - baseline and deep-learning model-zoo comparison cards
-- strategy metrics table
+- strategy metrics table with test-primary, mark-to-market backtest fields
 - vault status and mock operator update summary
 - local deposit / withdraw / strategy update / NAV update simulation
 - example activity log
@@ -58,4 +58,5 @@ If you rerun upstream pipeline stages and want the dashboard to reflect new arti
 
 - The demo console is local and simulated; it is not a wallet-connected production dApp.
 - The operator/oracle flow is a prototype bridge from local artifacts to mock vault updates.
+- Backtest cards use mark-to-market drawdown/Sharpe by default, while realized-only metrics remain in the exported artifacts for auditability.
 - Broadcasted on-chain updates still depend on your local/testnet vault deployment and environment variables.

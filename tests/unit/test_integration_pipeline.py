@@ -57,6 +57,24 @@ def test_choose_leaderboard_row_prefers_top_ranked_strategy() -> None:
     assert summary["total_net_pnl_usd"] == 25.0
 
 
+def test_choose_leaderboard_row_prefers_traded_strategy_over_no_trade_zero() -> None:
+    settings = _sample_settings()
+    signals = pd.DataFrame({"strategy_name": ["no_trade", "traded"]})
+    leaderboard = pd.DataFrame(
+        {
+            "strategy_name": ["no_trade", "traded"],
+            "has_trades": [False, True],
+            "trade_count": [0, 12],
+            "total_net_pnl_usd": [0.0, -50.0],
+        }
+    )
+
+    strategy_name, summary = _choose_leaderboard_row(signals, leaderboard, settings)
+
+    assert strategy_name == "traded"
+    assert summary["trade_count"] == 12
+
+
 def test_choose_signal_row_respects_split_preference() -> None:
     settings = _sample_settings()
     signals = pd.DataFrame(

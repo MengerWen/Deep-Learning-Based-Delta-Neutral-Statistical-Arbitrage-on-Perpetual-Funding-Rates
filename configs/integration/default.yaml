@@ -12,6 +12,7 @@ selection:
   strategy_name: null
   ranking_metric: total_net_pnl_usd
   ranking_ascending: false
+  prefer_traded_strategy: true
   split_preference:
     - test
     - validation

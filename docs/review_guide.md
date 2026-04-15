@@ -78,7 +78,7 @@ npm run dev
 - `data/artifacts/models/dl/`
   Shows the first sequence-model experiment.
 - `data/artifacts/backtests/`
-  Shows trade logs, equity curves, leaderboard, and summary metrics.
+  Shows trade logs, mark-to-market equity curves, realized-only audit columns, test-primary leaderboard, and summary metrics.
 - `reports/robustness/`
   Shows whether the results are fragile under changed assumptions.
 

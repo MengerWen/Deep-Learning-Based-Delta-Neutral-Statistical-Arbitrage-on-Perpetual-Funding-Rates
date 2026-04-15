@@ -28,6 +28,7 @@ families:
 evaluation:
   split_filter:
     - test
+  primary_split: test
   ranking_metric: cumulative_return
   top_n_strategies: 1
 

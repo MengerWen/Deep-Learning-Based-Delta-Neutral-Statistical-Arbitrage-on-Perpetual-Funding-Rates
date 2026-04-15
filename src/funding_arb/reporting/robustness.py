@@ -337,6 +337,7 @@ def _run_backtest_experiment(
     scenario_settings.input.signal_manifest_path = signal_manifest_path
     scenario_settings.selection.strategy_names = list(family.strategy_names)
     scenario_settings.selection.split_filter = list(settings.evaluation.split_filter)
+    scenario_settings.reporting.primary_split = settings.evaluation.primary_split
     scenario_settings.reporting.output_dir = str(artifacts_root)
     scenario_settings.reporting.run_name = run_name
     scenario_settings.reporting.write_markdown_report = False
@@ -845,12 +846,14 @@ def _build_markdown_report(
 - Venue: `{settings.input.venue}`
 - Frequency: `{settings.input.frequency}`
 - Evaluation split(s): `{settings.evaluation.split_filter}`
+- Primary backtest split: `{settings.evaluation.primary_split}`
 - Ranking metric: `{ranking_metric}`
 - Best family under the base test-period configuration: `{best_family}`
 
 ## Method Notes
 
 - Cost and holding-window sweeps reuse the same standardized signals and the same backtest engine, so the accounting logic stays identical to the main strategy evaluation.
+- Scenario leaderboards use the upgraded backtest contract: primary metrics come from mark-to-market equity on the configured primary split, and no-trade strategies are not allowed to outrank traded strategies merely because their return is zero.
 - Rule-threshold sensitivity is implemented by tightening or relaxing `min_signal_score` in the standardized rule-based signal layer. This measures robustness to stronger or weaker entry confidence, not a full redefinition of the raw heuristic itself.
 - Feature ablation retrains only predictive baselines and the deep-learning model, regenerates their signals, and reruns the same backtest logic. Rule-based heuristics are excluded from ablation because they do not consume the engineered feature matrix.
 - The comparison tables preserve model-family metadata such as `source_subtype`, `prediction_mode`, `calibration_method`, `signal_threshold`, `threshold_objective`, checkpoint-selection fields, and loss/preprocessing settings, so upgraded baseline and deep-learning runs can be compared without collapsing everything into one generic ML bucket.

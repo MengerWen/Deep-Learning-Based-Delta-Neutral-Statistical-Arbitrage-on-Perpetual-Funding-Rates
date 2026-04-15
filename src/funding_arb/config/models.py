@@ -1077,8 +1077,24 @@ class RobustnessFamilySettings(SettingsBase):
 
 class RobustnessEvaluationSettings(SettingsBase):
     split_filter: list[str] = Field(default_factory=lambda: ["test"])
+    primary_split: str = "test"
     ranking_metric: str = "cumulative_return"
     top_n_strategies: int = 1
+
+    @model_validator(mode="after")
+    def validate_evaluation(self) -> "RobustnessEvaluationSettings":
+        valid_splits = {"train", "validation", "test", "combined"}
+        if self.primary_split not in valid_splits:
+            raise ValueError(
+                f"Robustness evaluation.primary_split must be one of {sorted(valid_splits)}, got '{self.primary_split}'."
+            )
+        if self.primary_split != "combined" and self.primary_split not in set(self.split_filter):
+            raise ValueError(
+                "Robustness evaluation.primary_split must be included in split_filter unless it is 'combined'."
+            )
+        if self.top_n_strategies <= 0:
+            raise ValueError("Robustness evaluation.top_n_strategies must be positive.")
+        return self
 
 
 class RobustnessCostScenario(SettingsBase):
@@ -1191,6 +1207,7 @@ class IntegrationSelectionSettings(SettingsBase):
     strategy_name: str | None = None
     ranking_metric: str = "total_net_pnl_usd"
     ranking_ascending: bool = False
+    prefer_traded_strategy: bool = True
     split_preference: list[str] = Field(
         default_factory=lambda: ["test", "validation", "train"]
     )

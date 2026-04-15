@@ -27,15 +27,30 @@ interface StrategyRow {
   source: string;
   source_subtype: string;
   task: string;
+  evaluation_split?: string;
+  has_trades?: boolean;
   trade_count: number;
   cumulative_return: number;
+  realized_cumulative_return?: number;
   annualized_return: number;
+  realized_annualized_return?: number;
   sharpe_ratio: number;
+  raw_period_sharpe?: number;
+  autocorr_adjusted_sharpe?: number;
+  realized_sharpe_ratio?: number;
   max_drawdown: number;
+  realized_max_drawdown?: number;
+  mark_to_market_max_drawdown?: number;
   win_rate: number;
+  profit_factor?: number;
   average_trade_return_bps: number;
+  median_trade_return_bps?: number;
+  exposure_time_fraction?: number;
+  funding_contribution_share?: number;
   total_net_pnl_usd: number;
+  total_funding_pnl_usd?: number;
   final_equity_usd: number;
+  realized_final_equity_usd?: number;
 }
 
 interface ActivityItem {
@@ -77,6 +92,15 @@ interface DemoSnapshot {
   };
   backtest: {
     summary: Record<string, unknown>;
+    diagnostics?: Record<string, unknown>;
+    risk_view?: {
+      primary_split?: string | null;
+      primary_trade_count?: number | null;
+      combined_trade_count?: number | null;
+      equity_basis?: string;
+      drawdown_basis?: string;
+      realized_audit_available?: boolean;
+    };
     best_strategy: StrategyRow;
     top_strategies: StrategyRow[];
     assumptions: string[];
@@ -214,6 +238,13 @@ function formatAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
+function formatYesNo(value: boolean | null | undefined): string {
+  if (value == null) {
+    return "n/a";
+  }
+  return value ? "yes" : "no";
+}
+
 function createInitialSimulationState(snapshot: DemoSnapshot): SimulationState {
   return {
     walletCashAssets: snapshot.simulation.wallet_cash_assets,
@@ -334,7 +365,7 @@ function renderDashboard(snapshot: DemoSnapshot, state: SimulationState): void {
         ${metricCard(
           "Best Backtest",
           formatUsd(snapshot.backtest.best_strategy.total_net_pnl_usd),
-          `${snapshot.backtest.best_strategy.strategy_name} with ${formatNumber(snapshot.backtest.best_strategy.trade_count, 0)} trades.`,
+          `${snapshot.backtest.best_strategy.strategy_name} on ${snapshot.backtest.best_strategy.evaluation_split ?? snapshot.backtest.risk_view?.primary_split ?? "primary"} split with ${formatNumber(snapshot.backtest.best_strategy.trade_count, 0)} trades.`,
         )}
         ${metricCard(
           "Baseline Benchmark",
@@ -448,8 +479,9 @@ function renderDashboard(snapshot: DemoSnapshot, state: SimulationState): void {
               <p>${snapshot.backtest.best_strategy.source_subtype}</p>
               <dl>
                 <div><dt>PnL</dt><dd>${formatUsd(snapshot.backtest.best_strategy.total_net_pnl_usd)}</dd></div>
-                <div><dt>Sharpe</dt><dd>${formatNumber(snapshot.backtest.best_strategy.sharpe_ratio, 3)}</dd></div>
-                <div><dt>Win Rate</dt><dd>${formatPercent(snapshot.backtest.best_strategy.win_rate)}</dd></div>
+                <div><dt>MTM Sharpe</dt><dd>${formatNumber(snapshot.backtest.best_strategy.sharpe_ratio, 3)}</dd></div>
+                <div><dt>MTM Drawdown</dt><dd>${formatPercent(snapshot.backtest.best_strategy.mark_to_market_max_drawdown ?? snapshot.backtest.best_strategy.max_drawdown)}</dd></div>
+                <div><dt>Has Trades</dt><dd>${formatYesNo(snapshot.backtest.best_strategy.has_trades ?? snapshot.backtest.best_strategy.trade_count > 0)}</dd></div>
               </dl>
             </article>
           </div>
@@ -494,9 +526,11 @@ function renderDashboard(snapshot: DemoSnapshot, state: SimulationState): void {
                 <tr>
                   <th>Strategy</th>
                   <th>Source</th>
+                  <th>Split</th>
                   <th>Trades</th>
                   <th>Cum Return</th>
-                  <th>Sharpe</th>
+                  <th>MTM DD</th>
+                  <th>MTM Sharpe</th>
                   <th>Net PnL</th>
                 </tr>
               </thead>
@@ -507,8 +541,10 @@ function renderDashboard(snapshot: DemoSnapshot, state: SimulationState): void {
                       <tr>
                         <td>${row.strategy_name}</td>
                         <td>${row.source_subtype}</td>
+                        <td>${row.evaluation_split ?? snapshot.backtest.risk_view?.primary_split ?? "n/a"}</td>
                         <td>${formatNumber(row.trade_count, 0)}</td>
                         <td>${formatPercent(row.cumulative_return)}</td>
+                        <td>${formatPercent(row.mark_to_market_max_drawdown ?? row.max_drawdown)}</td>
                         <td>${formatNumber(row.sharpe_ratio, 3)}</td>
                         <td>${formatUsd(row.total_net_pnl_usd)}</td>
                       </tr>
@@ -524,6 +560,11 @@ function renderDashboard(snapshot: DemoSnapshot, state: SimulationState): void {
           <div class="section-heading">
             <p class="section-kicker">Backtest Assumptions</p>
             <h2>Explicit and presentation-friendly</h2>
+          </div>
+          <div class="risk-note">
+            <p><strong>Primary split:</strong> ${String(snapshot.backtest.risk_view?.primary_split ?? snapshot.backtest.summary["primary_split"] ?? "test")}</p>
+            <p><strong>Risk view:</strong> mark-to-market equity for drawdown and Sharpe; realized-only equity is retained for audit.</p>
+            <p><strong>Trades:</strong> ${formatNumber((snapshot.backtest.risk_view?.primary_trade_count as number | null | undefined) ?? (snapshot.backtest.summary["primary_trade_count"] as number | null | undefined), 0)} primary-split trades, ${formatNumber((snapshot.backtest.risk_view?.combined_trade_count as number | null | undefined) ?? (snapshot.backtest.summary["combined_trade_count"] as number | null | undefined), 0)} combined trades.</p>
           </div>
           <ul class="assumption-list">
             ${snapshot.backtest.assumptions

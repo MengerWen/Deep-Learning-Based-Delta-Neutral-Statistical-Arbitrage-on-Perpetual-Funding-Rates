@@ -464,20 +464,22 @@ Use it if:
 
 The backtest must be explicit enough that results are interpretable and reproducible.
 
-### Recommended first-pass assumptions
+### Implemented prototype assumptions
 
 | Assumption | Recommended setting |
 | --- | --- |
 | Decision frequency | Hourly |
 | Execution timing | Enter at next bar open if available |
-| Funding accrual | Applied only at valid funding timestamps |
+| Funding accrual | Configurable `prototype_bar_sum` or `event_aware` mode |
 | Position size | Fixed notional from config |
 | Concurrent positions | Start with 1 |
 | Fees | Charge on both perp and hedge legs at entry and exit |
-| Slippage | Symmetric bps penalty on both legs |
+| Slippage | Symmetric bps penalty embedded in effective prices |
 | Gas cost | Small fixed USD penalty for demo comparability |
 | Borrow cost | Zero in phase 1 unless modeling negative-funding short-spot trades |
 | Liquidation model | Omitted in phase 1, document as limitation |
+| Primary split | Test split by default; combined metrics are secondary |
+| Primary risk curve | Mark-to-market equity; realized-only equity retained for audit |
 
 ### PnL components to model explicitly
 
@@ -485,17 +487,19 @@ The backtest must be explicit enough that results are interpretable and reproduc
 - hedge leg mark-to-market PnL
 - funding payments received or paid
 - trading fees
-- slippage
+- embedded slippage diagnostics
 - optional gas or operational fixed cost
 
 ### Recommended output artifacts
 
 The backtest layer should write at least:
 
-- `data/artifacts/backtests/latest_summary.json`
-- `data/artifacts/backtests/latest_equity_curve.parquet`
-- `data/artifacts/backtests/latest_trades.parquet`
-- `data/artifacts/backtests/latest_metrics.json`
+- `data/artifacts/backtests/.../trade_log.parquet`
+- `data/artifacts/backtests/.../equity_curve.parquet`
+- `data/artifacts/backtests/.../strategy_metrics.parquet`
+- `data/artifacts/backtests/.../combined_strategy_metrics.parquet`
+- `data/artifacts/backtests/.../leaderboard.parquet`
+- `data/artifacts/backtests/.../backtest_manifest.json`
 
 ### Evaluation metrics
 
@@ -505,8 +509,13 @@ At minimum, report:
 - annualized return
 - Sharpe ratio
 - maximum drawdown
+- realized-only and mark-to-market drawdown
+- profit factor
 - hit rate
 - average trade return
+- median trade return
+- exposure time
+- funding contribution share
 - turnover
 - cost drag
 

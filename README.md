@@ -40,7 +40,7 @@ The repository already contains working prototypes for all major layers:
 | Rule-based and simple ML baselines | Implemented | artifacts, metrics, predictions |
 | Deep-learning model zoo | Implemented | LSTM/GRU/TCN/Transformer artifacts and comparison reports |
 | Unified signal layer | Implemented | standardized `signals.parquet` |
-| Delta-neutral backtest | Implemented | trade log, equity curve, leaderboard |
+| Delta-neutral backtest | Implemented | trade log, mark-to-market equity, test-primary leaderboard |
 | Robustness analysis | Implemented | sensitivity tables and figures |
 | Solidity vault prototype | Implemented | contract, tests, deploy/update scripts |
 | Off-chain to on-chain mock integration | Implemented | operator/oracle-style sync flow |

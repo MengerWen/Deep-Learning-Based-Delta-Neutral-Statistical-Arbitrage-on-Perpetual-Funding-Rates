@@ -113,6 +113,32 @@ def _pick_best_dl_comparison_row(frame: pd.DataFrame) -> dict[str, Any]:
     return {key: _json_ready(value) for key, value in row.to_dict().items()}
 
 
+def _sort_backtest_leaderboard(frame: pd.DataFrame) -> pd.DataFrame:
+    """Align demo ordering with the upgraded backtest leaderboard contract."""
+    if frame.empty:
+        return frame.copy()
+    ranked = frame.copy()
+    if "has_trades" in ranked.columns:
+        ranked["_has_trades_for_demo"] = ranked["has_trades"].map(
+            lambda value: str(value).strip().lower() in {"true", "1", "yes"}
+        )
+    elif "trade_count" in ranked.columns:
+        ranked["_has_trades_for_demo"] = ranked["trade_count"].fillna(0).astype(float) > 0.0
+    else:
+        ranked["_has_trades_for_demo"] = True
+    sort_columns = ["_has_trades_for_demo"]
+    ascending = [False]
+    for column in ("sharpe_ratio", "cumulative_return", "total_net_pnl_usd"):
+        if column in ranked.columns:
+            sort_columns.append(column)
+            ascending.append(False)
+    return (
+        ranked.sort_values(sort_columns, ascending=ascending, kind="stable", na_position="last")
+        .drop(columns="_has_trades_for_demo")
+        .reset_index(drop=True)
+    )
+
+
 def _comparison_table_preview(frame: pd.DataFrame | None, limit: int = 4) -> list[dict[str, Any]]:
     """Build a small JSON-ready comparison table for the frontend."""
     if frame is None or frame.empty:
@@ -188,7 +214,9 @@ def export_demo_snapshot(config: dict[str, Any]) -> DemoArtifacts:
     dl_comparison_test_leaderboard = _load_optional_table(
         input_config.get("dl_comparison_test_leaderboard_path")
     )
-    backtest_leaderboard = _load_table(input_config["backtest_leaderboard_path"])
+    backtest_leaderboard = _sort_backtest_leaderboard(
+        _load_table(input_config["backtest_leaderboard_path"])
+    )
     integration_selection = _load_optional_json(input_config.get("integration_selection_path"))
     integration_plan = _load_optional_json(input_config.get("integration_plan_path"))
     integration_calls = _load_optional_json(input_config.get("integration_call_summary_path"))
@@ -284,13 +312,13 @@ def export_demo_snapshot(config: dict[str, Any]) -> DemoArtifacts:
             "story_points": [
                 "Historical Binance perpetual and spot data are normalized into a canonical hourly dataset.",
                 "Funding, basis, volatility, liquidity, and interaction features drive both baseline and sequence models.",
-                "Signals are evaluated in a delta-neutral backtester with fees, slippage, and funding effects.",
+                "Signals are evaluated in a delta-neutral backtester with fees, slippage, funding effects, and mark-to-market risk metrics.",
                 "A prototype Solidity vault mirrors the off-chain strategy state through a trusted operator update path.",
             ],
             "layers": [
                 {"label": "Data", "detail": "Binance BTCUSDT hourly perpetual, spot, and funding history over the main 2021-01-01 to 2026-04-07 UTC window."},
                 {"label": "Models", "detail": "Interpretable rule-based and linear baselines plus a Phase 1/2 sequence-model zoo: LSTM, GRU, TCN, and TransformerEncoder."},
-                {"label": "Backtest", "detail": "Explicit delta-neutral trade accounting with cost-aware results and robustness checks."},
+                {"label": "Backtest", "detail": "Explicit delta-neutral trade accounting with test-primary leaderboards, mark-to-market equity, realized audit columns, and robustness checks."},
                 {"label": "Vault", "detail": "Mock stablecoin deposits, internal shares, strategy state, NAV/PnL updates, and event-rich accounting."},
             ],
         },
@@ -325,6 +353,15 @@ def export_demo_snapshot(config: dict[str, Any]) -> DemoArtifacts:
         },
         "backtest": {
             "summary": backtest_manifest["summary"],
+            "diagnostics": backtest_manifest.get("diagnostics", {}),
+            "risk_view": {
+                "primary_split": backtest_manifest.get("summary", {}).get("primary_split"),
+                "primary_trade_count": backtest_manifest.get("summary", {}).get("primary_trade_count"),
+                "combined_trade_count": backtest_manifest.get("summary", {}).get("combined_trade_count"),
+                "equity_basis": "mark_to_market",
+                "drawdown_basis": "mark_to_market",
+                "realized_audit_available": True,
+            },
             "best_strategy": best_backtest_row,
             "top_strategies": top_backtests,
             "assumptions": backtest_manifest["assumptions"],
@@ -354,7 +391,7 @@ def export_demo_snapshot(config: dict[str, Any]) -> DemoArtifacts:
                 "timestamp": integration_selection["timestamp"],
                 "kind": "strategy",
                 "title": "Top backtest strategy selected",
-                "detail": f"{integration_selection['strategy_name']} leads the current leaderboard with ${integration_selection['leaderboard_summary']['total_net_pnl_usd']:.2f} net PnL.",
+                "detail": f"{integration_selection['strategy_name']} is the current primary-split leaderboard row with ${integration_selection['leaderboard_summary']['total_net_pnl_usd']:.2f} net PnL.",
             },
             {
                 "timestamp": integration_selection["timestamp"],

@@ -67,7 +67,14 @@ def test_export_demo_snapshot_survives_missing_optional_inputs() -> None:
             "summary": {
                 "strategy_count": 1,
                 "trade_count": 4,
+                "primary_split": "test",
+                "primary_trade_count": 4,
+                "combined_trade_count": 4,
                 "best_strategy": "ridge_regression",
+            },
+            "diagnostics": {
+                "leverage": {"implied_gross_leverage": 0.2},
+                "funding": {"funding_mode": "prototype_bar_sum"},
             },
             "assumptions": ["Prototype assumption one", "Prototype assumption two"],
         },
@@ -93,11 +100,15 @@ def test_export_demo_snapshot_survives_missing_optional_inputs() -> None:
                 "source": "baseline",
                 "source_subtype": "linear",
                 "task": "regression",
+                "evaluation_split": "test",
+                "has_trades": True,
                 "trade_count": 4,
                 "cumulative_return": 0.012,
                 "annualized_return": 0.03,
                 "sharpe_ratio": 1.2,
                 "max_drawdown": -0.01,
+                "mark_to_market_max_drawdown": -0.01,
+                "realized_max_drawdown": -0.005,
                 "win_rate": 0.5,
                 "average_trade_return_bps": 6.0,
                 "total_net_pnl_usd": 24.5,
@@ -168,6 +179,8 @@ def test_export_demo_snapshot_survives_missing_optional_inputs() -> None:
             snapshot_payload["backtest"]["best_strategy"]["strategy_name"]
             == "ridge_regression"
         )
+        assert snapshot_payload["backtest"]["risk_view"]["primary_split"] == "test"
+        assert snapshot_payload["backtest"]["diagnostics"]["funding"]["funding_mode"] == "prototype_bar_sum"
         assert len(snapshot_payload["charts"]) == 1
         assert snapshot_payload["charts"][0]["image"] == "/demo/assets/funding.png"
     finally:
@@ -220,8 +233,12 @@ def test_export_demo_snapshot_prefers_dl_comparison_when_available() -> None:
             "summary": {
                 "strategy_count": 1,
                 "trade_count": 4,
+                "primary_split": "test",
+                "primary_trade_count": 4,
+                "combined_trade_count": 4,
                 "best_strategy": "ridge_regression",
             },
+            "diagnostics": {"leverage": {}, "funding": {}},
             "assumptions": ["Prototype assumption one"],
         },
     )
@@ -295,11 +312,15 @@ def test_export_demo_snapshot_prefers_dl_comparison_when_available() -> None:
                 "source": "baseline",
                 "source_subtype": "linear",
                 "task": "regression",
+                "evaluation_split": "test",
+                "has_trades": True,
                 "trade_count": 4,
                 "cumulative_return": 0.012,
                 "annualized_return": 0.03,
                 "sharpe_ratio": 1.2,
                 "max_drawdown": -0.01,
+                "mark_to_market_max_drawdown": -0.01,
+                "realized_max_drawdown": -0.005,
                 "win_rate": 0.5,
                 "average_trade_return_bps": 6.0,
                 "total_net_pnl_usd": 24.5,

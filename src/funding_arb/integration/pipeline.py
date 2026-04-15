@@ -168,13 +168,34 @@ def _choose_leaderboard_row(
         metric = settings.selection.ranking_metric
         if metric not in leaderboard.columns:
             raise ValueError(f"Ranking metric '{metric}' is missing from leaderboard artifact.")
-        selected = leaderboard.sort_values(
-            metric,
-            ascending=settings.selection.ranking_ascending,
-            kind="stable",
-        ).iloc[0]
+        ranked = leaderboard.copy()
+        if settings.selection.prefer_traded_strategy:
+            if "has_trades" in ranked.columns:
+                ranked["_has_trades_for_selection"] = ranked["has_trades"].map(
+                    lambda value: str(value).strip().lower() in {"true", "1", "yes"}
+                )
+            elif "trade_count" in ranked.columns:
+                ranked["_has_trades_for_selection"] = ranked["trade_count"].fillna(0).astype(float) > 0.0
+            else:
+                ranked["_has_trades_for_selection"] = True
+            ranked = ranked.sort_values(
+                ["_has_trades_for_selection", metric],
+                ascending=[False, settings.selection.ranking_ascending],
+                kind="stable",
+                na_position="last",
+            )
+        else:
+            ranked = ranked.sort_values(
+                metric,
+                ascending=settings.selection.ranking_ascending,
+                kind="stable",
+                na_position="last",
+            )
+        selected = ranked.iloc[0]
 
-    return str(selected["strategy_name"]), {key: _json_ready(value) for key, value in selected.to_dict().items()}
+    selected_payload = selected.to_dict()
+    selected_payload.pop("_has_trades_for_selection", None)
+    return str(selected["strategy_name"]), {key: _json_ready(value) for key, value in selected_payload.items()}
 
 
 def _choose_signal_row(

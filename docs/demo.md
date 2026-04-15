@@ -182,6 +182,8 @@ npm run dev
   - `frontend/public/demo/assets/`
 - Backtest artifacts:
   - `data/artifacts/backtests/binance/btcusdt/1h/baseline_signals_default/`
+  - primary leaderboard metrics are test-split and mark-to-market by default
+  - combined metrics are kept separately as secondary diagnostics
 - Vault integration artifacts:
   - `data/artifacts/integration/binance/btcusdt/1h/mock_operator_default/`
 
