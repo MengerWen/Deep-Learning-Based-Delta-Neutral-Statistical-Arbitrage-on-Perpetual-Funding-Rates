@@ -164,8 +164,8 @@ Compatibility wrapper:
 - The backtest is still the project prototype backtest:
   - single asset
   - delta-neutral abstraction
-  - realized-PnL equity curve
-  - simplified execution and funding timing assumptions
+  - mark-to-market primary equity with realized-only audit columns
+  - simplified execution, stop, funding, margin, and order-book assumptions
 
 ## Suggested Presentation Framing
 

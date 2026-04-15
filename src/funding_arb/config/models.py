@@ -890,6 +890,25 @@ class PortfolioSettings(SettingsBase):
     initial_capital: float
     position_notional: float
     max_open_positions: int = 1
+    max_gross_leverage: float = 2.0
+    leverage_check_mode: str = "warn"
+
+    @model_validator(mode="after")
+    def validate_portfolio(self) -> "PortfolioSettings":
+        valid_modes = {"off", "warn", "fail"}
+        if self.initial_capital <= 0.0:
+            raise ValueError("Backtest portfolio.initial_capital must be positive.")
+        if self.position_notional <= 0.0:
+            raise ValueError("Backtest portfolio.position_notional must be positive.")
+        if self.max_open_positions <= 0:
+            raise ValueError("Backtest portfolio.max_open_positions must be positive.")
+        if self.max_gross_leverage <= 0.0:
+            raise ValueError("Backtest portfolio.max_gross_leverage must be positive.")
+        if self.leverage_check_mode not in valid_modes:
+            raise ValueError(
+                f"Backtest portfolio.leverage_check_mode must be one of {sorted(valid_modes)}, got '{self.leverage_check_mode}'."
+            )
+        return self
 
 
 class CostSettings(SettingsBase):
@@ -906,11 +925,58 @@ class ExecutionSettings(SettingsBase):
     holding_window_hours: int = 24
     maximum_holding_hours: int = 48
     funding_interval_hours: int = 8
+    funding_mode: str = "prototype_bar_sum"
+    funding_notional_mode: str = "initial_notional"
+    hedge_mode: str = "equal_notional_hedge"
     rebalance_frequency: str = "1h"
     exit_on_signal_off: bool = True
     stop_loss_bps: float | None = None
     take_profit_bps: float | None = None
+    stop_observation_mode: str = "bar_close_observed"
+    stop_execution_mode: str = "next_bar_executed"
     allow_partial_exit: bool = False
+
+    @model_validator(mode="after")
+    def validate_execution(self) -> "ExecutionSettings":
+        valid_price_fields = {"open", "close"}
+        valid_funding_modes = {"prototype_bar_sum", "event_aware"}
+        valid_funding_notional_modes = {"initial_notional", "dynamic_position_value"}
+        valid_hedge_modes = {
+            "equal_notional_hedge",
+            "equal_quantity_hedge",
+            "contract_multiplier_adjusted_hedge",
+        }
+        if self.entry_delay_bars < 0:
+            raise ValueError("Backtest execution.entry_delay_bars must be non-negative.")
+        if self.execution_price_field not in valid_price_fields:
+            raise ValueError(
+                f"Backtest execution.execution_price_field must be one of {sorted(valid_price_fields)}, got '{self.execution_price_field}'."
+            )
+        if self.holding_window_hours <= 0:
+            raise ValueError("Backtest execution.holding_window_hours must be positive.")
+        if self.maximum_holding_hours <= 0:
+            raise ValueError("Backtest execution.maximum_holding_hours must be positive.")
+        if self.funding_interval_hours <= 0:
+            raise ValueError("Backtest execution.funding_interval_hours must be positive.")
+        if self.funding_mode not in valid_funding_modes:
+            raise ValueError(
+                f"Backtest execution.funding_mode must be one of {sorted(valid_funding_modes)}, got '{self.funding_mode}'."
+            )
+        if self.funding_notional_mode not in valid_funding_notional_modes:
+            raise ValueError(
+                "Backtest execution.funding_notional_mode must be one of "
+                f"{sorted(valid_funding_notional_modes)}, got '{self.funding_notional_mode}'."
+            )
+        if self.hedge_mode not in valid_hedge_modes:
+            raise ValueError(
+                f"Backtest execution.hedge_mode must be one of {sorted(valid_hedge_modes)}, got '{self.hedge_mode}'."
+            )
+        if self.hedge_mode != "equal_notional_hedge":
+            raise ValueError(
+                "Backtest prototype currently implements only hedge_mode='equal_notional_hedge'. "
+                "Other hedge modes are reserved for future work."
+            )
+        return self
 
 
 class ReportingSettings(SettingsBase):
@@ -921,6 +987,19 @@ class ReportingSettings(SettingsBase):
     figure_format: str = "png"
     dpi: int = 180
     top_n_strategies_for_plots: int = 5
+    primary_split: str = "test"
+    include_combined_summary: bool = True
+
+    @model_validator(mode="after")
+    def validate_reporting(self) -> "ReportingSettings":
+        valid_primary_splits = {"train", "validation", "test", "combined"}
+        if self.primary_split not in valid_primary_splits:
+            raise ValueError(
+                f"Backtest reporting.primary_split must be one of {sorted(valid_primary_splits)}, got '{self.primary_split}'."
+            )
+        if self.top_n_strategies_for_plots <= 0:
+            raise ValueError("Backtest reporting.top_n_strategies_for_plots must be positive.")
+        return self
 
 
 class BacktestSettings(SettingsBase):

@@ -95,6 +95,6 @@ These are known limitations, not submission blockers:
 
 - multi-exchange normalization is not implemented yet
 - index-price ingestion is still limited
-- intratrade mark-to-market equity is not yet the default backtest mode
+- intratrade mark-to-market equity is now the default backtest risk view, but intrabar execution and margin/liquidation modeling remain out of scope
 - the vault is not production-audited
 - the frontend is a demo dashboard, not a live wallet-connected application

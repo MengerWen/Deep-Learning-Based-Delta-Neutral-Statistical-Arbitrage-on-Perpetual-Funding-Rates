@@ -2,7 +2,7 @@
 
 ## Status
 
-The first complete backtesting module is now implemented.
+The backtesting module is implemented and has been upgraded from a first-pass realized-PnL simulator into a more conservative research backtester.
 
 Primary implementation:
 
@@ -17,23 +17,37 @@ Primary documentation:
 - consumes standardized signals from the signal layer
 - simulates one delta-neutral position at a time per strategy
 - applies explicit fee, slippage, gas, and funding logic
-- writes trade logs, equity curves, metrics, plots, and a markdown report
+- writes trade logs, mark-to-market equity curves, realized-only audit columns, metrics, plots, and a markdown report
+- ranks strategies on the configured primary split, which defaults to `test`
+- records funding mode, hedge mode, leverage diagnostics, and stop-logic assumptions in the manifest
 
 ## Current Design Choice
 
-This first version uses a **realized-PnL equity curve** instead of full intratrade mark-to-market.
+The primary equity curve is now **mark-to-market**. Open positions are marked on every bar using current market prices, while realized-only equity is retained for auditability.
 
-That is an intentional simplification:
+This is intentionally more conservative:
 
-- easier to audit
-- easier to explain in a course project
-- enough for first-pass comparison of baseline and deep-learning signals
+- primary drawdown and Sharpe reflect intratrade risk
+- realized-only drawdown remains available as a secondary diagnostic
+- the main leaderboard defaults to out-of-sample `test` trades instead of silently mixing train/validation/test
+- slippage remains embedded in effective prices and is not deducted twice
 
 ## Outputs
 
 Default output root:
 
 - `data/artifacts/backtests/<provider>/<symbol>/<frequency>/<run_name>/`
+
+Key outputs:
+
+- `trade_log.parquet`
+- `equity_curve.parquet`
+- `strategy_metrics.parquet`
+- `combined_strategy_metrics.parquet`
+- `split_summary.parquet`
+- `leaderboard.parquet`
+- `backtest_report.md`
+- `backtest_manifest.json`
 
 ## Command
 

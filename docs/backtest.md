@@ -2,219 +2,241 @@
 
 ## Purpose
 
-This module implements the first explicit backtesting engine for the project.
+The backtesting module evaluates standardized strategy signals for a single-asset, delta-neutral perpetual funding-rate arbitrage prototype. It is intentionally narrower than a generic portfolio simulator: the goal is to make the course-project strategy accounting explicit, reproducible, and hard to overstate.
 
-It is designed for one narrow research problem:
+The engine answers one practical question:
 
-> Given standardized hourly trading signals for a perpetual-funding arbitrage strategy, does a simple delta-neutral execution rule produce usable post-cost performance after fees, slippage, and holding-period constraints?
-
-This is intentionally **not** a generic multi-asset portfolio framework.
+> Given hourly model or rule-based signals, does a simple delta-neutral execution rule produce useful post-cost performance after fees, slippage, gas, funding effects, and holding-period constraints?
 
 ## Scope
 
-The first version supports:
+The current version supports:
 
 - one asset at a time
 - one open position at a time per strategy
 - standardized signals from the signal layer
 - fixed-notional delta-neutral positions
-- explicit trade logs and performance summaries
-- presentation-friendly plots and markdown output
+- explicit perp, spot, funding, fee, gas, and friction PnL
+- realized-only and mark-to-market equity curves
+- test-split-first leaderboards by default
+- strategy metrics, split summaries, trade logs, plots, markdown reports, and manifests
 
-It compares strategies independently. If one signal artifact contains multiple strategies, each strategy is backtested as its own standalone equity curve.
+It compares each `strategy_name` independently. If one signal artifact contains several rule, baseline, or deep-learning strategies, each strategy receives its own simulated equity curve and metrics row.
 
 ## Inputs
 
-Main inputs:
+Default inputs:
 
-- standardized signal artifact
-  - default: `data/artifacts/signals/binance/btcusdt/1h/baseline/signals.parquet`
-- canonical hourly market dataset
-  - default: `data/processed/binance/btcusdt/1h/hourly_market_data.parquet`
+- signals: `data/artifacts/signals/binance/btcusdt/1h/baseline/signals.parquet`
+- market data: `data/processed/binance/btcusdt/1h/hourly_market_data.parquet`
+- config: `configs/backtests/default.yaml`
 
-Required signal fields:
+Required signal fields include:
 
 - `timestamp`
-- `strategy_name`
+- `asset`
 - `source`
 - `source_subtype`
+- `strategy_name`
+- `task`
 - `signal_score`
 - `predicted_class`
 - `expected_return_bps`
-- `signal_threshold`
-- `threshold_objective`
-- `selected_threshold_objective_value`
-- `prediction_mode`
-- `calibration_method`
-- `feature_importance_method`
-- `checkpoint_selection_metric`
-- `checkpoint_selection_effective_metric`
-- `checkpoint_selection_fallback_used`
-- `selected_loss`
-- `regression_loss`
-- `preprocessing_scaler`
 - `suggested_direction`
 - `confidence`
 - `should_trade`
 - `split`
+- `metadata_json`
 
-Required market fields:
+Optional model metadata fields such as selected threshold, calibration method, checkpoint-selection metric, and preprocessing settings are preserved when present.
+
+Required market fields include:
 
 - `timestamp`
+- `symbol`
+- `venue`
+- `frequency`
 - `perp_open`, `perp_close`
 - `spot_open`, `spot_close`
 - `funding_rate`
 
-Important note for the upgraded baseline and deep-learning flows:
-
-- the backtester now preserves model metadata such as `source_subtype`, selected threshold, prediction mode, calibration choice, feature-importance method, checkpoint-selection fields, and selected loss/preprocessing settings
-- these fields are written into trade logs and strategy summary tables so later robustness reports can compare not just "ML vs rules vs DL", but which concrete modeling configuration actually produced the result
-
 ## Position Model
 
-The default direction is:
+The default direction is `short_perp_long_spot`.
 
-- `short_perp_long_spot`
+The implemented hedge mode is:
 
-The backtester uses a fixed notional per leg:
+- `equal_notional_hedge`
 
-- `position_notional_usd`
+For a configured `position_notional` of `10,000 USD`, each trade uses:
 
-For a `10,000 USD` notional:
+- `10,000 USD` notional on the perpetual leg
+- `10,000 USD` notional on the spot hedge leg
+- `20,000 USD` gross exposure
 
-- short perpetual leg notionally sells `10,000 USD` of perp
-- hedge leg notionally buys `10,000 USD` of spot
+Other hedge modes are reserved in config for future work:
 
-This makes trade-level PnL easy to interpret in both USD and bps of per-leg notional.
+- `equal_quantity_hedge`
+- `contract_multiplier_adjusted_hedge`
 
-## Entry Logic
+They are not implemented yet because this prototype does not model exchange-specific contract multipliers or quantity-level hedge rebalancing.
 
-Default entry logic:
+## Entry And Exit Logic
+
+Entry logic:
 
 1. observe signal at timestamp `t`
-2. require `should_trade = 1`
+2. require `should_trade = 1` unless disabled in config
 3. require `suggested_direction` to match config direction
-4. optionally require minimum `signal_score`
-5. optionally require minimum `confidence`
-6. optionally require minimum `expected_return_bps`
-7. enter after `entry_delay_bars`
+4. optionally require minimum signal score, confidence, or expected return
+5. execute after `entry_delay_bars` using `execution_price_field`
 
-With the default config:
+With the default config, a signal observed at hour `t` executes on the next bar open. This preserves the no-lookahead convention used by the label and signal pipelines.
 
-- signals are evaluated on hourly data
-- execution uses next-bar `open`
-- so signal at `t` enters at `t + 1` open
+Exit logic:
 
-This matches the same no-leakage convention used in the label pipeline.
+- `signal_off`: close when the signal no longer satisfies entry conditions
+- `holding_window`: close at the configured soft holding horizon
+- `maximum_holding`: hard time cap
+- `stop_loss` / `take_profit`: optional stop conditions
+- `end_of_data`: close any remaining open position at the final market row
 
-## Exit Logic
+Stop approximation:
 
-The first version supports four exit types:
+- `stop_observation_mode = bar_close_observed`
+- `stop_execution_mode = next_bar_executed`
 
-- `signal_off`
-  - exit when the signal no longer satisfies entry conditions
-- `holding_window`
-  - soft time-based exit
-- `maximum_holding`
-  - hard time cap
-- optional stop conditions
-  - `stop_loss_bps`
-  - `take_profit_bps`
-
-Current stop logic is evaluated on hourly bar information and exits on the next execution bar. It is therefore conservative and explicit, but not intrabar-precise.
+This means stops are observed on hourly bar-close marks and executed on the configured next execution bar. The engine does not model intrabar stop fills.
 
 ## PnL Logic
 
-Trade PnL has three economic components:
+Trade PnL is decomposed into:
 
-1. perpetual leg PnL
-2. hedge leg PnL
-3. funding PnL
+- perpetual leg PnL
+- spot hedge leg PnL
+- funding PnL
+- trading fees
+- gas cost
+- other friction
+- embedded slippage diagnostic
 
-For `short_perp_long_spot`:
+Slippage is applied through adverse effective execution prices. The output column `estimated_slippage_cost_usd` is a diagnostic approximation of the embedded price impact and is not deducted a second time.
 
-```text
-gross_pnl
-= short-perp leg pnl
-+ long-spot leg pnl
-+ funding pnl
+## Funding Assumptions
+
+Funding behavior is configurable:
+
+- `funding_mode = prototype_bar_sum`: original prototype behavior; sum every aligned `funding_rate` row between entry and exit.
+- `funding_mode = event_aware`: use explicit `funding_event` / `is_funding_event` markers if present; otherwise use UTC hour modulo `funding_interval_hours` as a Binance-style fallback.
+
+Funding notional is configurable:
+
+- `funding_notional_mode = initial_notional`: apply funding to fixed entry notional.
+- `funding_notional_mode = dynamic_position_value`: approximate funding using current perp close value of the original position quantity.
+
+The default stays `prototype_bar_sum` plus `initial_notional` for backward compatibility and simple auditability. Reports and manifests record the chosen mode and funding rows used.
+
+## Equity Curves
+
+The output `equity_curve.parquet` includes both audit and risk views:
+
+- `realized_equity_usd`: changes only when trades close.
+- `mark_to_market_equity_usd`: marks open positions on each market bar using current close prices.
+- `equity_usd`: alias for the mark-to-market equity used by primary risk metrics.
+- `realized_drawdown`: drawdown from realized-only equity.
+- `mark_to_market_drawdown`: drawdown from mark-to-market equity.
+- `drawdown`: alias for mark-to-market drawdown.
+
+Primary drawdown, Sharpe, annualized return, and cumulative return use the mark-to-market curve by default. Realized-only columns remain available because they are easier to audit against closed trades, but they can understate intratrade risk.
+
+## Split-Aware Evaluation
+
+The config field `reporting.primary_split` controls the main leaderboard. The default is:
+
+```yaml
+reporting:
+  primary_split: test
 ```
 
-Net PnL then subtracts:
+This means:
 
-- taker fees on all four round-trip transactions
-- gas cost per trade
-- optional flat friction term
+- `strategy_metrics.parquet` and `leaderboard.parquet` are test-split primary outputs.
+- `split_summary.parquet` keeps train, validation, and test trade summaries separate.
+- `combined_strategy_metrics.parquet` is written as a secondary diagnostic when enabled.
 
-Slippage is modeled by adverse execution prices rather than by a second explicit deduction.
+This prevents the main leaderboard from silently mixing in-sample and out-of-sample trades.
 
-## Performance Outputs
+## Capital And Leverage Checks
+
+The engine reports implied gross leverage:
+
+```text
+gross exposure = 2 * position_notional * max_open_positions
+implied gross leverage = gross exposure / initial_capital
+```
+
+Config fields:
+
+```yaml
+portfolio:
+  max_gross_leverage: 2.0
+  leverage_check_mode: warn
+```
+
+`leverage_check_mode` can be:
+
+- `off`
+- `warn`
+- `fail`
+
+For course-project clarity, the default warns rather than failing, but submission/demo configs should avoid unrealistic leverage.
+
+## Metrics
+
+Primary strategy metrics include:
+
+- cumulative return
+- annualized return
+- simple annualized Sharpe
+- raw-period Sharpe
+- autocorrelation-adjusted Sharpe diagnostic
+- mark-to-market max drawdown
+- realized-only max drawdown
+- win rate
+- profit factor
+- average and median trade return
+- expectancy per trade
+- average and median holding hours
+- max consecutive losses
+- exposure time fraction
+- average and maximum gross leverage
+- turnover
+- fee, gas, other friction, funding, and embedded slippage diagnostics
+- funding contribution share
+
+Sharpe caveat:
+
+The main Sharpe is a simple square-root-scaled annualized Sharpe from the mark-to-market return stream. This is useful for comparison, but sparse and serially correlated strategy returns can make annualization optimistic. Treat it as a compact diagnostic rather than proof of live-trading quality.
+
+## Outputs
 
 The backtester writes:
 
 - `trade_log.parquet` / `trade_log.csv`
 - `equity_curve.parquet` / `equity_curve.csv`
 - `strategy_metrics.parquet` / `strategy_metrics.csv`
+- `combined_strategy_metrics.parquet` / `combined_strategy_metrics.csv`
 - `split_summary.parquet` / `split_summary.csv`
 - `leaderboard.parquet` / `leaderboard.csv`
 - `backtest_report.md`
 - `backtest_manifest.json`
 - figures under `figures/`
 
-Key reported metrics:
+Plots:
 
-- cumulative return
-- annualized return
-- Sharpe ratio
-- max drawdown
-- win rate
-- average trade return
-- trade count
-- turnover
-- total fees / gas / funding contribution
-
-For upgraded baseline runs, the summary tables also keep:
-
-- source subtype such as `rule_based`, `baseline_linear`, or `baseline_tree`
-- applied signal threshold
-- threshold-selection objective
-- prediction mode such as `static` or `expanding`
-- calibration method
-- feature-importance method
-
-## Plots
-
-The first version exports:
-
-- cumulative return by strategy
-- realized drawdown by strategy
+- mark-to-market cumulative return by strategy
+- mark-to-market drawdown by strategy
 - trade-return distribution boxplot
-
-These are intended to be reusable in the final report or course presentation.
-
-## Important Simplifying Assumptions
-
-These assumptions are deliberate and should be stated clearly in any presentation:
-
-- single-asset prototype only
-- one open position at a time per strategy
-- no partial exits
-- no full intratrade mark-to-market equity curve yet
-- no borrow-cost model for `long_perp_short_spot`
-- no order book or latency simulation
-- no liquidation or margin model
-- no exchange-specific funding edge cases beyond the cleaned historical dataset
-
-The current equity curve is **realized-PnL based**. This makes the first version easier to audit, but it understates intratrade drawdown relative to a true mark-to-market engine.
-
-## Main Files
-
-- backtest engine:
-  - `src/funding_arb/backtest/engine.py`
-- CLI wrapper:
-  - `scripts/backtests/run_backtest.py`
-- config:
-  - `configs/backtests/default.yaml`
 
 ## Command
 
@@ -222,10 +244,27 @@ The current equity curve is **realized-PnL based**. This makes the first version
 & 'd:\MG\anaconda3\python.exe' -m src.main backtest --config configs/backtests/default.yaml
 ```
 
-## Recommended Next Step
+## Main Files
 
-After this first version, the most valuable improvement is:
+- engine: `src/funding_arb/backtest/engine.py`
+- metrics helpers: `src/funding_arb/evaluation/metrics.py`
+- config model: `src/funding_arb/config/models.py`
+- default config: `configs/backtests/default.yaml`
+- CLI wrapper: `scripts/backtests/run_backtest.py`
+- tests: `tests/unit/test_backtest_engine.py`, `tests/unit/test_metrics.py`
 
-- mark-to-market equity and drawdown during open positions
+## Limitations
 
-That would make the engine more realistic without changing the signal, trade-log, or reporting interfaces.
+The engine is still a research backtester, not a production execution simulator.
+
+Known simplifications:
+
+- single-asset only
+- one open position per strategy
+- no partial exits
+- no order book, latency, liquidation, margin, or borrow-cost model
+- no intrabar stop execution
+- event-aware funding uses cleaned dataset markers when available and a simple UTC-hour fallback otherwise
+- no dynamic hedge rebalancing beyond the optional dynamic funding notional approximation
+
+These limitations should be disclosed in the final presentation and interpreted as prototype boundaries, not hidden assumptions.

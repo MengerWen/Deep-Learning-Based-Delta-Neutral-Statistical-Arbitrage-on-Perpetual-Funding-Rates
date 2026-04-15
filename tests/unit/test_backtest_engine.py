@@ -6,11 +6,81 @@ import pandas as pd
 import pytest
 
 from funding_arb.backtest.engine import (
+    _funding_pnl_for_period,
+    _leverage_diagnostics,
     _plot_trade_return_boxplot,
+    build_mark_to_market_equity_curve,
     build_realized_equity_curve,
     calculate_trade_pnl,
+    run_backtest_pipeline,
     summarize_strategy_backtest,
 )
+from funding_arb.config.models import BacktestSettings
+
+
+def _settings(**overrides: object) -> BacktestSettings:
+    config = {
+        "input": {
+            "signal_path": "unused.csv",
+            "signal_manifest_path": None,
+            "market_dataset_path": "unused.csv",
+            "market_manifest_path": None,
+            "provider": "binance",
+            "symbol": "BTCUSDT",
+            "venue": "binance",
+            "frequency": "1h",
+        },
+        "selection": {
+            "strategy_names": [],
+            "split_filter": ["train", "validation", "test"],
+            "direction": "short_perp_long_spot",
+            "require_should_trade": True,
+        },
+        "portfolio": {
+            "initial_capital": 100_000.0,
+            "position_notional": 10_000.0,
+            "max_open_positions": 1,
+            "max_gross_leverage": 2.0,
+            "leverage_check_mode": "warn",
+        },
+        "costs": {
+            "taker_fee_bps": 0.0,
+            "maker_fee_bps": 0.0,
+            "slippage_bps": 0.0,
+            "gas_cost_usd": 0.0,
+            "other_friction_bps": 0.0,
+        },
+        "execution": {
+            "entry_delay_bars": 0,
+            "execution_price_field": "close",
+            "holding_window_hours": 1,
+            "maximum_holding_hours": 1,
+            "funding_interval_hours": 8,
+            "funding_mode": "prototype_bar_sum",
+            "funding_notional_mode": "initial_notional",
+            "hedge_mode": "equal_notional_hedge",
+            "rebalance_frequency": "1h",
+            "exit_on_signal_off": False,
+            "allow_partial_exit": False,
+        },
+        "reporting": {
+            "output_dir": "tests/.tmp/backtest_outputs",
+            "run_name": "unit",
+            "write_csv": False,
+            "write_markdown_report": False,
+            "figure_format": "png",
+            "dpi": 72,
+            "top_n_strategies_for_plots": 1,
+            "primary_split": "test",
+            "include_combined_summary": True,
+        },
+    }
+    for section, value in overrides.items():
+        if isinstance(value, dict) and isinstance(config.get(section), dict):
+            config[section].update(value)
+        else:
+            config[section] = value
+    return BacktestSettings.model_validate(config)
 
 
 def test_calculate_trade_pnl_for_short_perp_long_spot_convergence_trade() -> None:
@@ -55,6 +125,103 @@ def test_calculate_trade_pnl_applies_explicit_cost_terms() -> None:
     assert pnl["other_friction_usd"] == pytest.approx(1.0)
     assert pnl["net_pnl_usd"] == pytest.approx(-23.0)
     assert pnl["net_return_bps"] == pytest.approx(-23.0)
+
+
+def test_trade_pnl_reports_embedded_slippage_without_double_deducting() -> None:
+    pnl = calculate_trade_pnl(
+        direction="short_perp_long_spot",
+        position_notional_usd=10_000.0,
+        perp_entry_price_raw=100.0,
+        perp_exit_price_raw=100.0,
+        spot_entry_price_raw=100.0,
+        spot_exit_price_raw=100.0,
+        funding_rate_sum=0.0,
+        taker_fee_bps=0.0,
+        slippage_bps=5.0,
+        gas_cost_usd=0.0,
+        other_friction_bps=0.0,
+    )
+
+    assert pnl["embedded_slippage_cost_usd"] == pytest.approx(pnl["estimated_slippage_cost_usd"])
+    assert pnl["net_pnl_usd"] == pytest.approx(pnl["gross_pnl_usd"])
+
+
+def test_mark_to_market_curve_captures_intratrade_drawdown() -> None:
+    timestamps = pd.date_range("2024-01-01", periods=3, freq="h", tz="UTC")
+    market = pd.DataFrame(
+        {
+            "timestamp": timestamps,
+            "perp_close": [100.0, 110.0, 100.0],
+            "spot_close": [100.0, 90.0, 100.0],
+            "funding_rate": [0.0, 0.0, 0.0],
+        }
+    )
+    trade_log = pd.DataFrame(
+        {
+            "entry_market_index": [0],
+            "exit_market_index": [2],
+            "net_pnl_usd": [0.0],
+            "direction": ["short_perp_long_spot"],
+            "position_notional_usd": [10_000.0],
+            "perp_entry_price_raw": [100.0],
+            "spot_entry_price_raw": [100.0],
+        }
+    )
+
+    curve = build_mark_to_market_equity_curve(
+        market,
+        trade_log,
+        initial_capital=100_000.0,
+        strategy_name="toy_strategy",
+        settings=_settings(),
+        curve_scope="test",
+    )
+
+    assert curve["realized_equity_usd"].tolist() == pytest.approx([100_000.0, 100_000.0, 100_000.0])
+    assert curve["mark_to_market_equity_usd"].iloc[1] == pytest.approx(98_000.0)
+    assert curve["mark_to_market_drawdown"].min() == pytest.approx(-0.02)
+
+
+def test_funding_mode_event_aware_uses_funding_event_hours() -> None:
+    timestamps = pd.date_range("2024-01-01", periods=10, freq="h", tz="UTC")
+    market = pd.DataFrame(
+        {
+            "timestamp": timestamps,
+            "perp_close": [100.0] * 10,
+            "funding_rate": [0.001] * 10,
+        }
+    )
+
+    prototype = _funding_pnl_for_period(
+        direction="short_perp_long_spot",
+        position_notional_usd=10_000.0,
+        perp_entry_price_raw=100.0,
+        market=market,
+        start_index=0,
+        end_index=10,
+        settings=_settings(execution={"funding_mode": "prototype_bar_sum"}),
+    )
+    event_aware = _funding_pnl_for_period(
+        direction="short_perp_long_spot",
+        position_notional_usd=10_000.0,
+        perp_entry_price_raw=100.0,
+        market=market,
+        start_index=0,
+        end_index=10,
+        settings=_settings(execution={"funding_mode": "event_aware"}),
+    )
+
+    assert prototype["funding_rate_sum"] == pytest.approx(0.010)
+    assert event_aware["funding_rate_sum"] == pytest.approx(0.002)
+    assert prototype["funding_rows_used"] == pytest.approx(10)
+    assert event_aware["funding_rows_used"] == pytest.approx(2)
+
+
+def test_leverage_guard_can_fail_fast() -> None:
+    settings = _settings(portfolio={"max_gross_leverage": 0.1, "leverage_check_mode": "fail"})
+
+    with pytest.raises(ValueError, match="gross leverage"):
+        _leverage_diagnostics(settings)
 
 
 def test_realized_equity_curve_and_summary_metrics() -> None:
@@ -127,6 +294,68 @@ def test_realized_equity_curve_and_summary_metrics() -> None:
     assert summary["checkpoint_selection_fallback_used"] is True
     assert summary["selected_loss"] == "huber"
     assert summary["preprocessing_scaler"] == "robust"
+    assert summary["evaluation_split"] == "combined"
+    assert "mark_to_market_max_drawdown" in summary
+
+
+def test_backtest_pipeline_uses_test_split_for_primary_leaderboard() -> None:
+    scratch_dir = Path("tests/.tmp/backtest_split")
+    scratch_dir.mkdir(parents=True, exist_ok=True)
+    market_path = scratch_dir / "market.csv"
+    signals_path = scratch_dir / "signals.csv"
+    timestamps = pd.date_range("2024-01-01", periods=6, freq="h", tz="UTC")
+    pd.DataFrame(
+        {
+            "timestamp": timestamps,
+            "symbol": ["BTCUSDT"] * 6,
+            "venue": ["binance"] * 6,
+            "frequency": ["1h"] * 6,
+            "perp_open": [100.0, 101.0, 100.0, 100.0, 99.0, 100.0],
+            "perp_close": [100.0, 101.0, 100.0, 100.0, 99.0, 100.0],
+            "spot_open": [100.0, 99.0, 100.0, 100.0, 101.0, 100.0],
+            "spot_close": [100.0, 99.0, 100.0, 100.0, 101.0, 100.0],
+            "funding_rate": [0.0] * 6,
+        }
+    ).to_csv(market_path, index=False)
+    pd.DataFrame(
+        {
+            "timestamp": [timestamps[0], timestamps[1], timestamps[3], timestamps[4]],
+            "asset": ["BTCUSDT"] * 4,
+            "source": ["baseline"] * 4,
+            "source_subtype": ["rule_based"] * 4,
+            "strategy_name": ["toy_strategy"] * 4,
+            "task": ["classification"] * 4,
+            "signal_score": [1.0] * 4,
+            "predicted_class": [1] * 4,
+            "expected_return_bps": [10.0] * 4,
+            "suggested_direction": ["short_perp_long_spot"] * 4,
+            "confidence": [0.8] * 4,
+            "should_trade": [1] * 4,
+            "split": ["train", "train", "test", "test"],
+            "metadata_json": ["{}"] * 4,
+        }
+    ).to_csv(signals_path, index=False)
+    settings = _settings(
+        input={
+            "signal_path": str(signals_path),
+            "market_dataset_path": str(market_path),
+        },
+        reporting={
+            "output_dir": str(scratch_dir / "artifacts"),
+            "run_name": "primary_test",
+            "primary_split": "test",
+        },
+    )
+
+    artifacts = run_backtest_pipeline(settings)
+    leaderboard = pd.read_parquet(artifacts.leaderboard_path)
+    trade_log = pd.read_parquet(artifacts.trade_log_path)
+    equity_curve = pd.read_parquet(artifacts.equity_curve_path)
+
+    assert len(trade_log) == 2
+    assert leaderboard.loc[0, "evaluation_split"] == "test"
+    assert leaderboard.loc[0, "trade_count"] == 1
+    assert set(equity_curve["curve_scope"]) == {"test"}
 
 
 def test_trade_return_boxplot_handles_empty_trade_log() -> None:

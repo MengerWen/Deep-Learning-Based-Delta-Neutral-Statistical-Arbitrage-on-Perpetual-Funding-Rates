@@ -288,7 +288,7 @@ npm run build
 This repository is intentionally prototype-level in several ways:
 
 - data currently centers on one clear working source path: Binance `BTCUSDT`
-- backtesting is explicit and understandable, but not a full exchange microstructure simulator
+- backtesting includes mark-to-market equity, costs, funding, and leverage checks, but is not a full exchange microstructure simulator
 - the vault is an accounting and state-management prototype, not a live execution protocol
 - the off-chain to on-chain bridge is a trusted operator flow, not a decentralized oracle network
 - the frontend is a presentation dashboard, not a production dApp
@@ -309,7 +309,7 @@ Still prototype-level:
 
 - multi-exchange data support
 - richer position sizing and portfolio construction
-- mark-to-market intratrade equity
+- intrabar execution, liquidation, margin, and order-book simulation
 - live oracle security model
 - real wallet-connected vault UX
 

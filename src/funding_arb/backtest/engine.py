@@ -18,7 +18,15 @@ import numpy as np
 import pandas as pd
 
 from funding_arb.config.models import BacktestSettings
-from funding_arb.evaluation.metrics import calculate_max_drawdown, calculate_sharpe_ratio, calculate_total_return
+from funding_arb.evaluation.metrics import (
+    calculate_autocorrelation_adjusted_sharpe,
+    calculate_max_consecutive_losses,
+    calculate_max_drawdown,
+    calculate_period_sharpe_ratio,
+    calculate_profit_factor,
+    calculate_sharpe_ratio,
+    calculate_total_return,
+)
 from funding_arb.utils.paths import ensure_directory, repo_path
 
 PLOT_COLORS = [
@@ -336,6 +344,136 @@ def _funding_rate_sum(cumulative_rates: pd.Series, start_index: int, end_index: 
     return end_value - start_value
 
 
+def _funding_event_mask(market: pd.DataFrame, settings: BacktestSettings) -> tuple[pd.Series, str]:
+    """Return rows used for funding accrual under the configured mode.
+
+    `prototype_bar_sum` preserves the original prototype behavior by summing
+    every aligned funding-rate row. `event_aware` uses an explicit event marker
+    when the dataset has one, otherwise it falls back to UTC hour modulo the
+    configured funding interval. That fallback matches Binance-style 8-hour
+    funding events better than blindly summing every hourly row.
+    """
+    mode = settings.execution.funding_mode
+    if mode == "prototype_bar_sum":
+        return pd.Series(True, index=market.index), "all_aligned_rows"
+    for marker in ("funding_event", "is_funding_event"):
+        if marker in market.columns:
+            return market[marker].fillna(False).astype(bool), marker
+    timestamps = pd.to_datetime(market["timestamp"], utc=True)
+    interval = int(settings.execution.funding_interval_hours)
+    return pd.Series((timestamps.dt.hour % interval) == 0, index=market.index), "utc_hour_mod_interval_fallback"
+
+
+def _funding_rate_series(market: pd.DataFrame, settings: BacktestSettings) -> pd.Series:
+    rates = pd.to_numeric(market["funding_rate"], errors="coerce").fillna(0.0)
+    mask, _ = _funding_event_mask(market, settings)
+    return rates.where(mask, 0.0)
+
+
+def _funding_mode_diagnostics(market: pd.DataFrame, settings: BacktestSettings) -> dict[str, Any]:
+    rates = pd.to_numeric(market["funding_rate"], errors="coerce").fillna(0.0)
+    mask, source = _funding_event_mask(market, settings)
+    rows_used = int(mask.sum())
+    return {
+        "funding_mode": settings.execution.funding_mode,
+        "funding_notional_mode": settings.execution.funding_notional_mode,
+        "funding_event_source": source,
+        "funding_rows_used": rows_used,
+        "funding_nonzero_rows_used": int(((rates != 0.0) & mask).sum()),
+        "funding_total_rows": int(len(market)),
+    }
+
+
+def _funding_rows_for_period(
+    market: pd.DataFrame,
+    start_index: int,
+    end_index: int,
+    settings: BacktestSettings,
+) -> pd.DataFrame:
+    if end_index <= start_index:
+        return market.iloc[0:0].copy()
+    rates = _funding_rate_series(market, settings)
+    mask, _ = _funding_event_mask(market, settings)
+    period = market.iloc[start_index:end_index].copy()
+    period["funding_rate_for_backtest"] = rates.iloc[start_index:end_index].to_numpy(dtype=float)
+    period["funding_event_for_backtest"] = mask.iloc[start_index:end_index].to_numpy(dtype=bool)
+    return period
+
+
+def _funding_pnl_for_period(
+    *,
+    direction: str,
+    position_notional_usd: float,
+    perp_entry_price_raw: float,
+    market: pd.DataFrame,
+    start_index: int,
+    end_index: int,
+    settings: BacktestSettings,
+) -> dict[str, float]:
+    """Calculate funding PnL under the configured funding/notional assumption."""
+    period = _funding_rows_for_period(market, start_index, end_index, settings)
+    if period.empty:
+        return {
+            "funding_rate_sum": 0.0,
+            "funding_pnl_usd": 0.0,
+            "funding_rows_used": 0.0,
+            "funding_nonzero_rows_used": 0.0,
+        }
+    rates = pd.to_numeric(period["funding_rate_for_backtest"], errors="coerce").fillna(0.0)
+    perp_sign, _ = _direction_signs(direction)
+    funding_rate_sum = float(rates.sum())
+    if settings.execution.funding_notional_mode == "initial_notional":
+        funding_notional = pd.Series(float(position_notional_usd), index=period.index)
+    else:
+        entry_effective = _effective_price(
+            float(perp_entry_price_raw),
+            perp_sign,
+            is_entry=True,
+            slippage_bps=settings.costs.slippage_bps,
+        )
+        quantity = float(position_notional_usd) / entry_effective
+        funding_notional = quantity * pd.to_numeric(period["perp_close"], errors="coerce").ffill().fillna(float(perp_entry_price_raw))
+    funding_pnl_usd = (-perp_sign) * float((rates * funding_notional).sum())
+    return {
+        "funding_rate_sum": funding_rate_sum,
+        "funding_pnl_usd": float(funding_pnl_usd),
+        "funding_rows_used": float(period["funding_event_for_backtest"].sum()),
+        "funding_nonzero_rows_used": float((rates != 0.0).sum()),
+    }
+
+
+def _gross_notional_usd(settings: BacktestSettings) -> float:
+    if settings.execution.hedge_mode != "equal_notional_hedge":
+        raise ValueError("Only equal_notional_hedge is implemented in the prototype backtester.")
+    return 2.0 * float(settings.portfolio.position_notional) * int(settings.portfolio.max_open_positions)
+
+
+def _leverage_diagnostics(settings: BacktestSettings) -> dict[str, Any]:
+    gross_notional = _gross_notional_usd(settings)
+    initial_capital = float(settings.portfolio.initial_capital)
+    implied_gross_leverage = gross_notional / initial_capital
+    max_gross_leverage = float(settings.portfolio.max_gross_leverage)
+    diagnostics = {
+        "hedge_mode": settings.execution.hedge_mode,
+        "gross_notional_usd": float(gross_notional),
+        "position_notional_usd": float(settings.portfolio.position_notional),
+        "initial_capital_usd": initial_capital,
+        "implied_gross_leverage": float(implied_gross_leverage),
+        "max_gross_leverage": max_gross_leverage,
+        "leverage_check_mode": settings.portfolio.leverage_check_mode,
+        "leverage_check_passed": bool(implied_gross_leverage <= max_gross_leverage),
+    }
+    if implied_gross_leverage > max_gross_leverage and settings.portfolio.leverage_check_mode != "off":
+        message = (
+            f"Configured gross leverage {implied_gross_leverage:.2f}x exceeds "
+            f"max_gross_leverage {max_gross_leverage:.2f}x."
+        )
+        if settings.portfolio.leverage_check_mode == "fail":
+            raise ValueError(message)
+        warnings.warn(message, RuntimeWarning, stacklevel=2)
+    return diagnostics
+
+
 def calculate_trade_pnl(
     *,
     direction: str,
@@ -349,6 +487,7 @@ def calculate_trade_pnl(
     slippage_bps: float,
     gas_cost_usd: float,
     other_friction_bps: float,
+    funding_pnl_usd_override: float | None = None,
 ) -> dict[str, float]:
     """Calculate explicit trade-level PnL for a delta-neutral position."""
     if position_notional_usd <= 0:
@@ -373,12 +512,16 @@ def calculate_trade_pnl(
     if hedge_sign < 0:
         spot_leg_pnl_usd *= -1.0
 
-    funding_pnl_usd = (-perp_sign) * float(funding_rate_sum) * float(position_notional_usd)
+    funding_pnl_usd = (
+        float(funding_pnl_usd_override)
+        if funding_pnl_usd_override is not None
+        else (-perp_sign) * float(funding_rate_sum) * float(position_notional_usd)
+    )
     trading_fees_usd = 4.0 * float(position_notional_usd) * (float(taker_fee_bps) / 10_000.0)
     gas_cost_usd = float(gas_cost_usd)
     other_friction_usd = float(position_notional_usd) * (float(other_friction_bps) / 10_000.0)
     turnover_usd = 4.0 * float(position_notional_usd)
-    estimated_slippage_cost_usd = turnover_usd * (float(slippage_bps) / 10_000.0)
+    embedded_slippage_cost_usd = turnover_usd * (float(slippage_bps) / 10_000.0)
 
     gross_pnl_usd = perp_leg_pnl_usd + spot_leg_pnl_usd + funding_pnl_usd
     net_pnl_usd = gross_pnl_usd - trading_fees_usd - gas_cost_usd - other_friction_usd
@@ -399,7 +542,8 @@ def calculate_trade_pnl(
         "trading_fees_usd": float(trading_fees_usd),
         "gas_cost_usd": float(gas_cost_usd),
         "other_friction_usd": float(other_friction_usd),
-        "estimated_slippage_cost_usd": float(estimated_slippage_cost_usd),
+        "estimated_slippage_cost_usd": float(embedded_slippage_cost_usd),
+        "embedded_slippage_cost_usd": float(embedded_slippage_cost_usd),
         "net_pnl_usd": float(net_pnl_usd),
         "gross_return_bps": float(gross_return_bps),
         "net_return_bps": float(net_return_bps),
@@ -475,11 +619,18 @@ def _open_position(row: pd.Series, market: pd.DataFrame, entry_market_index: int
 def _mark_trade_return_bps(
     position: OpenPosition,
     market: pd.DataFrame,
-    funding_cumulative: pd.Series,
     current_market_index: int,
     settings: BacktestSettings,
 ) -> float:
-    funding_sum = _funding_rate_sum(funding_cumulative, position.entry_market_index, current_market_index + 1)
+    funding = _funding_pnl_for_period(
+        direction=position.direction,
+        position_notional_usd=position.position_notional_usd,
+        perp_entry_price_raw=position.perp_entry_price_raw,
+        market=market,
+        start_index=position.entry_market_index,
+        end_index=current_market_index + 1,
+        settings=settings,
+    )
     pnl = calculate_trade_pnl(
         direction=position.direction,
         position_notional_usd=position.position_notional_usd,
@@ -487,11 +638,12 @@ def _mark_trade_return_bps(
         perp_exit_price_raw=float(market.iloc[current_market_index]["perp_close"]),
         spot_entry_price_raw=position.spot_entry_price_raw,
         spot_exit_price_raw=float(market.iloc[current_market_index]["spot_close"]),
-        funding_rate_sum=funding_sum,
+        funding_rate_sum=funding["funding_rate_sum"],
         taker_fee_bps=settings.costs.taker_fee_bps,
         slippage_bps=settings.costs.slippage_bps,
         gas_cost_usd=settings.costs.gas_cost_usd,
         other_friction_bps=settings.costs.other_friction_bps,
+        funding_pnl_usd_override=funding["funding_pnl_usd"],
     )
     return float(pnl["net_return_bps"])
 
@@ -503,13 +655,20 @@ def _close_position(
     exit_reason: str,
     observed_market_index: int,
     market: pd.DataFrame,
-    funding_cumulative: pd.Series,
     settings: BacktestSettings,
 ) -> dict[str, Any]:
     execution_price_field = settings.execution.execution_price_field
     perp_exit_price_raw = float(market.iloc[exit_market_index][_price_column("perp", execution_price_field)])
     spot_exit_price_raw = float(market.iloc[exit_market_index][_price_column("spot", execution_price_field)])
-    funding_sum = _funding_rate_sum(funding_cumulative, position.entry_market_index, exit_market_index)
+    funding = _funding_pnl_for_period(
+        direction=position.direction,
+        position_notional_usd=position.position_notional_usd,
+        perp_entry_price_raw=position.perp_entry_price_raw,
+        market=market,
+        start_index=position.entry_market_index,
+        end_index=exit_market_index,
+        settings=settings,
+    )
     pnl = calculate_trade_pnl(
         direction=position.direction,
         position_notional_usd=position.position_notional_usd,
@@ -517,11 +676,12 @@ def _close_position(
         perp_exit_price_raw=perp_exit_price_raw,
         spot_entry_price_raw=position.spot_entry_price_raw,
         spot_exit_price_raw=spot_exit_price_raw,
-        funding_rate_sum=funding_sum,
+        funding_rate_sum=funding["funding_rate_sum"],
         taker_fee_bps=settings.costs.taker_fee_bps,
         slippage_bps=settings.costs.slippage_bps,
         gas_cost_usd=settings.costs.gas_cost_usd,
         other_friction_bps=settings.costs.other_friction_bps,
+        funding_pnl_usd_override=funding["funding_pnl_usd"],
     )
     return {
         "strategy_name": position.strategy_name,
@@ -569,7 +729,14 @@ def _close_position(
         "perp_exit_price_raw": float(perp_exit_price_raw),
         "spot_entry_price_raw": float(position.spot_entry_price_raw),
         "spot_exit_price_raw": float(spot_exit_price_raw),
-        "funding_rate_sum": float(funding_sum),
+        "funding_rate_sum": float(funding["funding_rate_sum"]),
+        "funding_rows_used": int(funding["funding_rows_used"]),
+        "funding_nonzero_rows_used": int(funding["funding_nonzero_rows_used"]),
+        "hedge_mode": settings.execution.hedge_mode,
+        "funding_mode": settings.execution.funding_mode,
+        "funding_notional_mode": settings.execution.funding_notional_mode,
+        "stop_observation_mode": settings.execution.stop_observation_mode,
+        "stop_execution_mode": settings.execution.stop_execution_mode,
         **pnl,
     }
 
@@ -578,7 +745,6 @@ def _simulate_strategy(
     strategy_frame: pd.DataFrame,
     market: pd.DataFrame,
     timestamp_to_market_index: dict[pd.Timestamp, int],
-    funding_cumulative: pd.Series,
     settings: BacktestSettings,
 ) -> pd.DataFrame:
     if strategy_frame.empty:
@@ -603,7 +769,7 @@ def _simulate_strategy(
         exited_on_this_signal = False
         if open_position is not None:
             exit_candidates: list[tuple[int, int, str]] = []
-            marked_return_bps = _mark_trade_return_bps(open_position, market, funding_cumulative, current_market_index, settings)
+            marked_return_bps = _mark_trade_return_bps(open_position, market, current_market_index, settings)
 
             if stop_loss_bps is not None and marked_return_bps <= -abs(float(stop_loss_bps)):
                 exit_candidates.append((current_market_index + delay, 0, "stop_loss"))
@@ -631,7 +797,6 @@ def _simulate_strategy(
                         exit_reason=exit_reason,
                         observed_market_index=current_market_index,
                         market=market,
-                        funding_cumulative=funding_cumulative,
                         settings=settings,
                     )
                 )
@@ -657,7 +822,6 @@ def _simulate_strategy(
                     exit_reason="end_of_data",
                     observed_market_index=final_exit_market_index,
                     market=market,
-                    funding_cumulative=funding_cumulative,
                     settings=settings,
                 )
             )
@@ -694,6 +858,13 @@ def _simulate_strategy(
                 "spot_entry_price_raw",
                 "spot_exit_price_raw",
                 "funding_rate_sum",
+                "funding_rows_used",
+                "funding_nonzero_rows_used",
+                "hedge_mode",
+                "funding_mode",
+                "funding_notional_mode",
+                "stop_observation_mode",
+                "stop_execution_mode",
                 "perp_entry_price_effective",
                 "perp_exit_price_effective",
                 "spot_entry_price_effective",
@@ -708,6 +879,7 @@ def _simulate_strategy(
                 "gas_cost_usd",
                 "other_friction_usd",
                 "estimated_slippage_cost_usd",
+                "embedded_slippage_cost_usd",
                 "net_pnl_usd",
                 "gross_return_bps",
                 "net_return_bps",
@@ -745,10 +917,124 @@ def build_realized_equity_curve(
     return curve
 
 
-def _annualized_return(equity_curve: pd.DataFrame, initial_capital: float) -> float:
+def _mark_open_trade_pnl(
+    trade: pd.Series,
+    market: pd.DataFrame,
+    current_market_index: int,
+    settings: BacktestSettings,
+) -> dict[str, float]:
+    """Conservatively mark one open trade using current close prices."""
+    funding = _funding_pnl_for_period(
+        direction=str(trade["direction"]),
+        position_notional_usd=float(trade["position_notional_usd"]),
+        perp_entry_price_raw=float(trade["perp_entry_price_raw"]),
+        market=market,
+        start_index=int(trade["entry_market_index"]),
+        end_index=current_market_index + 1,
+        settings=settings,
+    )
+    return calculate_trade_pnl(
+        direction=str(trade["direction"]),
+        position_notional_usd=float(trade["position_notional_usd"]),
+        perp_entry_price_raw=float(trade["perp_entry_price_raw"]),
+        perp_exit_price_raw=float(market.iloc[current_market_index]["perp_close"]),
+        spot_entry_price_raw=float(trade["spot_entry_price_raw"]),
+        spot_exit_price_raw=float(market.iloc[current_market_index]["spot_close"]),
+        funding_rate_sum=funding["funding_rate_sum"],
+        taker_fee_bps=settings.costs.taker_fee_bps,
+        slippage_bps=settings.costs.slippage_bps,
+        gas_cost_usd=settings.costs.gas_cost_usd,
+        other_friction_bps=settings.costs.other_friction_bps,
+        funding_pnl_usd_override=funding["funding_pnl_usd"],
+    )
+
+
+def build_mark_to_market_equity_curve(
+    market: pd.DataFrame,
+    trade_log: pd.DataFrame,
+    *,
+    initial_capital: float,
+    strategy_name: str,
+    settings: BacktestSettings,
+    curve_scope: str,
+    start_timestamp: pd.Timestamp | None = None,
+) -> pd.DataFrame:
+    """Build a mark-to-market equity curve while retaining realized audit columns."""
+    timestamps = pd.to_datetime(market["timestamp"], utc=True)
+    realized_events = pd.Series(0.0, index=range(len(timestamps)), dtype="float64")
+    unrealized = pd.Series(0.0, index=range(len(timestamps)), dtype="float64")
+    open_counts = pd.Series(0, index=range(len(timestamps)), dtype="int64")
+    gross_exposure = pd.Series(0.0, index=range(len(timestamps)), dtype="float64")
+
+    if not trade_log.empty:
+        for _, trade in trade_log.iterrows():
+            exit_index = int(trade["exit_market_index"])
+            entry_index = int(trade["entry_market_index"])
+            if 0 <= exit_index < len(realized_events):
+                realized_events.iloc[exit_index] += float(trade["net_pnl_usd"])
+            # Mark open positions from entry bar through the bar before realized exit.
+            for market_index in range(max(entry_index, 0), min(exit_index, len(market))):
+                mark = _mark_open_trade_pnl(trade, market, market_index, settings)
+                unrealized.iloc[market_index] += float(mark["net_pnl_usd"])
+                open_counts.iloc[market_index] += 1
+                gross_exposure.iloc[market_index] += 2.0 * float(trade["position_notional_usd"])
+
+    realized_equity = float(initial_capital) + realized_events.cumsum()
+    mtm_equity = realized_equity + unrealized
+    curve = pd.DataFrame(
+        {
+            "timestamp": timestamps,
+            "strategy_name": strategy_name,
+            "curve_scope": curve_scope,
+            "realized_pnl_event_usd": realized_events.to_numpy(dtype=float),
+            "realized_equity_usd": realized_equity.to_numpy(dtype=float),
+            "unrealized_pnl_usd": unrealized.to_numpy(dtype=float),
+            "mark_to_market_equity_usd": mtm_equity.to_numpy(dtype=float),
+            "open_position_count": open_counts.to_numpy(dtype=int),
+            "gross_exposure_notional_usd": gross_exposure.to_numpy(dtype=float),
+        }
+    )
+    curve["equity_usd"] = curve["mark_to_market_equity_usd"]
+    curve["realized_period_return"] = curve["realized_equity_usd"].pct_change().fillna(0.0)
+    curve["mark_to_market_period_return"] = curve["mark_to_market_equity_usd"].pct_change().fillna(0.0)
+    curve["period_return"] = curve["mark_to_market_period_return"]
+    curve["realized_cumulative_return"] = curve["realized_equity_usd"] / float(initial_capital) - 1.0
+    curve["mark_to_market_cumulative_return"] = curve["mark_to_market_equity_usd"] / float(initial_capital) - 1.0
+    curve["cumulative_return"] = curve["mark_to_market_cumulative_return"]
+    curve["realized_drawdown"] = curve["realized_equity_usd"] / curve["realized_equity_usd"].cummax() - 1.0
+    curve["mark_to_market_drawdown"] = (
+        curve["mark_to_market_equity_usd"] / curve["mark_to_market_equity_usd"].cummax() - 1.0
+    )
+    curve["drawdown"] = curve["mark_to_market_drawdown"]
+    curve["implied_gross_leverage"] = curve["gross_exposure_notional_usd"] / float(initial_capital)
+    if start_timestamp is not None:
+        start = pd.Timestamp(start_timestamp)
+        curve = curve.loc[curve["timestamp"] >= start].reset_index(drop=True)
+        for column in ("realized_period_return", "mark_to_market_period_return", "period_return"):
+            if not curve.empty:
+                curve.loc[curve.index[0], column] = 0.0
+    return curve
+
+
+def _filter_trades_for_split(trade_log: pd.DataFrame, split: str) -> pd.DataFrame:
+    if split == "combined" or trade_log.empty or "signal_split" not in trade_log.columns:
+        return trade_log.copy()
+    return trade_log.loc[trade_log["signal_split"] == split].copy()
+
+
+def _primary_split_start(strategy_frame: pd.DataFrame, split: str) -> pd.Timestamp | None:
+    if split == "combined":
+        return None
+    split_rows = strategy_frame.loc[strategy_frame["split"] == split]
+    if split_rows.empty:
+        return None
+    return pd.Timestamp(split_rows["timestamp"].min())
+
+
+def _annualized_return(equity_curve: pd.DataFrame, initial_capital: float, *, equity_column: str = "equity_usd") -> float:
     if equity_curve.empty:
         return 0.0
-    final_equity = float(equity_curve["equity_usd"].iloc[-1])
+    final_equity = float(equity_curve[equity_column].iloc[-1])
     periods = max(len(equity_curve) - 1, 0)
     if periods <= 0 or initial_capital <= 0 or final_equity <= 0:
         return 0.0
@@ -766,25 +1052,86 @@ def summarize_strategy_backtest(
     trade_log: pd.DataFrame,
     initial_capital: float,
     strategy_metadata: dict[str, Any] | None = None,
+    evaluation_split: str = "combined",
 ) -> dict[str, Any]:
-    """Summarize a realized backtest into report-friendly metrics."""
+    """Summarize a backtest into report-friendly, strategy-aware metrics."""
     trade_count = int(len(trade_log))
     win_rate = float((trade_log["net_pnl_usd"] > 0).mean()) if trade_count else 0.0
     average_trade_return_bps = float(trade_log["net_return_bps"].mean()) if trade_count else 0.0
+    median_trade_return_bps = float(trade_log["net_return_bps"].median()) if trade_count else 0.0
     average_trade_pnl_usd = float(trade_log["net_pnl_usd"].mean()) if trade_count else 0.0
+    expectancy_per_trade_usd = average_trade_pnl_usd
+    expectancy_per_trade_bps = average_trade_return_bps
     total_turnover_usd = float(trade_log["turnover_usd"].sum()) if trade_count else 0.0
     total_fees_usd = float(trade_log["trading_fees_usd"].sum()) if trade_count else 0.0
     total_gas_cost_usd = float(trade_log["gas_cost_usd"].sum()) if trade_count else 0.0
     total_other_friction_usd = float(trade_log["other_friction_usd"].sum()) if trade_count else 0.0
+    slippage_column = (
+        "embedded_slippage_cost_usd"
+        if "embedded_slippage_cost_usd" in trade_log.columns
+        else "estimated_slippage_cost_usd"
+        if "estimated_slippage_cost_usd" in trade_log.columns
+        else None
+    )
+    total_embedded_slippage_cost_usd = float(trade_log[slippage_column].sum()) if trade_count and slippage_column else 0.0
     total_funding_pnl_usd = float(trade_log["funding_pnl_usd"].sum()) if trade_count else 0.0
     total_gross_pnl_usd = float(trade_log["gross_pnl_usd"].sum()) if trade_count else 0.0
     total_net_pnl_usd = float(trade_log["net_pnl_usd"].sum()) if trade_count else 0.0
     average_holding_hours = float(trade_log["holding_hours"].mean()) if trade_count else 0.0
-    final_equity = float(equity_curve["equity_usd"].iloc[-1]) if not equity_curve.empty else float(initial_capital)
-    total_return = calculate_total_return(equity_curve["period_return"]) if not equity_curve.empty else 0.0
-    annualized_return = _annualized_return(equity_curve, initial_capital)
-    sharpe_ratio = calculate_sharpe_ratio(equity_curve["period_return"], periods_per_year=PERIODS_PER_YEAR_1H) if not equity_curve.empty else 0.0
-    max_drawdown = calculate_max_drawdown(equity_curve["equity_usd"]) if not equity_curve.empty else 0.0
+    median_holding_hours = float(trade_log["holding_hours"].median()) if trade_count else 0.0
+    profit_factor = calculate_profit_factor(trade_log["net_pnl_usd"]) if trade_count else 0.0
+    max_consecutive_losses = calculate_max_consecutive_losses(trade_log["net_pnl_usd"]) if trade_count else 0
+    funding_contribution_share = (
+        float(total_funding_pnl_usd / abs(total_net_pnl_usd)) if not math.isclose(total_net_pnl_usd, 0.0) else 0.0
+    )
+
+    mtm_equity_column = "mark_to_market_equity_usd" if "mark_to_market_equity_usd" in equity_curve.columns else "equity_usd"
+    realized_equity_column = "realized_equity_usd" if "realized_equity_usd" in equity_curve.columns else "equity_usd"
+    mtm_return_column = "mark_to_market_period_return" if "mark_to_market_period_return" in equity_curve.columns else "period_return"
+    realized_return_column = "realized_period_return" if "realized_period_return" in equity_curve.columns else "period_return"
+
+    final_equity = float(equity_curve[mtm_equity_column].iloc[-1]) if not equity_curve.empty else float(initial_capital)
+    realized_final_equity = (
+        float(equity_curve[realized_equity_column].iloc[-1]) if not equity_curve.empty else float(initial_capital)
+    )
+    total_return = calculate_total_return(equity_curve[mtm_return_column]) if not equity_curve.empty else 0.0
+    realized_total_return = calculate_total_return(equity_curve[realized_return_column]) if not equity_curve.empty else 0.0
+    annualized_return = _annualized_return(equity_curve, initial_capital, equity_column=mtm_equity_column)
+    realized_annualized_return = _annualized_return(equity_curve, initial_capital, equity_column=realized_equity_column)
+    sharpe_ratio = (
+        calculate_sharpe_ratio(equity_curve[mtm_return_column], periods_per_year=PERIODS_PER_YEAR_1H)
+        if not equity_curve.empty
+        else 0.0
+    )
+    raw_period_sharpe = calculate_period_sharpe_ratio(equity_curve[mtm_return_column]) if not equity_curve.empty else 0.0
+    autocorr_adjusted_sharpe = (
+        calculate_autocorrelation_adjusted_sharpe(equity_curve[mtm_return_column], periods_per_year=PERIODS_PER_YEAR_1H)
+        if not equity_curve.empty
+        else 0.0
+    )
+    realized_sharpe_ratio = (
+        calculate_sharpe_ratio(equity_curve[realized_return_column], periods_per_year=PERIODS_PER_YEAR_1H)
+        if not equity_curve.empty
+        else 0.0
+    )
+    mark_to_market_max_drawdown = calculate_max_drawdown(equity_curve[mtm_equity_column]) if not equity_curve.empty else 0.0
+    realized_max_drawdown = calculate_max_drawdown(equity_curve[realized_equity_column]) if not equity_curve.empty else 0.0
+    max_drawdown = mark_to_market_max_drawdown
+    exposure_time_fraction = (
+        float((equity_curve["open_position_count"] > 0).mean())
+        if not equity_curve.empty and "open_position_count" in equity_curve.columns
+        else 0.0
+    )
+    average_gross_leverage = (
+        float(equity_curve["implied_gross_leverage"].mean())
+        if not equity_curve.empty and "implied_gross_leverage" in equity_curve.columns
+        else 0.0
+    )
+    max_gross_leverage = (
+        float(equity_curve["implied_gross_leverage"].max())
+        if not equity_curve.empty and "implied_gross_leverage" in equity_curve.columns
+        else 0.0
+    )
     active_signal_count = int(trade_log["entry_timestamp"].count())
     metadata = strategy_metadata or {}
     return {
@@ -792,6 +1139,7 @@ def summarize_strategy_backtest(
         "source": source,
         "source_subtype": source_subtype,
         "task": task,
+        "evaluation_split": evaluation_split,
         "signal_threshold": metadata.get("signal_threshold"),
         "signal_threshold_mode": metadata.get("signal_threshold_mode"),
         "threshold_objective": metadata.get("threshold_objective"),
@@ -814,21 +1162,41 @@ def summarize_strategy_backtest(
         "trade_count": trade_count,
         "active_position_count": active_signal_count,
         "cumulative_return": float(total_return),
+        "realized_cumulative_return": float(realized_total_return),
         "annualized_return": float(annualized_return),
+        "realized_annualized_return": float(realized_annualized_return),
         "sharpe_ratio": float(sharpe_ratio),
+        "simple_annualized_sharpe": float(sharpe_ratio),
+        "raw_period_sharpe": float(raw_period_sharpe),
+        "autocorr_adjusted_sharpe": float(autocorr_adjusted_sharpe),
+        "realized_sharpe_ratio": float(realized_sharpe_ratio),
         "max_drawdown": float(max_drawdown),
+        "realized_max_drawdown": float(realized_max_drawdown),
+        "mark_to_market_max_drawdown": float(mark_to_market_max_drawdown),
         "win_rate": float(win_rate),
+        "profit_factor": float(profit_factor),
         "average_trade_return_bps": float(average_trade_return_bps),
+        "median_trade_return_bps": float(median_trade_return_bps),
         "average_trade_pnl_usd": float(average_trade_pnl_usd),
+        "expectancy_per_trade_usd": float(expectancy_per_trade_usd),
+        "expectancy_per_trade_bps": float(expectancy_per_trade_bps),
         "average_holding_hours": float(average_holding_hours),
+        "median_holding_hours": float(median_holding_hours),
+        "max_consecutive_losses": int(max_consecutive_losses),
+        "exposure_time_fraction": float(exposure_time_fraction),
+        "average_gross_leverage": float(average_gross_leverage),
+        "max_gross_leverage": float(max_gross_leverage),
         "total_turnover_usd": float(total_turnover_usd),
         "total_fees_usd": float(total_fees_usd),
         "total_gas_cost_usd": float(total_gas_cost_usd),
         "total_other_friction_usd": float(total_other_friction_usd),
+        "total_embedded_slippage_cost_usd": float(total_embedded_slippage_cost_usd),
         "total_funding_pnl_usd": float(total_funding_pnl_usd),
+        "funding_contribution_share": float(funding_contribution_share),
         "total_gross_pnl_usd": float(total_gross_pnl_usd),
         "total_net_pnl_usd": float(total_net_pnl_usd),
         "final_equity_usd": float(final_equity),
+        "realized_final_equity_usd": float(realized_final_equity),
     }
 
 
@@ -843,8 +1211,12 @@ def _split_trade_summary(trade_log: pd.DataFrame) -> pd.DataFrame:
         "selected_loss",
         "trade_count",
         "win_rate",
+        "profit_factor",
         "average_trade_return_bps",
+        "median_trade_return_bps",
         "average_holding_hours",
+        "median_holding_hours",
+        "max_consecutive_losses",
         "total_turnover_usd",
         "total_funding_pnl_usd",
         "total_net_pnl_usd",
@@ -867,14 +1239,31 @@ def _split_trade_summary(trade_log: pd.DataFrame) -> pd.DataFrame:
                 "selected_loss": _safe_text(_constant_signal_value(group["selected_loss_at_entry"])),
                 "trade_count": int(len(group)),
                 "win_rate": float((group["net_pnl_usd"] > 0).mean()) if len(group) else 0.0,
+                "profit_factor": float(calculate_profit_factor(group["net_pnl_usd"])) if len(group) else 0.0,
                 "average_trade_return_bps": float(group["net_return_bps"].mean()) if len(group) else 0.0,
+                "median_trade_return_bps": float(group["net_return_bps"].median()) if len(group) else 0.0,
                 "average_holding_hours": float(group["holding_hours"].mean()) if len(group) else 0.0,
+                "median_holding_hours": float(group["holding_hours"].median()) if len(group) else 0.0,
+                "max_consecutive_losses": calculate_max_consecutive_losses(group["net_pnl_usd"]) if len(group) else 0,
                 "total_turnover_usd": float(group["turnover_usd"].sum()),
                 "total_funding_pnl_usd": float(group["funding_pnl_usd"].sum()),
                 "total_net_pnl_usd": float(group["net_pnl_usd"].sum()),
             }
         )
     return pd.DataFrame(rows).sort_values(["strategy_name", "signal_split"]).reset_index(drop=True)
+
+
+def _sort_strategy_metrics(metrics: pd.DataFrame) -> pd.DataFrame:
+    """Rank traded strategies ahead of no-trade placeholders, then by risk metrics."""
+    if metrics.empty:
+        return metrics
+    ranked = metrics.copy()
+    ranked["has_trades"] = ranked["trade_count"].astype(float) > 0.0
+    return ranked.sort_values(
+        ["has_trades", "sharpe_ratio", "cumulative_return"],
+        ascending=[False, False, False],
+        na_position="last",
+    ).reset_index(drop=True)
 
 
 def _resolve_output_dir(settings: BacktestSettings) -> Path:
@@ -928,7 +1317,7 @@ def _plot_cumulative_returns(equity_curve: pd.DataFrame, leaderboard: pd.DataFra
             linewidth=1.8,
             color=PLOT_COLORS[color_index % len(PLOT_COLORS)],
         )
-    ax.set_title("Cumulative Return by Strategy")
+    ax.set_title("Mark-to-Market Cumulative Return by Strategy")
     ax.set_ylabel("Cumulative return (%)")
     ax.set_xlabel("Timestamp")
     ax.legend(loc="best")
@@ -953,7 +1342,7 @@ def _plot_drawdowns(equity_curve: pd.DataFrame, leaderboard: pd.DataFrame, outpu
             linewidth=1.5,
             color=PLOT_COLORS[color_index % len(PLOT_COLORS)],
         )
-    ax.set_title("Realized Drawdown by Strategy")
+    ax.set_title("Mark-to-Market Drawdown by Strategy")
     ax.set_ylabel("Drawdown (%)")
     ax.set_xlabel("Timestamp")
     ax.legend(loc="best")
@@ -980,7 +1369,7 @@ def _plot_trade_return_boxplot(trade_log: pd.DataFrame, leaderboard: pd.DataFram
             plt.close(fig)
             return str(output_path)
         ordered_groups = [filtered.loc[filtered["strategy_name"] == name, "net_return_bps"].astype(float).to_numpy() for name in top_names]
-        ax.boxplot(ordered_groups, labels=top_names, patch_artist=True)
+        ax.boxplot(ordered_groups, tick_labels=top_names, patch_artist=True)
         ax.set_ylabel("Net trade return (bps)")
         ax.set_title("Trade Return Distribution")
         ax.tick_params(axis="x", rotation=20)
@@ -1006,16 +1395,23 @@ def _build_markdown_report(
     figure_paths: list[str],
     signal_manifest: dict[str, Any] | None,
     market_manifest: dict[str, Any] | None,
+    leverage_diagnostics: dict[str, Any],
+    funding_diagnostics: dict[str, Any],
 ) -> str:
     assumptions = [
         f"Signals are observed at timestamp `t` and executed after `{settings.execution.entry_delay_bars}` bar(s) using `{settings.execution.execution_price_field}` prices.",
         f"Direction is fixed to `{settings.selection.direction}` for this run.",
+        f"Hedge mode is `{settings.execution.hedge_mode}`; the implemented prototype uses equal USD notional on perp and spot legs.",
         f"Delta-neutral abstraction uses fixed per-leg notional of `{settings.portfolio.position_notional}` USD.",
+        f"Primary leaderboard split is `{settings.reporting.primary_split}`; combined/in-sample behavior should be treated as secondary diagnostics.",
+        "Primary risk metrics use mark-to-market equity. Realized-only equity remains in the artifact for auditability.",
+        f"Funding mode is `{settings.execution.funding_mode}` with `{settings.execution.funding_notional_mode}` funding notional.",
         "PnL includes explicit perp-leg, spot-leg, and funding components.",
         f"Trading fees use taker fee `{settings.costs.taker_fee_bps}` bps on all four round-trip transactions.",
-        f"Slippage is modeled through adverse execution prices using `{settings.costs.slippage_bps}` bps.",
+        f"Slippage is modeled through adverse execution prices using `{settings.costs.slippage_bps}` bps. Reported slippage cost is embedded, not deducted a second time.",
         f"Gas cost is `{settings.costs.gas_cost_usd}` USD per closed trade.",
-        "Equity curve in this first version is realized-PnL based rather than full intratrade mark-to-market.",
+        f"Stop logic is `{settings.execution.stop_observation_mode}` and `{settings.execution.stop_execution_mode}`, not intrabar execution.",
+        "Simple annualized Sharpe uses square-root scaling and may be distorted by sparse, serially correlated trading returns.",
     ]
     figure_markdown = "\n".join(f"![{Path(path).stem}](figures/{Path(path).name})" for path in figure_paths)
     manifest_lines = ""
@@ -1030,30 +1426,56 @@ def _build_markdown_report(
         manifest_lines += f"- Signal preprocessing scalers: `{signal_manifest.get('summary', {}).get('preprocessing_scalers', [])}`\n"
     if market_manifest is not None:
         manifest_lines += f"- Canonical market rows: `{market_manifest.get('canonical_row_count', 'n/a')}`\n"
+    diagnostics_lines = "\n".join(
+        [
+            f"- Implied gross leverage: `{leverage_diagnostics.get('implied_gross_leverage', 'n/a')}`",
+            f"- Max gross leverage guard: `{leverage_diagnostics.get('max_gross_leverage', 'n/a')}`",
+            f"- Leverage check passed: `{leverage_diagnostics.get('leverage_check_passed', 'n/a')}`",
+            f"- Funding event source: `{funding_diagnostics.get('funding_event_source', 'n/a')}`",
+            f"- Funding rows used: `{funding_diagnostics.get('funding_rows_used', 'n/a')}`",
+            f"- Nonzero funding rows used: `{funding_diagnostics.get('funding_nonzero_rows_used', 'n/a')}`",
+        ]
+    )
 
     top_metrics = (
         strategy_metrics[
             [
                 "strategy_name",
                 "source_subtype",
+                "evaluation_split",
                 "prediction_mode",
                 "calibration_method",
                 "checkpoint_selection_effective_metric",
                 "selected_loss",
                 "preprocessing_scaler",
                 "signal_threshold",
+                "has_trades",
                 "trade_count",
                 "cumulative_return",
                 "annualized_return",
                 "sharpe_ratio",
+                "raw_period_sharpe",
+                "autocorr_adjusted_sharpe",
                 "max_drawdown",
+                "realized_max_drawdown",
+                "mark_to_market_max_drawdown",
                 "win_rate",
+                "profit_factor",
                 "average_trade_return_bps",
+                "median_trade_return_bps",
+                "exposure_time_fraction",
                 "total_net_pnl_usd",
             ]
         ].copy()
         if not strategy_metrics.empty
         else pd.DataFrame()
+    )
+    primary_trade_count = int(strategy_metrics["trade_count"].sum()) if "trade_count" in strategy_metrics.columns else 0
+    primary_warning = (
+        f"\n> Note: the primary split `{settings.reporting.primary_split}` produced no closed trades for the current signals. "
+        "Use `split_summary` and `combined_strategy_metrics` as secondary diagnostics, not as the primary out-of-sample result.\n"
+        if primary_trade_count == 0 and settings.reporting.primary_split != "combined"
+        else ""
     )
 
     return f"""# Backtest Report
@@ -1070,6 +1492,17 @@ def _build_markdown_report(
 ## Simplifying Assumptions
 
 """ + "\n".join(f"- {line}" for line in assumptions) + f"""
+
+## Run Diagnostics
+
+{diagnostics_lines}
+
+## Equity And Risk Notes
+
+- `mark_to_market_equity_usd` marks open positions on every bar and is the source for primary drawdown and Sharpe metrics.
+- `realized_equity_usd` only changes when trades close. It is useful for audit trails, but can understate intratrade risk.
+- `estimated_slippage_cost_usd` is a diagnostic implied by adverse execution prices; it is not subtracted again from net PnL.
+{primary_warning}
 
 ## Strategy Summary
 
@@ -1093,6 +1526,7 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
         raise ValueError("The first backtest version does not support partial exits.")
     if settings.execution.maximum_holding_hours < settings.execution.holding_window_hours:
         raise ValueError("maximum_holding_hours must be greater than or equal to holding_window_hours.")
+    leverage_diagnostics = _leverage_diagnostics(settings)
 
     signals = _load_signal_table(settings)
     market = _load_market_table(settings)
@@ -1107,16 +1541,17 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
     selected_index_map = {pd.Timestamp(timestamp): index for index, timestamp in enumerate(pd.to_datetime(selected_market["timestamp"], utc=True))}
     signals = signals[signals["timestamp"].isin(selected_index_map)].copy()
     signals["market_index"] = signals["timestamp"].map(selected_index_map).astype(int)
-    funding_cumulative = pd.to_numeric(selected_market["funding_rate"], errors="coerce").fillna(0.0).cumsum()
+    funding_diagnostics = _funding_mode_diagnostics(selected_market, settings)
 
     trade_logs: list[pd.DataFrame] = []
     equity_curves: list[pd.DataFrame] = []
     metric_rows: list[dict[str, Any]] = []
+    combined_metric_rows: list[dict[str, Any]] = []
 
     for strategy_name, strategy_frame in signals.groupby("strategy_name", sort=True):
         strategy_frame = strategy_frame.sort_values("timestamp").reset_index(drop=True)
         strategy_metadata = _strategy_signal_metadata(strategy_frame)
-        trade_log = _simulate_strategy(strategy_frame, selected_market, selected_index_map, funding_cumulative, settings)
+        trade_log = _simulate_strategy(strategy_frame, selected_market, selected_index_map, settings)
         if not trade_log.empty:
             trade_log["trade_id"] = np.arange(1, len(trade_log) + 1, dtype=int)
         trade_logs.append(trade_log)
@@ -1124,11 +1559,16 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
         strategy_source = str(strategy_frame["source"].iloc[0])
         strategy_subtype = str(strategy_frame["source_subtype"].iloc[0])
         strategy_task = str(strategy_frame["task"].iloc[0])
-        equity_curve = build_realized_equity_curve(
-            selected_market["timestamp"],
-            trade_log,
+        primary_trade_log = _filter_trades_for_split(trade_log, settings.reporting.primary_split)
+        primary_start = _primary_split_start(strategy_frame, settings.reporting.primary_split)
+        equity_curve = build_mark_to_market_equity_curve(
+            selected_market,
+            primary_trade_log,
             initial_capital=settings.portfolio.initial_capital,
             strategy_name=strategy_name,
+            settings=settings,
+            curve_scope=settings.reporting.primary_split,
+            start_timestamp=primary_start,
         )
         equity_curve["source"] = strategy_source
         equity_curve["source_subtype"] = strategy_subtype
@@ -1140,11 +1580,34 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
                 source_subtype=strategy_subtype,
                 task=strategy_task,
                 equity_curve=equity_curve,
-                trade_log=trade_log,
+                trade_log=primary_trade_log,
                 initial_capital=settings.portfolio.initial_capital,
                 strategy_metadata=strategy_metadata,
+                evaluation_split=settings.reporting.primary_split,
             )
         )
+        if settings.reporting.include_combined_summary and settings.reporting.primary_split != "combined":
+            combined_equity_curve = build_mark_to_market_equity_curve(
+                selected_market,
+                trade_log,
+                initial_capital=settings.portfolio.initial_capital,
+                strategy_name=strategy_name,
+                settings=settings,
+                curve_scope="combined",
+            )
+            combined_metric_rows.append(
+                summarize_strategy_backtest(
+                    strategy_name=strategy_name,
+                    source=strategy_source,
+                    source_subtype=strategy_subtype,
+                    task=strategy_task,
+                    equity_curve=combined_equity_curve,
+                    trade_log=trade_log,
+                    initial_capital=settings.portfolio.initial_capital,
+                    strategy_metadata=strategy_metadata,
+                    evaluation_split="combined",
+                )
+            )
 
     non_empty_trade_logs = [frame for frame in trade_logs if not frame.empty]
     if non_empty_trade_logs:
@@ -1155,8 +1618,13 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
         trade_log_frame = pd.DataFrame()
     equity_curve_frame = pd.concat(equity_curves, ignore_index=True) if equity_curves else pd.DataFrame()
     strategy_metrics = (
-        pd.DataFrame(metric_rows).sort_values(["sharpe_ratio", "cumulative_return"], ascending=[False, False]).reset_index(drop=True)
+        _sort_strategy_metrics(pd.DataFrame(metric_rows))
         if metric_rows
+        else pd.DataFrame()
+    )
+    combined_strategy_metrics = (
+        _sort_strategy_metrics(pd.DataFrame(combined_metric_rows))
+        if combined_metric_rows
         else pd.DataFrame()
     )
     split_summary = _split_trade_summary(trade_log_frame)
@@ -1167,6 +1635,7 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
                 "source",
                 "source_subtype",
                 "task",
+                "evaluation_split",
                 "signal_threshold",
                 "signal_threshold_mode",
                 "threshold_objective",
@@ -1185,15 +1654,37 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
                 "preprocessing_scaler",
                 "winsorize_lower_quantile",
                 "winsorize_upper_quantile",
+                "has_trades",
                 "trade_count",
                 "cumulative_return",
+                "realized_cumulative_return",
                 "annualized_return",
+                "realized_annualized_return",
                 "sharpe_ratio",
+                "simple_annualized_sharpe",
+                "raw_period_sharpe",
+                "autocorr_adjusted_sharpe",
+                "realized_sharpe_ratio",
                 "max_drawdown",
+                "realized_max_drawdown",
+                "mark_to_market_max_drawdown",
                 "win_rate",
+                "profit_factor",
                 "average_trade_return_bps",
+                "median_trade_return_bps",
+                "expectancy_per_trade_usd",
+                "expectancy_per_trade_bps",
+                "median_holding_hours",
+                "max_consecutive_losses",
+                "exposure_time_fraction",
+                "average_gross_leverage",
+                "max_gross_leverage",
                 "total_net_pnl_usd",
+                "total_funding_pnl_usd",
+                "funding_contribution_share",
+                "total_embedded_slippage_cost_usd",
                 "final_equity_usd",
+                "realized_final_equity_usd",
             ]
         ].copy()
         if not strategy_metrics.empty
@@ -1208,12 +1699,22 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
     strategy_metrics_path = _write_frame(strategy_metrics, output_dir / "strategy_metrics.parquet")
     split_summary_path = _write_frame(split_summary, output_dir / "split_summary.parquet")
     leaderboard_path = _write_frame(leaderboard, output_dir / "leaderboard.parquet")
+    combined_strategy_metrics_path = (
+        _write_frame(combined_strategy_metrics, output_dir / "combined_strategy_metrics.parquet")
+        if not combined_strategy_metrics.empty
+        else None
+    )
 
     trade_log_csv_path = _write_frame(trade_log_frame, output_dir / "trade_log.csv") if settings.reporting.write_csv else None
     equity_curve_csv_path = _write_frame(equity_curve_frame, output_dir / "equity_curve.csv") if settings.reporting.write_csv else None
     strategy_metrics_csv_path = _write_frame(strategy_metrics, output_dir / "strategy_metrics.csv") if settings.reporting.write_csv else None
     split_summary_csv_path = _write_frame(split_summary, output_dir / "split_summary.csv") if settings.reporting.write_csv else None
     leaderboard_csv_path = _write_frame(leaderboard, output_dir / "leaderboard.csv") if settings.reporting.write_csv else None
+    combined_strategy_metrics_csv_path = (
+        _write_frame(combined_strategy_metrics, output_dir / "combined_strategy_metrics.csv")
+        if settings.reporting.write_csv and not combined_strategy_metrics.empty
+        else None
+    )
 
     figure_paths: list[str] = []
     if not equity_curve_frame.empty and not leaderboard.empty:
@@ -1249,7 +1750,16 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
     market_manifest = _load_manifest(settings.input.market_manifest_path)
     report_path: str | None = None
     if settings.reporting.write_markdown_report:
-        report_text = _build_markdown_report(settings, strategy_metrics, split_summary, figure_paths, signal_manifest, market_manifest)
+        report_text = _build_markdown_report(
+            settings,
+            strategy_metrics,
+            split_summary,
+            figure_paths,
+            signal_manifest,
+            market_manifest,
+            leverage_diagnostics,
+            funding_diagnostics,
+        )
         report_file = output_dir / "backtest_report.md"
         report_file.write_text(report_text, encoding="utf-8")
         report_path = str(report_file)
@@ -1264,9 +1774,16 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
         "summary": {
             "strategy_count": int(strategy_metrics["strategy_name"].nunique()) if not strategy_metrics.empty else 0,
             "trade_count": int(len(trade_log_frame)),
+            "primary_trade_count": int(strategy_metrics["trade_count"].sum()) if not strategy_metrics.empty else 0,
+            "combined_trade_count": int(combined_strategy_metrics["trade_count"].sum()) if not combined_strategy_metrics.empty else int(len(trade_log_frame)),
+            "primary_split": settings.reporting.primary_split,
             "best_strategy": None if leaderboard.empty else str(leaderboard.iloc[0]["strategy_name"]),
             "best_sharpe_ratio": None if leaderboard.empty else float(leaderboard.iloc[0]["sharpe_ratio"]),
             "best_cumulative_return": None if leaderboard.empty else float(leaderboard.iloc[0]["cumulative_return"]),
+            "best_mark_to_market_max_drawdown": None
+            if leaderboard.empty
+            else float(leaderboard.iloc[0]["mark_to_market_max_drawdown"]),
+            "best_realized_max_drawdown": None if leaderboard.empty else float(leaderboard.iloc[0]["realized_max_drawdown"]),
             "prediction_modes": []
             if strategy_metrics.empty
             else sorted(strategy_metrics["prediction_mode"].dropna().astype(str).unique().tolist()),
@@ -1289,12 +1806,18 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
             if strategy_metrics.empty
             else sorted(strategy_metrics["source_subtype"].dropna().astype(str).unique().tolist()),
         },
+        "diagnostics": {
+            "leverage": leverage_diagnostics,
+            "funding": funding_diagnostics,
+        },
         "signal_manifest": signal_manifest,
         "market_manifest": market_manifest,
         "artifacts": {
             "trade_log_path": trade_log_path,
             "equity_curve_path": equity_curve_path,
             "strategy_metrics_path": strategy_metrics_path,
+            "combined_strategy_metrics_path": combined_strategy_metrics_path,
+            "combined_strategy_metrics_csv_path": combined_strategy_metrics_csv_path,
             "split_summary_path": split_summary_path,
             "leaderboard_path": leaderboard_path,
             "report_path": report_path,
@@ -1303,10 +1826,14 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
         "assumptions": [
             "Single-asset, delta-neutral prototype with at most one open position per strategy.",
             "Signals at timestamp t are executed after entry_delay_bars using the configured execution price field.",
-            "Equity curve is realized-PnL based rather than full intratrade mark-to-market.",
-            "Funding PnL uses summed realized funding_rate rows between entry and exit execution timestamps.",
+            "Primary leaderboard and strategy metrics use the configured reporting.primary_split, which defaults to test.",
+            "Primary equity, drawdown, and Sharpe metrics use mark-to-market equity; realized-only columns are retained for audit.",
+            f"Funding PnL uses funding_mode={settings.execution.funding_mode} and funding_notional_mode={settings.execution.funding_notional_mode}.",
+            f"Hedge mode is {settings.execution.hedge_mode}; current implementation uses equal USD notional on the perp and spot legs.",
             "Trading fees use taker_fee_bps on all four round-trip leg transactions.",
-            "Slippage is modeled by adverse execution prices, not by a separate extra deduction.",
+            "Slippage is modeled by adverse execution prices; estimated_slippage_cost_usd is embedded and not deducted twice.",
+            f"Stop logic is {settings.execution.stop_observation_mode} and {settings.execution.stop_execution_mode}.",
+            "Simple annualized Sharpe uses square-root scaling and should be interpreted cautiously for sparse or serially correlated returns.",
         ],
     }
     manifest_path = output_dir / "backtest_manifest.json"
