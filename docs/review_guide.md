@@ -14,7 +14,7 @@ The project has a coherent runnable path across all major layers:
 2. exploratory reporting and data-quality checks
 3. feature engineering
 4. post-cost label generation
-5. baseline and LSTM modeling
+5. baseline and deep-learning model-zoo modeling
 6. unified signal generation
 7. delta-neutral backtesting
 8. robustness analysis

@@ -155,11 +155,12 @@ That workflow:
 2. regenerates data-quality outputs
 3. rebuilds features and labels
 4. trains baseline models
-5. optionally trains the LSTM
-6. regenerates standardized signals
-7. reruns the baseline backtest
-8. prepares the mock vault update payload
-9. exports frontend-ready demo artifacts
+5. optionally trains the reference LSTM
+6. optionally compares the Phase 1/2 deep-learning model zoo
+7. regenerates standardized signals
+8. reruns the baseline backtest
+9. prepares the mock vault update payload
+10. exports frontend-ready demo artifacts
 
 Workflow outputs:
 
@@ -203,6 +204,8 @@ http://127.0.0.1:5173
 & 'd:\MG\anaconda3\python.exe' -m src.main generate-signals --source baseline
 & 'd:\MG\anaconda3\python.exe' -m src.main generate-signals --source dl
 ```
+
+`train-dl` keeps LSTM as the stable reference model. The default `dl` signal source points to the current Phase 2 comparison winner from the regression bundle, so run `compare-dl` before refreshing deep-learning signals if you want the latest model-zoo result reflected downstream.
 
 ### Evaluation and demo
 

@@ -105,6 +105,40 @@ def _pick_best_dl_row(frame: pd.DataFrame) -> dict[str, Any]:
     return {key: _json_ready(value) for key, value in row.to_dict().items()}
 
 
+def _pick_best_dl_comparison_row(frame: pd.DataFrame) -> dict[str, Any]:
+    """Return the top model-zoo row from a Phase 2 comparison leaderboard."""
+    if frame.empty:
+        return {}
+    row = frame.sort_values("rank", ascending=True, kind="stable").iloc[0]
+    return {key: _json_ready(value) for key, value in row.to_dict().items()}
+
+
+def _comparison_table_preview(frame: pd.DataFrame | None, limit: int = 4) -> list[dict[str, Any]]:
+    """Build a small JSON-ready comparison table for the frontend."""
+    if frame is None or frame.empty:
+        return []
+    columns = [
+        "rank",
+        "run_label",
+        "model_name",
+        "model_group",
+        "task",
+        "lookback_steps",
+        "ranking_metric",
+        "ranking_metric_value",
+        "test_pearson_corr",
+        "test_rmse",
+        "test_top_quantile_avg_return_bps",
+        "selected_loss",
+    ]
+    available_columns = [column for column in columns if column in frame.columns]
+    preview = frame.loc[:, available_columns].head(limit)
+    return [
+        {key: _json_ready(value) for key, value in row.items()}
+        for row in preview.to_dict("records")
+    ]
+
+
 def _copy_chart_assets(
     chart_specs: list[dict[str, Any]], public_assets_dir: Path
 ) -> list[dict[str, Any]]:
@@ -145,12 +179,42 @@ def export_demo_snapshot(config: dict[str, Any]) -> DemoArtifacts:
     backtest_manifest = _load_json(input_config["backtest_manifest_path"])
     baseline_leaderboard = _load_table(input_config["baseline_leaderboard_path"])
     dl_leaderboard = _load_optional_table(input_config.get("dl_leaderboard_path"))
+    dl_comparison_manifest = _load_optional_json(
+        input_config.get("dl_comparison_manifest_path")
+    )
+    dl_comparison_summary = _load_optional_table(
+        input_config.get("dl_comparison_summary_path")
+    )
+    dl_comparison_test_leaderboard = _load_optional_table(
+        input_config.get("dl_comparison_test_leaderboard_path")
+    )
     backtest_leaderboard = _load_table(input_config["backtest_leaderboard_path"])
     integration_selection = _load_optional_json(input_config.get("integration_selection_path"))
     integration_plan = _load_optional_json(input_config.get("integration_plan_path"))
     integration_calls = _load_optional_json(input_config.get("integration_call_summary_path"))
 
     charts = _copy_chart_assets(input_config["charts"], public_assets_dir)
+    dl_comparison_available = (
+        dl_comparison_test_leaderboard is not None
+        and not dl_comparison_test_leaderboard.empty
+    )
+    dl_comparison_best = (
+        _pick_best_dl_comparison_row(dl_comparison_test_leaderboard)
+        if dl_comparison_available
+        else None
+    )
+    single_dl_best = (
+        _pick_best_dl_row(dl_leaderboard)
+        if dl_leaderboard is not None and not dl_leaderboard.empty
+        else {
+            "model_name": "Deep learning not available",
+            "task": "optional",
+            "split": "n/a",
+            "pearson_corr": None,
+            "rmse": None,
+            "note": "The demo snapshot was exported without a deep-learning leaderboard artifact.",
+        }
+    )
 
     best_backtest_row = {
         key: _json_ready(value)
@@ -225,7 +289,7 @@ def export_demo_snapshot(config: dict[str, Any]) -> DemoArtifacts:
             ],
             "layers": [
                 {"label": "Data", "detail": "Binance BTCUSDT hourly perpetual, spot, and funding history over the main 2021-01-01 to 2026-04-07 UTC window."},
-                {"label": "Models", "detail": "Interpretable rule-based and linear baselines plus an LSTM sequence model."},
+                {"label": "Models", "detail": "Interpretable rule-based and linear baselines plus a Phase 1/2 sequence-model zoo: LSTM, GRU, TCN, and TransformerEncoder."},
                 {"label": "Backtest", "detail": "Explicit delta-neutral trade accounting with cost-aware results and robustness checks."},
                 {"label": "Vault", "detail": "Mock stablecoin deposits, internal shares, strategy state, NAV/PnL updates, and event-rich accounting."},
             ],
@@ -242,18 +306,22 @@ def export_demo_snapshot(config: dict[str, Any]) -> DemoArtifacts:
         },
         "models": {
             "baseline_best": _pick_best_baseline_row(baseline_leaderboard),
-            "deep_learning_best": (
-                _pick_best_dl_row(dl_leaderboard)
-                if dl_leaderboard is not None and not dl_leaderboard.empty
-                else {
-                    "model_name": "Deep learning not available",
-                    "task": "optional",
-                    "split": "n/a",
-                    "pearson_corr": None,
-                    "rmse": None,
-                    "note": "The demo snapshot was exported without a deep-learning leaderboard artifact.",
-                }
-            ),
+            "deep_learning_best": dl_comparison_best or single_dl_best,
+            "deep_learning_single_best": single_dl_best,
+            "deep_learning_comparison": {
+                "available": dl_comparison_available,
+                "best_model_note": (
+                    dl_comparison_manifest or {}
+                ).get("best_model_note"),
+                "run_count": (dl_comparison_manifest or {}).get("run_count"),
+                "report_path": (dl_comparison_manifest or {}).get("report_path"),
+                "summary_path": input_config.get("dl_comparison_summary_path")
+                if dl_comparison_summary is not None
+                else None,
+                "test_leaderboard": _comparison_table_preview(
+                    dl_comparison_test_leaderboard
+                ),
+            },
         },
         "backtest": {
             "summary": backtest_manifest["summary"],

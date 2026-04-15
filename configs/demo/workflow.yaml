@@ -5,6 +5,7 @@ commands:
   labels_config_path: configs/labels/default.yaml
   baseline_config_path: configs/models/baseline.yaml
   deep_learning_config_path: configs/models/lstm.yaml
+  deep_learning_comparison_config_path: configs/experiments/dl/regression_all.yaml
   signals_config_path: configs/signals/default.yaml
   backtest_config_path: configs/backtests/default.yaml
   integration_config_path: configs/integration/default.yaml
@@ -27,6 +28,9 @@ stages:
     enabled: true
     optional: false
   train_deep_learning:
+    enabled: true
+    optional: true
+  compare_deep_learning:
     enabled: true
     optional: true
   generate_baseline_signals:

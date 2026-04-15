@@ -9,6 +9,7 @@ from funding_arb.config.models import (
     DataQualityReportSettings,
     DataSettings,
     DemoWorkflowSettings,
+    DeepLearningComparisonSettings,
     DeepLearningSettings,
     FeatureSettings,
     IntegrationSettings,
@@ -89,12 +90,36 @@ def test_additional_dl_model_configs_load_typed_models() -> None:
     assert transformer.model.transformer_nhead == 4
 
 
+def test_dl_comparison_bundle_configs_load_typed_models() -> None:
+    regression = load_settings(
+        Path("configs/experiments/dl/regression_all.yaml"),
+        DeepLearningComparisonSettings,
+    )
+    recurrent = load_settings(
+        Path("configs/experiments/dl/recurrent_regression.yaml"),
+        DeepLearningComparisonSettings,
+    )
+    classification = load_settings(
+        Path("configs/experiments/dl/classification_all.yaml"),
+        DeepLearningComparisonSettings,
+    )
+
+    assert regression.experiment_name == "sequence_regression_all"
+    assert len(regression.runs) == 4
+    assert recurrent.experiment_name == "recurrent_regression_only"
+    assert len(recurrent.runs) == 2
+    assert classification.experiment_name == "sequence_classification_all"
+    assert classification.ranking.test_metric == "f1"
+    assert classification.runs[0].overrides["target"]["task"] == "classification"
+
+
 def test_generate_signals_default_config_loads_typed_model() -> None:
     config = load_command_settings("generate-signals")
     assert isinstance(config, SignalSettings)
     assert config.input.baseline_predictions_path.endswith(
         "baseline_predictions.parquet"
     )
+    assert "transformer_regression_24h_default" in config.input.dl_predictions_path
     assert config.input.dl_predictions_path.endswith("dl_predictions.parquet")
     assert config.source.name == "baseline"
 
@@ -137,6 +162,18 @@ def test_run_demo_default_config_loads_typed_model() -> None:
     config = load_command_settings("run-demo")
     assert isinstance(config, DemoWorkflowSettings)
     assert config.commands.fetch_data_config_path.endswith("configs/data/default.yaml")
+    assert config.commands.deep_learning_comparison_config_path.endswith(
+        "configs/experiments/dl/regression_all.yaml"
+    )
     assert config.stages.train_deep_learning.optional is True
+    assert config.stages.compare_deep_learning.optional is True
     assert config.stages.generate_deep_learning_signals.optional is True
     assert config.output.run_name == "full_demo_default"
+
+
+def test_compare_dl_default_config_loads_typed_model() -> None:
+    config = load_command_settings("compare-dl")
+    assert isinstance(config, DeepLearningComparisonSettings)
+    assert config.experiment_name == "sequence_regression_all"
+    assert len(config.runs) == 4
+    assert config.runs[0].config_path.endswith("configs/models/lstm.yaml")

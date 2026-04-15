@@ -396,6 +396,17 @@ h3 {
   background: rgba(255, 252, 246, 0.78);
 }
 
+.comparison-note {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(22, 24, 31, 0.08);
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.comparison-table {
+  border-bottom: 1px solid rgba(22, 24, 31, 0.1);
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

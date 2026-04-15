@@ -65,6 +65,15 @@ interface DemoSnapshot {
   models: {
     baseline_best: Record<string, unknown>;
     deep_learning_best: Record<string, unknown>;
+    deep_learning_single_best: Record<string, unknown>;
+    deep_learning_comparison: {
+      available: boolean;
+      best_model_note: string | null;
+      run_count: number | null;
+      report_path: string | null;
+      summary_path: string | null;
+      test_leaderboard: Array<Record<string, unknown>>;
+    };
   };
   backtest: {
     summary: Record<string, unknown>;
@@ -284,6 +293,7 @@ function metricCard(label: string, value: string, note: string): string {
 function renderDashboard(snapshot: DemoSnapshot, state: SimulationState): void {
   const baselineBest = snapshot.models.baseline_best;
   const dlBest = snapshot.models.deep_learning_best;
+  const dlComparison = snapshot.models.deep_learning_comparison;
   const assetSymbol = snapshot.simulation.asset_symbol;
   const assetDecimals = snapshot.simulation.asset_decimals;
   const visibleEvents = state.activityLog.slice(0, 8);
@@ -332,9 +342,14 @@ function renderDashboard(snapshot: DemoSnapshot, state: SimulationState): void {
           `${String(baselineBest["model_name"] ?? "baseline")} test-set correlation.`,
         )}
         ${metricCard(
-          "LSTM Benchmark",
-          formatNumber((dlBest["pearson_corr"] as number | null | undefined) ?? null, 3),
-          `${String(dlBest["model_name"] ?? "lstm")} test-set correlation.`,
+          "DL Zoo Leader",
+          formatNumber(
+            ((dlBest["ranking_metric_value"] as number | null | undefined) ??
+              (dlBest["pearson_corr"] as number | null | undefined)) ??
+              null,
+            3,
+          ),
+          `${String(dlBest["model_name"] ?? dlBest["run_label"] ?? "deep learning")} under the configured comparison metric.`,
         )}
       </section>
 
@@ -418,13 +433,13 @@ function renderDashboard(snapshot: DemoSnapshot, state: SimulationState): void {
               </dl>
             </article>
             <article class="model-card">
-              <p class="model-type">Deep Learning</p>
-              <h3>${String(dlBest["model_name"] ?? "n/a")}</h3>
-              <p>Task: ${String(dlBest["task"] ?? "n/a")}</p>
+              <p class="model-type">${dlComparison.available ? "DL Zoo Winner" : "Deep Learning"}</p>
+              <h3>${String(dlBest["run_label"] ?? dlBest["model_name"] ?? "n/a")}</h3>
+              <p>${dlComparison.available ? `${formatNumber(dlComparison.run_count, 0)} model families compared` : "Single-model artifact"}</p>
               <dl>
-                <div><dt>Split</dt><dd>${String(dlBest["split"] ?? "n/a")}</dd></div>
-                <div><dt>Pearson</dt><dd>${formatNumber((dlBest["pearson_corr"] as number | null | undefined) ?? null, 3)}</dd></div>
-                <div><dt>RMSE</dt><dd>${formatNumber((dlBest["rmse"] as number | null | undefined) ?? null, 3)}</dd></div>
+                <div><dt>Metric</dt><dd>${String(dlBest["ranking_metric"] ?? "pearson_corr")}</dd></div>
+                <div><dt>Score</dt><dd>${formatNumber(((dlBest["ranking_metric_value"] as number | null | undefined) ?? (dlBest["pearson_corr"] as number | null | undefined)) ?? null, 3)}</dd></div>
+                <div><dt>Group</dt><dd>${String(dlBest["model_group"] ?? "sequence")}</dd></div>
               </dl>
             </article>
             <article class="model-card">
@@ -439,6 +454,41 @@ function renderDashboard(snapshot: DemoSnapshot, state: SimulationState): void {
             </article>
           </div>
           <div class="table-shell">
+            ${
+              dlComparison.available && dlComparison.test_leaderboard.length > 0
+                ? `
+                  <div class="comparison-note">
+                    ${dlComparison.best_model_note ?? "Deep-learning model zoo comparison is available."}
+                  </div>
+                  <table class="comparison-table">
+                    <thead>
+                      <tr>
+                        <th>DL Rank</th>
+                        <th>Model</th>
+                        <th>Group</th>
+                        <th>Metric</th>
+                        <th>Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${dlComparison.test_leaderboard
+                        .map(
+                          (row) => `
+                            <tr>
+                              <td>${formatNumber(row["rank"] as number | null | undefined, 0)}</td>
+                              <td>${String(row["run_label"] ?? row["model_name"] ?? "n/a")}</td>
+                              <td>${String(row["model_group"] ?? "n/a")}</td>
+                              <td>${String(row["ranking_metric"] ?? "n/a")}</td>
+                              <td>${formatNumber(row["ranking_metric_value"] as number | null | undefined, 3)}</td>
+                            </tr>
+                          `,
+                        )
+                        .join("")}
+                    </tbody>
+                  </table>
+                `
+                : ""
+            }
             <table>
               <thead>
                 <tr>

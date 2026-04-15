@@ -5,11 +5,12 @@ This document defines the clearest runnable path for presenting the full reposit
 1. prepare market data
 2. engineer features and labels
 3. fit baseline and optional deep-learning models
-4. convert outputs into standardized signals
-5. backtest the strategy
-6. prepare a mock off-chain to on-chain vault update
-7. export frontend-ready demo artifacts
-8. open the local dashboard
+4. compare the Phase 1/2 deep-learning model zoo when artifacts are available
+5. convert outputs into standardized signals
+6. backtest the strategy
+7. prepare a mock off-chain to on-chain vault update
+8. export frontend-ready demo artifacts
+9. open the local dashboard
 
 The goal is a presentation-friendly prototype flow, not a production job scheduler.
 
@@ -48,16 +49,18 @@ By default, `configs/demo/workflow.yaml` runs these stages:
 4. `build-labels`
 5. `train-baseline`
 6. `train-dl` as an optional stage
-7. `generate-signals --source baseline`
-8. `generate-signals --source dl` as an optional stage
-9. `backtest`
-10. `sync-vault`
-11. `scripts/demo/export_demo_snapshot.py`
+7. `compare-dl` as an optional Phase 2 stage
+8. `generate-signals --source baseline`
+9. `generate-signals --source dl` as an optional stage
+10. `backtest`
+11. `sync-vault`
+12. `scripts/demo/export_demo_snapshot.py`
 
 Design notes:
 
 - Baseline training is treated as required because the backtest and demo currently depend on it.
-- Deep learning is treated as optional so the demo can still complete if `torch` is unavailable or if you want a faster presentation-only run.
+- Deep learning and model-zoo comparison are treated as optional so the demo can still complete if `torch` is unavailable or if you want a faster presentation-only run.
+- The default `dl` signal source points to the current Phase 2 comparison winner, while the LSTM remains the stable reference single-model config.
 - `sync-vault` reuses the existing integration config and stays in dry-run mode until you explicitly switch it to broadcast mode.
 - If a stage fails but the expected downstream artifact already exists locally, the workflow records a warning and reuses the existing artifact so the demo can still proceed.
 
@@ -139,6 +142,7 @@ forge script script/DeployLocal.s.sol:DeployLocal --rpc-url http://127.0.0.1:854
 Disable the optional deep-learning stages in `configs/demo/workflow.yaml`:
 
 - `stages.train_deep_learning.enabled: false`
+- `stages.compare_deep_learning.enabled: false`
 - `stages.generate_deep_learning_signals.enabled: false`
 
 Then rerun:

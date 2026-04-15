@@ -21,7 +21,7 @@ Primary reading path:
 - [x] Feature engineering is implemented and configurable.
 - [x] Label generation is implemented and cost-aware.
 - [x] Rule-based and simple ML baselines are implemented.
-- [x] A first deep-learning sequence model is implemented.
+- [x] A deep-learning sequence-model zoo and comparison workflow are implemented.
 - [x] Standardized signals are generated for backtesting.
 
 Main Python entrypoint:

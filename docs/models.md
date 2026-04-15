@@ -321,6 +321,8 @@ Key artifacts:
 
 The comparison runner first checks whether each per-model artifact already exists. If it does, the runner reuses that artifact by default. If it is missing and `runner.train_if_missing=true`, it trains that model through the existing `train-dl` pipeline. Set `runner.force_retrain_all=true` or per-run `force_retrain=true` when you intentionally want to refresh model artifacts.
 
+The unified signal config currently points its default `dl` source at the current Phase 2 regression comparison winner. The single-model `train-dl` default remains LSTM so the project still has a stable reference model, while downstream `generate-signals --source dl` can consume the best available comparison artifact.
+
 ## How It Differs From Baselines
 
 Baseline models treat each timestamp mostly as an independent row after feature engineering.

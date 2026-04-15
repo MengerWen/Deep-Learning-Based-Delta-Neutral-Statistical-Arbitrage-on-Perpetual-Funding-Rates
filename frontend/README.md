@@ -12,7 +12,7 @@ The frontend is intentionally lightweight:
 
 - project overview and architecture story
 - key data-quality and backtest charts
-- model comparison cards
+- baseline and deep-learning model-zoo comparison cards
 - strategy metrics table
 - vault status and mock operator update summary
 - local deposit / withdraw / strategy update / NAV update simulation

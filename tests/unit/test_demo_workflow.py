@@ -15,6 +15,9 @@ def test_build_stage_plan_contains_core_demo_stages_in_order() -> None:
         "build_labels",
         "train_baseline",
     ]
+    assert "compare_deep_learning" in stage_keys
+    assert stage_keys.index("compare_deep_learning") > stage_keys.index("train_deep_learning")
+    assert stage_keys.index("compare_deep_learning") < stage_keys.index("generate_deep_learning_signals")
     assert stage_keys[-2:] == ["sync_vault", "export_demo_snapshot"]
 
 
@@ -23,6 +26,7 @@ def test_build_stage_plan_marks_deep_learning_stages_optional() -> None:
     stage_plan = build_stage_plan(config)
     stage_lookup = {stage.key: stage for stage in stage_plan}
     assert stage_lookup["train_deep_learning"].optional is True
+    assert stage_lookup["compare_deep_learning"].optional is True
     assert stage_lookup["generate_deep_learning_signals"].optional is True
     assert "--source" in stage_lookup["generate_baseline_signals"].command
     assert "baseline" in stage_lookup["generate_baseline_signals"].command
@@ -33,4 +37,4 @@ def test_describe_demo_workflow_mentions_run_name_and_stage_count() -> None:
     config = load_command_settings("run-demo")
     description = describe_demo_workflow_job(config)
     assert "full_demo_default" in description
-    assert "11 stages" in description
+    assert "12 stages" in description

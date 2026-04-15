@@ -826,10 +826,10 @@ class SignalInputSettings(SettingsBase):
         "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_manifest.json"
     )
     dl_predictions_path: str = (
-        "data/artifacts/models/dl/binance/btcusdt/1h/lstm_regression_24h_default/dl_predictions.parquet"
+        "data/artifacts/models/dl/binance/btcusdt/1h/transformer_regression_24h_default/dl_predictions.parquet"
     )
     dl_manifest_path: str | None = (
-        "data/artifacts/models/dl/binance/btcusdt/1h/lstm_regression_24h_default/dl_manifest.json"
+        "data/artifacts/models/dl/binance/btcusdt/1h/transformer_regression_24h_default/dl_manifest.json"
     )
     provider: str = "binance"
     symbol: str = "BTCUSDT"
@@ -1188,6 +1188,9 @@ class DemoWorkflowCommandsSettings(SettingsBase):
     labels_config_path: str = "configs/labels/default.yaml"
     baseline_config_path: str = "configs/models/baseline.yaml"
     deep_learning_config_path: str = "configs/models/lstm.yaml"
+    deep_learning_comparison_config_path: str = (
+        "configs/experiments/dl/regression_all.yaml"
+    )
     signals_config_path: str = "configs/signals/default.yaml"
     backtest_config_path: str = "configs/backtests/default.yaml"
     integration_config_path: str = "configs/integration/default.yaml"
@@ -1211,6 +1214,9 @@ class DemoWorkflowStages(SettingsBase):
         default_factory=DemoWorkflowStageSettings
     )
     train_deep_learning: DemoWorkflowStageSettings = Field(
+        default_factory=lambda: DemoWorkflowStageSettings(optional=True)
+    )
+    compare_deep_learning: DemoWorkflowStageSettings = Field(
         default_factory=lambda: DemoWorkflowStageSettings(optional=True)
     )
     generate_baseline_signals: DemoWorkflowStageSettings = Field(

@@ -57,6 +57,7 @@ STAGE_SEQUENCE: tuple[tuple[str, str], ...] = (
     ("build_labels", "Build supervised dataset"),
     ("train_baseline", "Train baseline models"),
     ("train_deep_learning", "Train deep-learning model"),
+    ("compare_deep_learning", "Compare deep-learning model zoo"),
     ("generate_baseline_signals", "Generate baseline signals"),
     ("generate_deep_learning_signals", "Generate deep-learning signals"),
     ("backtest", "Run backtest"),
@@ -125,6 +126,11 @@ def build_stage_plan(config: DemoWorkflowSettings) -> list[DemoWorkflowStagePlan
         ),
         "train_deep_learning": _cli_command(
             "train-dl", command_paths.deep_learning_config_path, log_level
+        ),
+        "compare_deep_learning": _cli_command(
+            "compare-dl",
+            command_paths.deep_learning_comparison_config_path,
+            log_level,
         ),
         "generate_baseline_signals": _cli_command(
             "generate-signals",
@@ -219,6 +225,20 @@ def _stage_existing_artifact_paths(
     if stage_key == "train_deep_learning":
         signal_config = load_config(_resolve_path(config.commands.signals_config_path))
         return [_resolve_path(signal_config["input"]["dl_predictions_path"])]
+    if stage_key == "compare_deep_learning":
+        comparison_config = load_config(
+            _resolve_path(config.commands.deep_learning_comparison_config_path)
+        )
+        first_run_config = load_config(_resolve_path(comparison_config["runs"][0]["config_path"]))
+        output_dir = _resolve_path(comparison_config["output"]["output_dir"])
+        return [
+            output_dir
+            / first_run_config["input"]["provider"]
+            / first_run_config["input"]["symbol"].lower()
+            / first_run_config["input"]["frequency"]
+            / comparison_config["output"]["run_name"]
+            / "comparison_summary.parquet",
+        ]
     if stage_key == "generate_baseline_signals":
         backtest_config = load_config(_resolve_path(config.commands.backtest_config_path))
         return [_resolve_path(backtest_config["input"]["signal_path"])]

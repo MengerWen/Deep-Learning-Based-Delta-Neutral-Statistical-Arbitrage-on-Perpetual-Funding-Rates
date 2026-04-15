@@ -74,6 +74,15 @@ def test_cli_parser_accepts_train_dl_command_with_log_level() -> None:
     assert args.log_level == "DEBUG"
 
 
+def test_cli_parser_accepts_compare_dl_command() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["compare-dl"])
+    assert args.command == "compare-dl"
+    assert args.config.endswith(
+        "configs\\experiments\\dl\\regression_all.yaml"
+    ) or args.config.endswith("configs/experiments/dl/regression_all.yaml")
+
+
 def test_cli_parser_accepts_sync_vault_command() -> None:
     parser = build_parser()
     args = parser.parse_args(["sync-vault"])
