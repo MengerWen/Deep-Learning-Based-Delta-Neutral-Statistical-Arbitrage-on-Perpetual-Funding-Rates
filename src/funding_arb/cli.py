@@ -31,6 +31,10 @@ from funding_arb.models.deep_learning import (
     describe_deep_learning_job,
     run_deep_learning_pipeline,
 )
+from funding_arb.models.deep_learning_experiments import (
+    describe_deep_learning_comparison_job,
+    run_deep_learning_comparison,
+)
 from funding_arb.reporting.data_quality import (
     describe_data_quality_job,
     run_data_quality_report,
@@ -182,6 +186,34 @@ def _run_train_dl(config: Any, config_path: Path) -> int:
     return 0
 
 
+def _run_compare_dl(config: Any, config_path: Path) -> int:
+    _log_config_summary("compare-dl", config_path, config)
+    LOGGER.info(describe_deep_learning_comparison_job(config))
+    artifacts = run_deep_learning_comparison(config)
+    LOGGER.info("Comparison summary: %s", artifacts.comparison_summary_path)
+    if artifacts.comparison_summary_csv_path is not None:
+        LOGGER.info("Comparison summary CSV: %s", artifacts.comparison_summary_csv_path)
+    LOGGER.info("Validation leaderboard: %s", artifacts.validation_leaderboard_path)
+    if artifacts.validation_leaderboard_csv_path is not None:
+        LOGGER.info(
+            "Validation leaderboard CSV: %s", artifacts.validation_leaderboard_csv_path
+        )
+    LOGGER.info("Test leaderboard: %s", artifacts.test_leaderboard_path)
+    if artifacts.test_leaderboard_csv_path is not None:
+        LOGGER.info("Test leaderboard CSV: %s", artifacts.test_leaderboard_csv_path)
+    LOGGER.info("Strategy leaderboard: %s", artifacts.strategy_leaderboard_path)
+    if artifacts.strategy_leaderboard_csv_path is not None:
+        LOGGER.info(
+            "Strategy leaderboard CSV: %s", artifacts.strategy_leaderboard_csv_path
+        )
+    if artifacts.report_path is not None:
+        LOGGER.info("Markdown report: %s", artifacts.report_path)
+    if artifacts.figure_paths:
+        LOGGER.info("Figures: %s", ", ".join(artifacts.figure_paths))
+    LOGGER.info("Comparison manifest: %s", artifacts.manifest_path)
+    return 0
+
+
 def _run_generate_signals(config: Any, config_path: Path) -> int:
     _log_config_summary("generate-signals", config_path, config)
     LOGGER.info(describe_signal_job(config))
@@ -274,6 +306,7 @@ COMMAND_HANDLERS: dict[str, Callable[[Any, Path], int]] = {
     "train-baseline": _run_train_baseline,
     "evaluate-baseline": _run_evaluate_baseline,
     "train-dl": _run_train_dl,
+    "compare-dl": _run_compare_dl,
     "generate-signals": _run_generate_signals,
     "backtest": _run_backtest,
     "robustness-report": _run_robustness_report,

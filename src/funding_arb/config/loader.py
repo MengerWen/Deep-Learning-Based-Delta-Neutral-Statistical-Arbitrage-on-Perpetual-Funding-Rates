@@ -14,6 +14,7 @@ from funding_arb.config.models import (
     DataQualityReportSettings,
     DataSettings,
     DemoWorkflowSettings,
+    DeepLearningComparisonSettings,
     DeepLearningSettings,
     FeatureSettings,
     IntegrationSettings,
@@ -71,6 +72,13 @@ COMMAND_SETTINGS: dict[str, CommandSettings] = {
         command_name="train-dl",
         default_config_path=repo_path("configs", "models", "lstm.yaml"),
         config_model=DeepLearningSettings,
+    ),
+    "compare-dl": CommandSettings(
+        command_name="compare-dl",
+        default_config_path=repo_path(
+            "configs", "experiments", "dl", "regression_all.yaml"
+        ),
+        config_model=DeepLearningComparisonSettings,
     ),
     "generate-signals": CommandSettings(
         command_name="generate-signals",

@@ -15,7 +15,14 @@ Phase 1 adds a compact model zoo while preserving:
 - the current signal/backtest integration path
 - the current time-series-safe dataset and normalization logic
 
-The current default is still `LSTM`. This phase does not yet add a full multi-model comparison experiment orchestrator; each model family is still run as its own experiment through its own config.
+Phase 2 adds a compact comparison layer on top of those per-model artifacts:
+
+- one YAML-driven `compare-dl` workflow
+- named experiment bundles for regression, classification, and recurrent-only comparisons
+- aggregated validation/test/strategy leaderboards
+- comparison markdown, CSV/parquet tables, plots, and manifests
+
+The current default is still `LSTM`. The comparison layer deliberately reuses the per-model artifact format rather than introducing a separate experiment-tracking platform.
 
 ## Default Task Setup
 
@@ -230,7 +237,7 @@ For classification:
 
 ## CLI
 
-Unified CLI:
+Single-model training through the existing unified CLI:
 
 ```powershell
 & 'd:\MG\anaconda3\python.exe' -m src.main train-dl --config configs/models/lstm.yaml
@@ -250,7 +257,26 @@ Wrapper script:
 & 'd:\MG\anaconda3\python.exe' scripts\models\train_dl.py --config configs/models/lstm.yaml
 ```
 
-Important configs for Phase 1:
+Multi-model comparison through the Phase 2 workflow:
+
+```powershell
+& 'd:\MG\anaconda3\python.exe' -m src.main compare-dl --config configs/experiments/dl/regression_all.yaml
+```
+
+Other named bundles:
+
+```powershell
+& 'd:\MG\anaconda3\python.exe' -m src.main compare-dl --config configs/experiments/dl/recurrent_regression.yaml
+& 'd:\MG\anaconda3\python.exe' -m src.main compare-dl --config configs/experiments/dl/classification_all.yaml
+```
+
+Comparison wrapper script:
+
+```powershell
+& 'd:\MG\anaconda3\python.exe' scripts\models\compare_dl.py --config configs/experiments/dl/regression_all.yaml
+```
+
+Important single-model configs:
 
 - [lstm.yaml](../configs/models/lstm.yaml)
   Default reference recurrent experiment.
@@ -260,6 +286,40 @@ Important configs for Phase 1:
   Compact convolutional sequence benchmark.
 - [transformer.yaml](../configs/models/transformer.yaml)
   Compact causal attention benchmark.
+
+Important comparison bundle configs:
+
+- [regression_all.yaml](../configs/experiments/dl/regression_all.yaml)
+  Compares `lstm`, `gru`, `tcn`, and `transformer_encoder` on the 24-hour post-cost net-return regression target.
+- [classification_all.yaml](../configs/experiments/dl/classification_all.yaml)
+  Reuses the same four model configs with explicit classification overrides for `target_is_profitable_24h`.
+- [recurrent_regression.yaml](../configs/experiments/dl/recurrent_regression.yaml)
+  Compares only the recurrent reference models, `lstm` and `gru`.
+
+## Phase 2 Comparison Outputs
+
+Default output directory:
+
+`data/artifacts/models/dl_comparisons/binance/btcusdt/1h/sequence_regression_all/`
+
+Key artifacts:
+
+- `comparison_summary.parquet` / `comparison_summary.csv`
+  One row per model run with task, target, lookback, selected hyperparameters, best epoch, checkpoint metric, selected threshold, validation/test metrics, and artifact paths.
+- `validation_leaderboard.parquet` / `validation_leaderboard.csv`
+  Ranking table using the bundle's configured validation metric.
+- `test_leaderboard.parquet` / `test_leaderboard.csv`
+  Ranking table using the bundle's configured test metric.
+- `strategy_leaderboard.parquet` / `strategy_leaderboard.csv`
+  Ranking table using a strategy-oriented metric such as top-quantile or signal-return quality.
+- `comparison_report.md`
+  Human-readable report listing models, configs, headline results, trade-offs, and the current default best model under the configured test metric.
+- `comparison_manifest.json`
+  Reproducibility manifest with bundle settings, output paths, and per-model artifact locations.
+- `figures/`
+  Compact bar charts for validation, test, and strategy-oriented comparison metrics.
+
+The comparison runner first checks whether each per-model artifact already exists. If it does, the runner reuses that artifact by default. If it is missing and `runner.train_if_missing=true`, it trains that model through the existing `train-dl` pipeline. Set `runner.force_retrain_all=true` or per-run `force_retrain=true` when you intentionally want to refresh model artifacts.
 
 ## How It Differs From Baselines
 
@@ -311,4 +371,5 @@ Groups are taken from the feature manifest when available, and otherwise inferre
 - This first version uses only engineered tabular features arranged into sequences; it does not yet include raw order-book or multi-asset sequence inputs.
 - Tuning support is intentionally lightweight and disabled by default because full deep time-series hyperparameter search can become expensive quickly.
 - Walk-forward mode is available, but the exported checkpoint still refers to the base train/validation model rather than every refit chunk.
-- Phase 1 only adds model families and per-model configs. It does not yet add a full multi-model comparison workflow or automated tournament-style reporting across all DL families.
+- Phase 2 adds multi-model comparison workflow and reporting, but it is still a compact course-project suite, not a full experiment-tracking server.
+- Artifact reuse is intentionally lightweight. If a config override changes but the same `output.run_name` already exists, set `force_retrain=true` to avoid unintentionally comparing stale artifacts.

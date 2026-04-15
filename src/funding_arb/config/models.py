@@ -746,6 +746,78 @@ class DeepLearningSettings(SettingsBase):
     notes: dict[str, Any] = Field(default_factory=dict)
 
 
+class DeepLearningComparisonRunSettings(SettingsBase):
+    """One model run inside a multi-model deep-learning comparison experiment."""
+
+    name: str | None = None
+    config_path: str
+    overrides: dict[str, Any] = Field(default_factory=dict)
+    enabled: bool = True
+    force_retrain: bool = False
+
+
+class DeepLearningComparisonRunnerSettings(SettingsBase):
+    """Execution behavior for the deep-learning comparison runner."""
+
+    train_if_missing: bool = True
+    force_retrain_all: bool = False
+    fail_fast: bool = True
+
+
+class DeepLearningComparisonRankingSettings(SettingsBase):
+    """Metrics used to rank models in comparison outputs."""
+
+    validation_metric: str = "pearson_corr"
+    test_metric: str = "pearson_corr"
+    strategy_metric: str = "cumulative_signal_return_bps"
+    strategy_split: str = "test"
+
+    @model_validator(mode="after")
+    def validate_ranking(self) -> "DeepLearningComparisonRankingSettings":
+        valid_splits = {"validation", "test"}
+        if self.strategy_split not in valid_splits:
+            raise ValueError(
+                f"Deep-learning comparison strategy_split must be one of {sorted(valid_splits)}, got '{self.strategy_split}'."
+            )
+        return self
+
+
+class DeepLearningComparisonOutputSettings(SettingsBase):
+    """Artifact settings for aggregated deep-learning comparison outputs."""
+
+    output_dir: str = "data/artifacts/models/dl_comparisons"
+    run_name: str = "sequence_regression_all"
+    write_csv: bool = True
+    write_markdown_report: bool = True
+    write_plots: bool = True
+
+
+class DeepLearningComparisonSettings(SettingsBase):
+    """Bundle definition for multi-model deep-learning comparison experiments."""
+
+    experiment_name: str
+    description: str = ""
+    runner: DeepLearningComparisonRunnerSettings = Field(
+        default_factory=DeepLearningComparisonRunnerSettings
+    )
+    ranking: DeepLearningComparisonRankingSettings = Field(
+        default_factory=DeepLearningComparisonRankingSettings
+    )
+    runs: list[DeepLearningComparisonRunSettings] = Field(default_factory=list)
+    output: DeepLearningComparisonOutputSettings = Field(
+        default_factory=DeepLearningComparisonOutputSettings
+    )
+    notes: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_runs(self) -> "DeepLearningComparisonSettings":
+        if not [run for run in self.runs if run.enabled]:
+            raise ValueError(
+                "Deep-learning comparison settings require at least one enabled run."
+            )
+        return self
+
+
 class SignalInputSettings(SettingsBase):
     baseline_predictions_path: str = (
         "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_predictions.parquet"

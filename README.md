@@ -38,7 +38,7 @@ The repository already contains working prototypes for all major layers:
 | Feature engineering | Implemented | interpretable feature table |
 | Label generation | Implemented | post-cost supervised dataset |
 | Rule-based and simple ML baselines | Implemented | artifacts, metrics, predictions |
-| First deep-learning model | Implemented | LSTM training pipeline and artifacts |
+| Deep-learning model zoo | Implemented | LSTM/GRU/TCN/Transformer artifacts and comparison reports |
 | Unified signal layer | Implemented | standardized `signals.parquet` |
 | Delta-neutral backtest | Implemented | trade log, equity curve, leaderboard |
 | Robustness analysis | Implemented | sensitivity tables and figures |
@@ -199,6 +199,7 @@ http://127.0.0.1:5173
 & 'd:\MG\anaconda3\python.exe' -m src.main train-baseline
 & 'd:\MG\anaconda3\python.exe' -m src.main evaluate-baseline
 & 'd:\MG\anaconda3\python.exe' -m src.main train-dl
+& 'd:\MG\anaconda3\python.exe' -m src.main compare-dl --config configs/experiments/dl/regression_all.yaml
 & 'd:\MG\anaconda3\python.exe' -m src.main generate-signals --source baseline
 & 'd:\MG\anaconda3\python.exe' -m src.main generate-signals --source dl
 ```

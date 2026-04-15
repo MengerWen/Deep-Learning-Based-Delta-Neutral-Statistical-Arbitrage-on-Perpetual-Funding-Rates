@@ -34,6 +34,7 @@ Read these if you want the cleanest demonstration path from research artifacts t
 8. [robustness.md](robustness.md)
 
 This sequence follows the actual data flow in the repository.
+The deep-learning comparison bundles and `compare-dl` workflow are documented in [models.md](models.md).
 
 ### 4. Understand the smart-contract layer
 
