@@ -1,0 +1,219 @@
+{
+  "run_name": "full_demo_default",
+  "overall_status": "completed_with_warnings",
+  "failed_stage": null,
+  "generated_at_epoch_seconds": 1775806995.018029,
+  "completed_stage_count": 11,
+  "stage_results": [
+    {
+      "key": "fetch_data",
+      "label": "Fetch and normalize market data",
+      "optional": false,
+      "status": "reused_existing_artifacts",
+      "return_code": 1,
+      "duration_seconds": 29.19642329995986,
+      "command": [
+        "D:\\MG\\anaconda3\\python.exe",
+        "-m",
+        "src.main",
+        "fetch-data",
+        "--config",
+        "configs/data/default.yaml",
+        "--log-level",
+        "INFO"
+      ]
+    },
+    {
+      "key": "report_data_quality",
+      "label": "Generate data-quality report",
+      "optional": false,
+      "status": "completed",
+      "return_code": 0,
+      "duration_seconds": 13.120709799986798,
+      "command": [
+        "D:\\MG\\anaconda3\\python.exe",
+        "-m",
+        "src.main",
+        "report-data-quality",
+        "--config",
+        "configs/reports/data_quality.yaml",
+        "--log-level",
+        "INFO"
+      ]
+    },
+    {
+      "key": "build_features",
+      "label": "Build feature table",
+      "optional": false,
+      "status": "completed",
+      "return_code": 0,
+      "duration_seconds": 12.657935999974143,
+      "command": [
+        "D:\\MG\\anaconda3\\python.exe",
+        "-m",
+        "src.main",
+        "build-features",
+        "--config",
+        "configs/features/default.yaml",
+        "--log-level",
+        "INFO"
+      ]
+    },
+    {
+      "key": "build_labels",
+      "label": "Build supervised dataset",
+      "optional": false,
+      "status": "completed",
+      "return_code": 0,
+      "duration_seconds": 15.094962999981362,
+      "command": [
+        "D:\\MG\\anaconda3\\python.exe",
+        "-m",
+        "src.main",
+        "build-labels",
+        "--config",
+        "configs/labels/default.yaml",
+        "--log-level",
+        "INFO"
+      ]
+    },
+    {
+      "key": "train_baseline",
+      "label": "Train baseline models",
+      "optional": false,
+      "status": "completed",
+      "return_code": 0,
+      "duration_seconds": 15.113481200009119,
+      "command": [
+        "D:\\MG\\anaconda3\\python.exe",
+        "-m",
+        "src.main",
+        "train-baseline",
+        "--config",
+        "configs/models/baseline.yaml",
+        "--log-level",
+        "INFO"
+      ]
+    },
+    {
+      "key": "train_deep_learning",
+      "label": "Train deep-learning model",
+      "optional": true,
+      "status": "reused_existing_artifacts",
+      "return_code": 3221226505,
+      "duration_seconds": 34.30202369997278,
+      "command": [
+        "D:\\MG\\anaconda3\\python.exe",
+        "-m",
+        "src.main",
+        "train-dl",
+        "--config",
+        "configs/models/lstm.yaml",
+        "--log-level",
+        "INFO"
+      ]
+    },
+    {
+      "key": "generate_baseline_signals",
+      "label": "Generate baseline signals",
+      "optional": false,
+      "status": "completed",
+      "return_code": 0,
+      "duration_seconds": 24.55015739996452,
+      "command": [
+        "D:\\MG\\anaconda3\\python.exe",
+        "-m",
+        "src.main",
+        "generate-signals",
+        "--config",
+        "configs/signals/default.yaml",
+        "--log-level",
+        "INFO",
+        "--source",
+        "baseline"
+      ]
+    },
+    {
+      "key": "generate_deep_learning_signals",
+      "label": "Generate deep-learning signals",
+      "optional": true,
+      "status": "completed",
+      "return_code": 0,
+      "duration_seconds": 11.132339000003412,
+      "command": [
+        "D:\\MG\\anaconda3\\python.exe",
+        "-m",
+        "src.main",
+        "generate-signals",
+        "--config",
+        "configs/signals/default.yaml",
+        "--log-level",
+        "INFO",
+        "--source",
+        "dl"
+      ]
+    },
+    {
+      "key": "backtest",
+      "label": "Run backtest",
+      "optional": false,
+      "status": "completed",
+      "return_code": 0,
+      "duration_seconds": 30.894944700005,
+      "command": [
+        "D:\\MG\\anaconda3\\python.exe",
+        "-m",
+        "src.main",
+        "backtest",
+        "--config",
+        "configs/backtests/default.yaml",
+        "--log-level",
+        "INFO"
+      ]
+    },
+    {
+      "key": "sync_vault",
+      "label": "Prepare or submit vault update",
+      "optional": false,
+      "status": "completed",
+      "return_code": 0,
+      "duration_seconds": 8.27561859996058,
+      "command": [
+        "D:\\MG\\anaconda3\\python.exe",
+        "-m",
+        "src.main",
+        "sync-vault",
+        "--config",
+        "configs/integration/default.yaml",
+        "--log-level",
+        "INFO"
+      ]
+    },
+    {
+      "key": "export_demo_snapshot",
+      "label": "Export frontend demo snapshot",
+      "optional": false,
+      "status": "completed",
+      "return_code": 0,
+      "duration_seconds": 1.0909352999879047,
+      "command": [
+        "D:\\MG\\anaconda3\\python.exe",
+        "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\scripts\\demo\\export_demo_snapshot.py",
+        "--config",
+        "configs/demo/default.yaml",
+        "--log-level",
+        "INFO"
+      ]
+    }
+  ],
+  "artifact_snapshot_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\demo\\demo_snapshot.json",
+  "frontend_snapshot_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\frontend\\public\\demo\\demo_snapshot.json",
+  "frontend_ready": true,
+  "frontend_dir": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\frontend",
+  "frontend_dashboard_url": "http://127.0.0.1:5173",
+  "frontend_dev_command": "npm run dev",
+  "notes": {
+    "purpose": "Produce one reproducible runnable path for demos, slides, and final presentation rehearsals.",
+    "default_vault_mode": "The integration stage reuses configs/integration/default.yaml, which stays in dry-run mode until VAULT_ADDRESS, PRIVATE_KEY, and broadcast settings are updated."
+  }
+}

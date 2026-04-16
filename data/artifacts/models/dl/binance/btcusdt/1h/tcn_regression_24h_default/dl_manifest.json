@@ -1,0 +1,197 @@
+{
+  "input": {
+    "dataset_path": "data/processed/supervised/binance/btcusdt/1h/btcusdt_supervised_dataset.parquet",
+    "manifest_path": "data/processed/supervised/binance/btcusdt/1h/btcusdt_supervised_manifest.json",
+    "provider": "binance",
+    "symbol": "BTCUSDT",
+    "venue": "binance",
+    "frequency": "1h"
+  },
+  "target": {
+    "task": "regression",
+    "column": "target_future_net_return_bps_24h",
+    "classification_column": "target_is_profitable_24h",
+    "regression_column": "target_future_net_return_bps_24h",
+    "timestamp_column": "timestamp",
+    "split_column": "split",
+    "ready_column": "supervised_ready",
+    "probability_threshold": 0.5,
+    "trade_threshold_bps": 0.0
+  },
+  "feature_selection": {
+    "include_columns": [],
+    "exclude_columns": [
+      "timestamp",
+      "symbol",
+      "venue",
+      "frequency",
+      "split",
+      "feature_ready",
+      "supervised_ready"
+    ],
+    "exclude_prefixes": [
+      "target_"
+    ],
+    "max_missing_fraction": 0.25,
+    "drop_constant_features": true
+  },
+  "sequence": {
+    "lookback_steps": 48,
+    "allow_cross_split_context": true
+  },
+  "model": {
+    "name": "tcn",
+    "hidden_size": 64,
+    "num_layers": 2,
+    "dropout": 0.1,
+    "bidirectional": false,
+    "tcn_hidden_channels": 64,
+    "tcn_num_blocks": 4,
+    "tcn_kernel_size": 3,
+    "tcn_dilation_base": 2,
+    "tcn_use_residual": true,
+    "transformer_d_model": 64,
+    "transformer_nhead": 4,
+    "transformer_num_layers": 2,
+    "transformer_dim_feedforward": 128,
+    "transformer_pooling": "last"
+  },
+  "preprocessing": {
+    "scaler": "robust",
+    "winsorize_lower_quantile": 0.01,
+    "winsorize_upper_quantile": 0.99
+  },
+  "threshold_search": {
+    "enabled": true,
+    "objective": "avg_signal_return_bps",
+    "probability_grid": [
+      0.4,
+      0.5,
+      0.6
+    ],
+    "regression_threshold_grid_bps": [
+      -5.0,
+      0.0,
+      2.5,
+      5.0
+    ],
+    "top_quantile": 0.1
+  },
+  "tuning": {
+    "enabled": false,
+    "mode": "expanding",
+    "n_splits": 2,
+    "gap": 24,
+    "min_train_size": 3000,
+    "rolling_window_size": null,
+    "max_candidates": 6,
+    "trial_epochs": 3,
+    "metric": "validation_avg_signal_return_bps",
+    "lookback_steps": [
+      48
+    ],
+    "hidden_size": [
+      64
+    ],
+    "num_layers": [
+      2
+    ],
+    "dropout": [
+      0.1
+    ],
+    "learning_rate": [
+      0.001
+    ],
+    "weight_decay": [
+      1e-05
+    ],
+    "batch_size": [
+      256
+    ]
+  },
+  "prediction": {
+    "mode": "static",
+    "refit_every_n_periods": 168,
+    "rolling_window_size": null,
+    "expanding_window_start": 3000,
+    "use_validation_history_for_test": true
+  },
+  "interpretability": {
+    "enabled": true,
+    "ablation_splits": [
+      "validation"
+    ],
+    "calibration_bins": 10,
+    "max_feature_groups": 6
+  },
+  "training": {
+    "batch_size": 256,
+    "epochs": 5,
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "seed": 42,
+    "device": "auto",
+    "num_workers": 0,
+    "clip_grad_norm": 1.0,
+    "early_stopping_patience": 3,
+    "deterministic": true,
+    "use_balanced_classification_loss": true,
+    "selection_metric": "validation_avg_signal_return_bps",
+    "regression_loss": "huber",
+    "huber_delta": 1.0,
+    "internal_validation_fraction": 0.15
+  },
+  "row_count": 46152,
+  "feature_count": 86,
+  "sample_counts": {
+    "train": 30090,
+    "validation": 6576,
+    "test": 8822
+  },
+  "best_epoch": 4,
+  "best_validation_loss": 1.2842296199496934,
+  "best_checkpoint_metric": "validation_avg_signal_return_bps",
+  "best_checkpoint_metric_value": null,
+  "best_checkpoint_effective_metric": "validation_loss",
+  "best_checkpoint_effective_metric_value": 1.2842296199496934,
+  "checkpoint_metric_fallback_used": true,
+  "selected_threshold": 0.0,
+  "selected_threshold_objective": "avg_signal_return_bps",
+  "selected_threshold_objective_value": null,
+  "selected_loss": "huber",
+  "loss_metadata": {
+    "loss_name": "huber",
+    "huber_delta": 1.0
+  },
+  "selected_hyperparameters": {
+    "lookback_steps": 48,
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "batch_size": 256,
+    "model_name": "tcn",
+    "dropout": 0.1,
+    "tcn_hidden_channels": 64,
+    "tcn_num_blocks": 4,
+    "tcn_kernel_size": 3,
+    "tcn_dilation_base": 2,
+    "tcn_use_residual": true
+  },
+  "prediction_mode": "static",
+  "device": "cuda",
+  "checkpoint_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\tcn_regression_24h_default\\best_model.pt",
+  "history_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\tcn_regression_24h_default\\training_history.csv",
+  "predictions_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\tcn_regression_24h_default\\dl_predictions.parquet",
+  "predictions_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\tcn_regression_24h_default\\dl_predictions.csv",
+  "metrics_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\tcn_regression_24h_default\\dl_metrics.parquet",
+  "metrics_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\tcn_regression_24h_default\\dl_metrics.csv",
+  "leaderboard_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\tcn_regression_24h_default\\dl_leaderboard.parquet",
+  "leaderboard_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\tcn_regression_24h_default\\dl_leaderboard.csv",
+  "feature_columns_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\tcn_regression_24h_default\\feature_columns.json",
+  "normalization_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\tcn_regression_24h_default\\feature_normalization.json",
+  "report_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\tcn_regression_24h_default\\training_report.md",
+  "diagnostic_paths": {
+    "threshold_search": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\tcn_regression_24h_default\\diagnostics\\threshold_search.csv",
+    "feature_group_ablation": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\tcn_regression_24h_default\\diagnostics\\feature_group_ablation.csv"
+  },
+  "tuning_results_path": null
+}

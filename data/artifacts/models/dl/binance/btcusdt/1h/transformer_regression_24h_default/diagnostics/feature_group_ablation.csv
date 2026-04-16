@@ -1,0 +1,6 @@
+split,feature_group,feature_count,baseline_avg_signal_return_bps,ablated_avg_signal_return_bps,delta_avg_signal_return_bps,baseline_signal_hit_rate,ablated_signal_hit_rate,baseline_cumulative_signal_return_bps,ablated_cumulative_signal_return_bps
+validation,funding,20,,,,,,,
+validation,basis,24,,,,,,,
+validation,volatility,14,,,,,,,
+validation,liquidity,14,,,,,,,
+validation,interaction_state,7,,,,,,,
