@@ -67,6 +67,15 @@ def test_cli_parser_accepts_robustness_report_command() -> None:
     ) or args.config.endswith("configs/reports/robustness.yaml")
 
 
+def test_cli_parser_accepts_generate_final_report_command() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["generate-final-report"])
+    assert args.command == "generate-final-report"
+    assert args.config.endswith(
+        "configs\\reports\\final_report.yaml"
+    ) or args.config.endswith("configs/reports/final_report.yaml")
+
+
 def test_cli_parser_accepts_train_dl_command_with_log_level() -> None:
     parser = build_parser()
     args = parser.parse_args(["train-dl", "--log-level", "DEBUG"])

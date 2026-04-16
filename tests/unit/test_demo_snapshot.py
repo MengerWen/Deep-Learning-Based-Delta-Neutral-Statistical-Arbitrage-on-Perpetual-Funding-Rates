@@ -182,7 +182,7 @@ def test_export_demo_snapshot_survives_missing_optional_inputs() -> None:
         assert snapshot_payload["backtest"]["risk_view"]["primary_split"] == "test"
         assert snapshot_payload["backtest"]["diagnostics"]["funding"]["funding_mode"] == "prototype_bar_sum"
         assert len(snapshot_payload["charts"]) == 1
-        assert snapshot_payload["charts"][0]["image"] == "/demo/assets/funding.png"
+        assert snapshot_payload["charts"][0]["image"] == "demo/assets/funding.png"
     finally:
         shutil.rmtree(tmp_path, ignore_errors=True)
 

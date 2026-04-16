@@ -182,7 +182,7 @@ def _copy_chart_assets(
                 "title": item["title"],
                 "subtitle": item["subtitle"],
                 "section": item["section"],
-                "image": f"/demo/assets/{target_name}",
+                "image": f"demo/assets/{target_name}",
                 "source_path": str(source_path),
             }
         )

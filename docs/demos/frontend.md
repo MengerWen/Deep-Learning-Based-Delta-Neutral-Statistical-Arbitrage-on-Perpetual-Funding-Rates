@@ -29,16 +29,31 @@ The frontend uses `Vite + vanilla TypeScript` to keep setup and maintenance ligh
    - `data/artifacts/demo/demo_snapshot.json`
    - `frontend/public/demo/demo_snapshot.json`
    - `frontend/public/demo/assets/*`
-3. The dashboard fetches `/demo/demo_snapshot.json` locally and renders the full story without a backend.
+3. `scripts/reports/generate_final_report.py` packages the final report into:
+   - `reports/final/binance/btcusdt/1h/*`
+   - `frontend/public/report/*`
+4. The dashboard fetches `demo/demo_snapshot.json` and renders the full story without a backend.
 
 ## Startup
 
 ```powershell
 & 'd:\MG\anaconda3\python.exe' scripts/demo/export_demo_snapshot.py --config configs/demo/default.yaml
+& 'd:\MG\anaconda3\python.exe' scripts/reports/generate_final_report.py --config configs/reports/final_report.yaml
 cd frontend
 npm install
 npm run dev
 ```
+
+## Static deployment
+
+```powershell
+cd frontend
+npm install
+npm run build
+```
+
+The repository now includes a GitHub Pages workflow at `.github/workflows/deploy-showcase.yml`.
+The frontend uses relative asset paths and build-time base URLs, so the same site can be served locally or from a GitHub Pages subpath.
 
 ## Caveats
 

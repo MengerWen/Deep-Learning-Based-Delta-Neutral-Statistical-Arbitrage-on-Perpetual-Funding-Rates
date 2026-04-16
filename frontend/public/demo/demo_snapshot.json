@@ -2,7 +2,7 @@
   "meta": {
     "title": "Funding-Rate Arbitrage Prototype Dashboard",
     "subtitle": "Research to signals, backtest to vault, all in one lightweight demo.",
-    "generated_at": "2026-04-16T00:50:53.983920+00:00",
+    "generated_at": "2026-04-16T04:21:51.842270+00:00",
     "symbol": "BTCUSDT",
     "venue": "binance",
     "frequency": "1h",
@@ -628,49 +628,49 @@
       "title": "Funding Rate Regime Map",
       "subtitle": "Hourly funding history shows persistent positive funding with episodic spikes and reversals.",
       "section": "data",
-      "image": "/demo/assets/funding_rate_time_series.png",
+      "image": "demo/assets/funding_rate_time_series.png",
       "source_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\reports\\data_quality\\binance\\btcusdt\\1h\\figures\\funding_rate_time_series.png"
     },
     {
       "title": "Perpetual vs Spot Spread",
       "subtitle": "Basis dislocations stay small on average but widen during stress and short-lived directional bursts.",
       "section": "data",
-      "image": "/demo/assets/perp_vs_spot_spread.png",
+      "image": "demo/assets/perp_vs_spot_spread.png",
       "source_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\reports\\data_quality\\binance\\btcusdt\\1h\\figures\\perp_vs_spot_spread.png"
     },
     {
       "title": "Cumulative Returns by Strategy",
       "subtitle": "The explicit delta-neutral backtest makes the ranking between rule-based, baseline ML, and learned models easy to explain.",
       "section": "backtest",
-      "image": "/demo/assets/cumulative_returns.png",
+      "image": "demo/assets/cumulative_returns.png",
       "source_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\binance\\btcusdt\\1h\\baseline_signals_default\\figures\\cumulative_returns.png"
     },
     {
       "title": "Drawdown Profile",
       "subtitle": "Even prototype strategies need a clear view of path dependence and downside depth.",
       "section": "backtest",
-      "image": "/demo/assets/drawdowns.png",
+      "image": "demo/assets/drawdowns.png",
       "source_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\binance\\btcusdt\\1h\\baseline_signals_default\\figures\\drawdowns.png"
     },
     {
       "title": "Robustness Family Comparison",
       "subtitle": "Rule-based, simple ML, and deep learning outputs are compared under one shared evaluation lens.",
       "section": "robustness",
-      "image": "/demo/assets/family_comparison.png",
+      "image": "demo/assets/family_comparison.png",
       "source_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\reports\\robustness\\binance\\btcusdt\\1h\\figures\\family_comparison.png"
     },
     {
       "title": "Deep Learning Model Zoo",
       "subtitle": "Phase 2 compares LSTM, GRU, TCN, and TransformerEncoder under one shared regression task.",
       "section": "models",
-      "image": "/demo/assets/dl_test_metric_comparison.png",
+      "image": "demo/assets/dl_test_metric_comparison.png",
       "source_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\sequence_regression_all\\figures\\test_metric_comparison.png"
     },
     {
       "title": "Deep Learning Strategy Lens",
       "subtitle": "The same sequence models are ranked again using a trading-oriented signal-return metric.",
       "section": "models",
-      "image": "/demo/assets/dl_strategy_metric_comparison.png",
+      "image": "demo/assets/dl_strategy_metric_comparison.png",
       "source_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\sequence_regression_all\\figures\\strategy_metric_comparison.png"
     }
   ],
@@ -712,7 +712,7 @@
       "detail": "Dry-run call data prepared for 2 vault update calls."
     },
     {
-      "timestamp": "2026-04-16T00:50:53.985929+00:00",
+      "timestamp": "2026-04-16T04:21:51.844269+00:00",
       "kind": "demo",
       "title": "Frontend snapshot exported",
       "detail": "Charts, metrics, and mock vault state were packaged for the local dashboard."

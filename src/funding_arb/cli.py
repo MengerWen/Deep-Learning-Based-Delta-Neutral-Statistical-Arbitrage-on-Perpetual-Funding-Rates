@@ -39,6 +39,10 @@ from funding_arb.reporting.data_quality import (
     describe_data_quality_job,
     run_data_quality_report,
 )
+from funding_arb.reporting.final_report import (
+    describe_final_report_job,
+    run_final_report,
+)
 from funding_arb.reporting.robustness import (
     describe_robustness_job,
     run_robustness_report,
@@ -272,6 +276,22 @@ def _run_robustness_report(config: Any, config_path: Path) -> int:
     return 0
 
 
+def _run_generate_final_report(config: Any, config_path: Path) -> int:
+    _log_config_summary("generate-final-report", config_path, config)
+    LOGGER.info(describe_final_report_job(config))
+    artifacts = run_final_report(config)
+    LOGGER.info("Artifact output dir: %s", artifacts.artifact_output_dir)
+    if artifacts.markdown_report_path is not None:
+        LOGGER.info("Markdown report: %s", artifacts.markdown_report_path)
+    if artifacts.html_report_path is not None:
+        LOGGER.info("HTML report: %s", artifacts.html_report_path)
+    if artifacts.summary_json_path is not None:
+        LOGGER.info("Summary JSON: %s", artifacts.summary_json_path)
+    if artifacts.public_report_dir is not None:
+        LOGGER.info("Frontend public report dir: %s", artifacts.public_report_dir)
+    return 0
+
+
 def _run_sync_vault(config: Any, config_path: Path) -> int:
     _log_config_summary("sync-vault", config_path, config)
     LOGGER.info(describe_integration_job(config))
@@ -317,6 +337,7 @@ COMMAND_HANDLERS: dict[str, Callable[[Any, Path], int]] = {
     "generate-signals": _run_generate_signals,
     "backtest": _run_backtest,
     "robustness-report": _run_robustness_report,
+    "generate-final-report": _run_generate_final_report,
     "sync-vault": _run_sync_vault,
     "run-demo": _run_demo,
 }

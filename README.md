@@ -44,7 +44,8 @@ The repository already contains working prototypes for all major layers:
 | Robustness analysis | Implemented | sensitivity tables and figures |
 | Solidity vault prototype | Implemented | contract, tests, deploy/update scripts |
 | Off-chain to on-chain mock integration | Implemented | operator/oracle-style sync flow |
-| Frontend dashboard | Implemented | local Vite demo using exported snapshot |
+| Final report generator | Implemented | markdown + HTML report with copied figures |
+| Showcase website | Implemented | static-buildable dashboard plus final-report entry point |
 | End-to-end demo workflow | Implemented | one-command orchestration path |
 
 ## Architecture At A Glance
@@ -212,6 +213,7 @@ http://127.0.0.1:5173
 ```powershell
 & 'd:\MG\anaconda3\python.exe' -m src.main backtest
 & 'd:\MG\anaconda3\python.exe' -m src.main robustness-report
+& 'd:\MG\anaconda3\python.exe' -m src.main generate-final-report --config configs/reports/final_report.yaml
 & 'd:\MG\anaconda3\python.exe' -m src.main sync-vault
 & 'd:\MG\anaconda3\python.exe' -m src.main run-demo --config configs/demo/workflow.yaml
 ```
@@ -260,6 +262,8 @@ cd frontend
 npm run build
 ```
 
+The final report and showcase entry point are copied into `frontend/public/report/`, so the built static site can expose both the dashboard and the report together.
+
 ## Important Artifact Locations
 
 - Canonical market data:
@@ -283,6 +287,9 @@ npm run build
   - `data/artifacts/integration/binance/btcusdt/1h/mock_operator_default/`
 - Frontend snapshot:
   - `frontend/public/demo/`
+- Final report artifacts:
+  - `reports/final/binance/btcusdt/1h/`
+  - `frontend/public/report/`
 
 ## Current Limitations
 
@@ -305,6 +312,7 @@ Complete enough for course-project demonstration:
 - vault contract prototype with tests
 - mock integration flow
 - presentation-ready frontend and demo workflow
+- formal final report and static-showcase packaging
 
 Still prototype-level:
 
