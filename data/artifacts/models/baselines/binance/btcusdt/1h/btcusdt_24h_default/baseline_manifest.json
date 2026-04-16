@@ -33,7 +33,7 @@
   },
   "tuning": {
     "enabled": true,
-    "n_splits": 4,
+    "n_splits": 3,
     "gap": 24,
     "mode": "expanding",
     "min_train_size": 4000,
@@ -174,11 +174,9 @@
       "random_state": 42,
       "param_grid": {
         "c": [
-          0.1,
           0.5,
           1.0,
-          2.0,
-          5.0
+          2.0
         ]
       },
       "calibration_method": "sigmoid",
@@ -208,19 +206,17 @@
           "random_state": 42,
           "param_grid": {
             "c": [
-              0.05,
               0.1,
               0.5,
-              1.0,
-              2.0
+              1.0
             ]
           },
-          "calibration_method": "sigmoid",
+          "calibration_method": "none",
           "calibration_cv_splits": 3,
           "calibration_ensemble": true
         },
         {
-          "enabled": true,
+          "enabled": false,
           "name": "logistic_elastic_net",
           "estimator": "logistic_elastic_net",
           "probability_threshold": 0.5,
@@ -242,17 +238,15 @@
           "random_state": 42,
           "param_grid": {
             "c": [
-              0.1,
               0.5,
               1.0
             ],
             "l1_ratio": [
               0.2,
-              0.5,
-              0.8
+              0.5
             ]
           },
-          "calibration_method": "sigmoid",
+          "calibration_method": "none",
           "calibration_cv_splits": 3,
           "calibration_ensemble": true
         }
@@ -278,11 +272,9 @@
       "random_state": 42,
       "param_grid": {
         "alpha": [
-          0.1,
           0.5,
           1.0,
-          5.0,
-          10.0
+          5.0
         ]
       },
       "additional_models": [
@@ -306,15 +298,12 @@
           "random_state": 42,
           "param_grid": {
             "alpha": [
-              0.1,
               0.5,
-              1.0,
-              2.0
+              1.0
             ],
             "l1_ratio": [
               0.2,
-              0.5,
-              0.8
+              0.5
             ]
           }
         }
@@ -423,7 +412,6 @@
   "model_paths": {
     "logistic_regression": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\baselines\\binance\\btcusdt\\1h\\btcusdt_24h_default\\models\\logistic_regression.joblib",
     "logistic_l1": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\baselines\\binance\\btcusdt\\1h\\btcusdt_24h_default\\models\\logistic_l1.joblib",
-    "logistic_elastic_net": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\baselines\\binance\\btcusdt\\1h\\btcusdt_24h_default\\models\\logistic_elastic_net.joblib",
     "ridge_regression": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\baselines\\binance\\btcusdt\\1h\\btcusdt_24h_default\\models\\ridge_regression.joblib",
     "elastic_net_regression": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\baselines\\binance\\btcusdt\\1h\\btcusdt_24h_default\\models\\elastic_net_regression.joblib"
   },
@@ -441,11 +429,6 @@
     "logistic_l1:coefficients": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\baselines\\binance\\btcusdt\\1h\\btcusdt_24h_default\\diagnostics\\logistic_l1_coefficients.csv",
     "logistic_l1:permutation": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\baselines\\binance\\btcusdt\\1h\\btcusdt_24h_default\\diagnostics\\logistic_l1_permutation_importance.csv",
     "logistic_l1:calibration_validation": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\baselines\\binance\\btcusdt\\1h\\btcusdt_24h_default\\diagnostics\\logistic_l1_calibration_validation.csv",
-    "logistic_elastic_net:cv_results": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\baselines\\binance\\btcusdt\\1h\\btcusdt_24h_default\\diagnostics\\logistic_elastic_net_cv_results.csv",
-    "logistic_elastic_net:threshold_search": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\baselines\\binance\\btcusdt\\1h\\btcusdt_24h_default\\diagnostics\\logistic_elastic_net_threshold_search.csv",
-    "logistic_elastic_net:coefficients": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\baselines\\binance\\btcusdt\\1h\\btcusdt_24h_default\\diagnostics\\logistic_elastic_net_coefficients.csv",
-    "logistic_elastic_net:permutation": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\baselines\\binance\\btcusdt\\1h\\btcusdt_24h_default\\diagnostics\\logistic_elastic_net_permutation_importance.csv",
-    "logistic_elastic_net:calibration_validation": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\baselines\\binance\\btcusdt\\1h\\btcusdt_24h_default\\diagnostics\\logistic_elastic_net_calibration_validation.csv",
     "ridge_regression:cv_results": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\baselines\\binance\\btcusdt\\1h\\btcusdt_24h_default\\diagnostics\\ridge_regression_cv_results.csv",
     "ridge_regression:threshold_search": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\baselines\\binance\\btcusdt\\1h\\btcusdt_24h_default\\diagnostics\\ridge_regression_threshold_search.csv",
     "ridge_regression:coefficients": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\baselines\\binance\\btcusdt\\1h\\btcusdt_24h_default\\diagnostics\\ridge_regression_coefficients.csv",
@@ -506,33 +489,20 @@
       "threshold_objective": "avg_signal_return_bps",
       "threshold_objective_value": null,
       "tuning_metric": "average_precision",
-      "selected_params_json": "{\"c\": 0.1, \"class_weight\": \"balanced\", \"estimator\": \"logistic_regression\", \"l1_ratio\": null, \"max_iter\": 2000, \"penalty\": \"l2\", \"random_state\": 42, \"solver\": \"lbfgs\"}"
+      "selected_params_json": "{\"c\": 0.5, \"class_weight\": \"balanced\", \"estimator\": \"logistic_regression\", \"l1_ratio\": null, \"max_iter\": 2000, \"penalty\": \"l2\", \"random_state\": 42, \"solver\": \"lbfgs\"}"
     },
     {
       "model_name": "logistic_l1",
       "task": "classification",
       "model_family": "linear",
       "prediction_mode": "static",
-      "calibration_method": "sigmoid",
+      "calibration_method": "none",
       "feature_importance_method": "permutation_validation",
-      "selected_threshold": 0.5,
+      "selected_threshold": 0.75,
       "threshold_objective": "avg_signal_return_bps",
-      "threshold_objective_value": null,
+      "threshold_objective_value": -26.049930426656893,
       "tuning_metric": "average_precision",
-      "selected_params_json": "{\"c\": 0.05, \"class_weight\": \"balanced\", \"estimator\": \"logistic_l1\", \"l1_ratio\": null, \"max_iter\": 2500, \"penalty\": \"l1\", \"random_state\": 42, \"solver\": \"liblinear\"}"
-    },
-    {
-      "model_name": "logistic_elastic_net",
-      "task": "classification",
-      "model_family": "linear",
-      "prediction_mode": "static",
-      "calibration_method": "sigmoid",
-      "feature_importance_method": "permutation_validation",
-      "selected_threshold": 0.5,
-      "threshold_objective": "avg_signal_return_bps",
-      "threshold_objective_value": null,
-      "tuning_metric": "average_precision",
-      "selected_params_json": "{\"c\": 0.1, \"class_weight\": \"balanced\", \"estimator\": \"logistic_elastic_net\", \"l1_ratio\": 0.8, \"max_iter\": 3000, \"penalty\": \"elasticnet\", \"random_state\": 42, \"solver\": \"saga\"}"
+      "selected_params_json": "{\"c\": 0.1, \"class_weight\": \"balanced\", \"estimator\": \"logistic_l1\", \"l1_ratio\": null, \"max_iter\": 2500, \"penalty\": \"l1\", \"random_state\": 42, \"solver\": \"liblinear\"}"
     },
     {
       "model_name": "ridge_regression",
@@ -545,7 +515,7 @@
       "threshold_objective": "avg_signal_return_bps",
       "threshold_objective_value": 0.09380736955770885,
       "tuning_metric": "neg_rmse",
-      "selected_params_json": "{\"alpha\": 10.0, \"estimator\": \"ridge\", \"l1_ratio\": 0.5, \"random_state\": 42}"
+      "selected_params_json": "{\"alpha\": 5.0, \"estimator\": \"ridge\", \"l1_ratio\": 0.5, \"random_state\": 42}"
     },
     {
       "model_name": "elastic_net_regression",

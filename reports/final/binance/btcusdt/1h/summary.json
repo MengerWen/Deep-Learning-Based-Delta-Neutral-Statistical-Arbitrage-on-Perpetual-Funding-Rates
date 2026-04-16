@@ -16,7 +16,7 @@
       "start": "2021-01-01T00:00:00+00:00",
       "end_exclusive": "2026-04-08T00:00:00+00:00"
     },
-    "generated_at": "2026-04-16T04:22:00.863003+00:00"
+    "generated_at": "2026-04-16T11:02:15.018230+00:00"
   },
   "executive_summary": [
     "The repository now has a full artifact chain from market-data ingestion to quantitative evaluation, vault accounting, and presentation delivery.",
@@ -225,11 +225,11 @@
   },
   "backtest": {
     "summary": {
-      "strategy_count": 8,
-      "trade_count": 1357,
+      "strategy_count": 7,
+      "trade_count": 1647,
       "primary_trade_log_rows": 200,
       "primary_trade_count": 200,
-      "combined_trade_count": 1357,
+      "combined_trade_count": 1647,
       "primary_split": "test",
       "best_strategy": "spread_zscore_1p5",
       "best_sharpe_ratio": -14.07210740647856,
@@ -534,17 +534,17 @@
         "realized_final_equity_usd": 100000.0
       },
       {
-        "strategy_name": "logistic_elastic_net",
+        "strategy_name": "logistic_l1",
         "source": "baseline",
         "source_subtype": "baseline_linear",
         "task": "classification",
         "evaluation_split": "test",
-        "signal_threshold": 0.5,
+        "signal_threshold": 0.75,
         "signal_threshold_mode": "constant",
         "threshold_objective": "avg_signal_return_bps",
         "selected_threshold_objective_value": null,
         "prediction_mode": "static",
-        "calibration_method": "sigmoid",
+        "calibration_method": "none",
         "feature_importance_method": "permutation_validation",
         "checkpoint_selection_metric": null,
         "best_checkpoint_metric_value": null,

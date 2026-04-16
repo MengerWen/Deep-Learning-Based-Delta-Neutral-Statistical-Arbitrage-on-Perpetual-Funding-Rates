@@ -2,8 +2,8 @@
   "input": {
     "baseline_predictions_path": "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_predictions.parquet",
     "baseline_manifest_path": "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_manifest.json",
-    "dl_predictions_path": "data/artifacts/models/dl/binance/btcusdt/1h/lstm_regression_24h_default/dl_predictions.parquet",
-    "dl_manifest_path": "data/artifacts/models/dl/binance/btcusdt/1h/lstm_regression_24h_default/dl_manifest.json",
+    "dl_predictions_path": "data/artifacts/models/dl/binance/btcusdt/1h/transformer_regression_24h_default/dl_predictions.parquet",
+    "dl_manifest_path": "data/artifacts/models/dl/binance/btcusdt/1h/transformer_regression_24h_default/dl_manifest.json",
     "provider": "binance",
     "symbol": "BTCUSDT",
     "venue": "binance",
@@ -21,12 +21,11 @@
     "write_csv": true
   },
   "summary": {
-    "row_count": 227440,
-    "active_signal_count": 69,
-    "active_signal_rate": 0.00030337671473795285,
+    "row_count": 181952,
+    "active_signal_count": 751,
+    "active_signal_rate": 0.004127462187829757,
     "strategies": [
       "elastic_net_regression",
-      "logistic_elastic_net",
       "logistic_l1",
       "logistic_regression",
       "ridge_regression"
@@ -47,14 +46,20 @@
     "threshold_objectives": [
       "avg_signal_return_bps"
     ],
+    "checkpoint_selection_metrics": [],
+    "checkpoint_selection_effective_metrics": [],
+    "selected_losses": [],
+    "regression_losses": [],
+    "preprocessing_scalers": [],
+    "checkpoint_selection_fallback_count": 0,
     "splits": {
-      "train": 150450,
-      "test": 44110,
-      "validation": 32880
+      "train": 120360,
+      "test": 35288,
+      "validation": 26304
     },
     "directions": {
-      "flat": 227371,
-      "short_perp_long_spot": 69
+      "flat": 181201,
+      "short_perp_long_spot": 751
     },
     "strategy_summary": [
       {
@@ -64,31 +69,34 @@
         "task": "regression",
         "signal_threshold": 0.0,
         "threshold_objective": "avg_signal_return_bps",
+        "selected_threshold_objective_value": NaN,
         "prediction_mode": "static",
         "calibration_method": "none",
-        "feature_importance_method": "permutation_validation"
-      },
-      {
-        "strategy_name": "logistic_elastic_net",
-        "source_subtype": "baseline_linear",
-        "model_family": "linear",
-        "task": "classification",
-        "signal_threshold": 0.5,
-        "threshold_objective": "avg_signal_return_bps",
-        "prediction_mode": "static",
-        "calibration_method": "sigmoid",
-        "feature_importance_method": "permutation_validation"
+        "feature_importance_method": "permutation_validation",
+        "checkpoint_selection_metric": null,
+        "checkpoint_selection_effective_metric": null,
+        "checkpoint_selection_fallback_used": false,
+        "selected_loss": null,
+        "regression_loss": null,
+        "preprocessing_scaler": null
       },
       {
         "strategy_name": "logistic_l1",
         "source_subtype": "baseline_linear",
         "model_family": "linear",
         "task": "classification",
-        "signal_threshold": 0.5,
+        "signal_threshold": 0.75,
         "threshold_objective": "avg_signal_return_bps",
+        "selected_threshold_objective_value": NaN,
         "prediction_mode": "static",
-        "calibration_method": "sigmoid",
-        "feature_importance_method": "permutation_validation"
+        "calibration_method": "none",
+        "feature_importance_method": "permutation_validation",
+        "checkpoint_selection_metric": null,
+        "checkpoint_selection_effective_metric": null,
+        "checkpoint_selection_fallback_used": false,
+        "selected_loss": null,
+        "regression_loss": null,
+        "preprocessing_scaler": null
       },
       {
         "strategy_name": "logistic_regression",
@@ -97,9 +105,16 @@
         "task": "classification",
         "signal_threshold": 0.5,
         "threshold_objective": "avg_signal_return_bps",
+        "selected_threshold_objective_value": NaN,
         "prediction_mode": "static",
         "calibration_method": "sigmoid",
-        "feature_importance_method": "permutation_validation"
+        "feature_importance_method": "permutation_validation",
+        "checkpoint_selection_metric": null,
+        "checkpoint_selection_effective_metric": null,
+        "checkpoint_selection_fallback_used": false,
+        "selected_loss": null,
+        "regression_loss": null,
+        "preprocessing_scaler": null
       },
       {
         "strategy_name": "ridge_regression",
@@ -108,9 +123,16 @@
         "task": "regression",
         "signal_threshold": -5.0,
         "threshold_objective": "avg_signal_return_bps",
+        "selected_threshold_objective_value": NaN,
         "prediction_mode": "static",
         "calibration_method": "none",
-        "feature_importance_method": "permutation_validation"
+        "feature_importance_method": "permutation_validation",
+        "checkpoint_selection_metric": null,
+        "checkpoint_selection_effective_metric": null,
+        "checkpoint_selection_fallback_used": false,
+        "selected_loss": null,
+        "regression_loss": null,
+        "preprocessing_scaler": null
       }
     ]
   },

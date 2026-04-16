@@ -2,7 +2,7 @@
   "meta": {
     "title": "Funding-Rate Arbitrage Prototype Dashboard",
     "subtitle": "Research to signals, backtest to vault, all in one lightweight demo.",
-    "generated_at": "2026-04-16T04:21:51.842270+00:00",
+    "generated_at": "2026-04-16T11:01:15.908367+00:00",
     "symbol": "BTCUSDT",
     "venue": "binance",
     "frequency": "1h",
@@ -217,11 +217,11 @@
   },
   "backtest": {
     "summary": {
-      "strategy_count": 8,
-      "trade_count": 1357,
+      "strategy_count": 7,
+      "trade_count": 1647,
       "primary_trade_log_rows": 200,
       "primary_trade_count": 200,
-      "combined_trade_count": 1357,
+      "combined_trade_count": 1647,
       "primary_split": "test",
       "best_strategy": "spread_zscore_1p5",
       "best_sharpe_ratio": -14.07210740647856,
@@ -267,7 +267,7 @@
     "risk_view": {
       "primary_split": "test",
       "primary_trade_count": 200,
-      "combined_trade_count": 1357,
+      "combined_trade_count": 1647,
       "equity_basis": "mark_to_market",
       "drawdown_basis": "mark_to_market",
       "realized_audit_available": true
@@ -554,17 +554,17 @@
         "realized_final_equity_usd": 100000.0
       },
       {
-        "strategy_name": "logistic_elastic_net",
+        "strategy_name": "logistic_l1",
         "source": "baseline",
         "source_subtype": "baseline_linear",
         "task": "classification",
         "evaluation_split": "test",
-        "signal_threshold": 0.5,
+        "signal_threshold": 0.75,
         "signal_threshold_mode": "constant",
         "threshold_objective": "avg_signal_return_bps",
         "selected_threshold_objective_value": null,
         "prediction_mode": "static",
-        "calibration_method": "sigmoid",
+        "calibration_method": "none",
         "feature_importance_method": "permutation_validation",
         "checkpoint_selection_metric": null,
         "best_checkpoint_metric_value": null,
@@ -712,7 +712,7 @@
       "detail": "Dry-run call data prepared for 2 vault update calls."
     },
     {
-      "timestamp": "2026-04-16T04:21:51.844269+00:00",
+      "timestamp": "2026-04-16T11:01:15.909369+00:00",
       "kind": "demo",
       "title": "Frontend snapshot exported",
       "detail": "Charts, metrics, and mock vault state were packaged for the local dashboard."

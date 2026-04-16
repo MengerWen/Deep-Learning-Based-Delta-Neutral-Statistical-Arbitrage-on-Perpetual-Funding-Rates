@@ -44,7 +44,17 @@
     "hidden_size": 64,
     "num_layers": 2,
     "dropout": 0.1,
-    "bidirectional": false
+    "bidirectional": false,
+    "tcn_hidden_channels": 64,
+    "tcn_num_blocks": 4,
+    "tcn_kernel_size": 3,
+    "tcn_dilation_base": 2,
+    "tcn_use_residual": true,
+    "transformer_d_model": 64,
+    "transformer_nhead": 4,
+    "transformer_num_layers": 2,
+    "transformer_dim_feedforward": 128,
+    "transformer_pooling": "last"
   },
   "preprocessing": {
     "scaler": "robust",
@@ -155,13 +165,14 @@
   },
   "selected_hyperparameters": {
     "lookback_steps": 48,
-    "hidden_size": 64,
-    "num_layers": 2,
-    "dropout": 0.1,
     "learning_rate": 0.001,
     "weight_decay": 1e-05,
     "batch_size": 256,
-    "model_name": "lstm"
+    "model_name": "lstm",
+    "dropout": 0.1,
+    "hidden_size": 64,
+    "num_layers": 2,
+    "bidirectional": false
   },
   "prediction_mode": "static",
   "device": "cuda",

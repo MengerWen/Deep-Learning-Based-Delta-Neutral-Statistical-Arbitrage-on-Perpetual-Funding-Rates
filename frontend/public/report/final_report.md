@@ -9,7 +9,7 @@ Final technical report for the end-to-end research, backtesting, vault, and show
 - Repository: `https://github.com/MengerWen/Deep-Learning-Based-Delta-Neutral-Statistical-Arbitrage-on-Perpetual-Funding-Rates`
 - Market: `BTCUSDT` on `binance` at `1h`
 - Sample window: `2021-01-01` to `2026-04-08`
-- Generated at: `2026-04-16T04:22:00.863003+00:00`
+- Generated at: `2026-04-16T11:02:15.018230+00:00`
 
 ## Executive Summary
 
@@ -59,7 +59,7 @@ Final technical report for the end-to-end research, backtesting, vault, and show
 | combined_funding_spread | rule_based | test | 0 | 0.00% | 0.00% | 0.000 | $0.00 |
 | elastic_net_regression | baseline_linear | test | 0 | 0.00% | 0.00% | 0.000 | $0.00 |
 | funding_threshold_2bps | rule_based | test | 0 | 0.00% | 0.00% | 0.000 | $0.00 |
-| logistic_elastic_net | baseline_linear | test | 0 | 0.00% | 0.00% | 0.000 | $0.00 |
+| logistic_l1 | baseline_linear | test | 0 | 0.00% | 0.00% | 0.000 | $0.00 |
 
 ### Core Assumptions
 

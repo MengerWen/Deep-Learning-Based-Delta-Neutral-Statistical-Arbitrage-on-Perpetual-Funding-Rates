@@ -2,8 +2,8 @@
   "input": {
     "baseline_predictions_path": "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_predictions.parquet",
     "baseline_manifest_path": "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_manifest.json",
-    "dl_predictions_path": "data/artifacts/models/dl/binance/btcusdt/1h/lstm_regression_24h_default/dl_predictions.parquet",
-    "dl_manifest_path": "data/artifacts/models/dl/binance/btcusdt/1h/lstm_regression_24h_default/dl_manifest.json",
+    "dl_predictions_path": "data/artifacts/models/dl/binance/btcusdt/1h/transformer_regression_24h_default/dl_predictions.parquet",
+    "dl_manifest_path": "data/artifacts/models/dl/binance/btcusdt/1h/transformer_regression_24h_default/dl_manifest.json",
     "provider": "binance",
     "symbol": "BTCUSDT",
     "venue": "binance",
@@ -44,6 +44,12 @@
     "threshold_objectives": [
       "avg_signal_return_bps"
     ],
+    "checkpoint_selection_metrics": [],
+    "checkpoint_selection_effective_metrics": [],
+    "selected_losses": [],
+    "regression_losses": [],
+    "preprocessing_scalers": [],
+    "checkpoint_selection_fallback_count": 0,
     "splits": {
       "train": 90270,
       "test": 26472,
@@ -61,9 +67,16 @@
         "task": "classification",
         "signal_threshold": 0.0,
         "threshold_objective": "avg_signal_return_bps",
+        "selected_threshold_objective_value": NaN,
         "prediction_mode": "static",
         "calibration_method": "none",
-        "feature_importance_method": "not_applicable"
+        "feature_importance_method": "not_applicable",
+        "checkpoint_selection_metric": null,
+        "checkpoint_selection_effective_metric": null,
+        "checkpoint_selection_fallback_used": false,
+        "selected_loss": null,
+        "regression_loss": null,
+        "preprocessing_scaler": null
       },
       {
         "strategy_name": "funding_threshold_2bps",
@@ -72,9 +85,16 @@
         "task": "classification",
         "signal_threshold": 3.0,
         "threshold_objective": "avg_signal_return_bps",
+        "selected_threshold_objective_value": NaN,
         "prediction_mode": "static",
         "calibration_method": "none",
-        "feature_importance_method": "not_applicable"
+        "feature_importance_method": "not_applicable",
+        "checkpoint_selection_metric": null,
+        "checkpoint_selection_effective_metric": null,
+        "checkpoint_selection_fallback_used": false,
+        "selected_loss": null,
+        "regression_loss": null,
+        "preprocessing_scaler": null
       },
       {
         "strategy_name": "spread_zscore_1p5",
@@ -83,9 +103,16 @@
         "task": "classification",
         "signal_threshold": 2.0,
         "threshold_objective": "avg_signal_return_bps",
+        "selected_threshold_objective_value": NaN,
         "prediction_mode": "static",
         "calibration_method": "none",
-        "feature_importance_method": "not_applicable"
+        "feature_importance_method": "not_applicable",
+        "checkpoint_selection_metric": null,
+        "checkpoint_selection_effective_metric": null,
+        "checkpoint_selection_fallback_used": false,
+        "selected_loss": null,
+        "regression_loss": null,
+        "preprocessing_scaler": null
       }
     ]
   },
