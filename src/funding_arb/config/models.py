@@ -244,6 +244,7 @@ class BaselineThresholdSearchSettings(SettingsBase):
     regression_threshold_grid_bps: list[float] = Field(default_factory=list)
     top_quantile: float = 0.1
     rule_search_enabled: bool = True
+    allow_degenerate_fallback: bool = False
 
     @model_validator(mode="after")
     def validate_threshold_search(self) -> "BaselineThresholdSearchSettings":
@@ -564,6 +565,7 @@ class DeepLearningThresholdSearchSettings(SettingsBase):
     probability_grid: list[float] = Field(default_factory=list)
     regression_threshold_grid_bps: list[float] = Field(default_factory=list)
     top_quantile: float = 0.1
+    allow_degenerate_fallback: bool = False
 
     @model_validator(mode="after")
     def validate_threshold_search(self) -> "DeepLearningThresholdSearchSettings":
@@ -673,6 +675,7 @@ class DeepLearningTrainingSettings(SettingsBase):
     deterministic: bool = True
     use_balanced_classification_loss: bool = True
     selection_metric: str = "validation_avg_signal_return_bps"
+    allow_degenerate_fallback: bool = False
     regression_loss: str = "huber"
     huber_delta: float = 1.0
     internal_validation_fraction: float = 0.15

@@ -7,6 +7,7 @@ import itertools
 import json
 import math
 import random
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -21,6 +22,17 @@ from torch.utils.data import DataLoader, Dataset
 
 from funding_arb.config.models import DeepLearningSettings
 from funding_arb.models.baselines import evaluate_prediction_table
+from funding_arb.utils.degeneracy import (
+    DegenerateExperimentDiagnostics,
+    DegenerateExperimentError,
+    infer_horizon_label,
+    infer_profitable_column,
+    infer_tradeable_column,
+    label_split_diagnostics,
+    signal_split_diagnostics,
+    summarize_threshold_search,
+    warn_on_degenerate_experiment,
+)
 from funding_arb.utils.paths import ensure_directory, repo_path
 
 DEFAULT_PROBABILITY_GRID = [0.3, 0.4, 0.5, 0.6, 0.7]
@@ -68,6 +80,17 @@ class DeepLearningArtifacts:
     feature_columns_path: str
     normalization_path: str
     diagnostic_paths: dict[str, str]
+
+
+@dataclass(frozen=True)
+class ThresholdSelectionResult:
+    """Outcome of selecting a decision threshold on validation data."""
+
+    selected_threshold: float
+    objective_value: float | None
+    search_frame: pd.DataFrame
+    fallback_used: bool = False
+    fallback_reason: str | None = None
 
 
 class SequenceDataset(Dataset[tuple[torch.Tensor, torch.Tensor, torch.Tensor]]):
@@ -777,6 +800,186 @@ def _default_threshold_grid(settings: DeepLearningSettings) -> list[float]:
     return settings.threshold_search.regression_threshold_grid_bps or DEFAULT_REGRESSION_THRESHOLD_GRID
 
 
+def _split_metric_map(
+    diagnostics_by_split: dict[str, dict[str, Any]],
+    key: str,
+) -> dict[str, Any]:
+    return {
+        split_name: diagnostics.get(key)
+        for split_name, diagnostics in diagnostics_by_split.items()
+    }
+
+
+def _return_summary_map(
+    diagnostics_by_split: dict[str, dict[str, Any]],
+) -> dict[str, dict[str, float | None]]:
+    return {
+        split_name: diagnostics.get("future_net_return_bps", {})
+        for split_name, diagnostics in diagnostics_by_split.items()
+    }
+
+
+def _label_diagnostics_for_frame(
+    frame: pd.DataFrame,
+    settings: DeepLearningSettings,
+) -> dict[str, dict[str, Any]]:
+    tradeable_threshold_bps = 5.0
+    profitable_threshold_bps = 0.0
+    if settings.input.manifest_path:
+        manifest_path = _resolve_path(settings.input.manifest_path)
+        if manifest_path.exists():
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            target_config = manifest.get("target", {})
+            tradeable_threshold_bps = float(
+                target_config.get("min_expected_edge_bps", tradeable_threshold_bps)
+            )
+            profitable_threshold_bps = float(
+                target_config.get("positive_return_threshold_bps", profitable_threshold_bps)
+            )
+    return label_split_diagnostics(
+        frame,
+        split_column=settings.target.split_column,
+        net_return_column=settings.target.regression_column,
+        tradeable_column=infer_tradeable_column(settings.target.regression_column),
+        profitable_column=infer_profitable_column(settings.target.regression_column),
+        tradeable_threshold_bps=tradeable_threshold_bps,
+        profitable_threshold_bps=profitable_threshold_bps,
+    )
+
+
+def _finalize_threshold_search_frame(
+    search_frame: pd.DataFrame,
+    *,
+    selected_threshold: float,
+    status: str,
+    reason: str | None,
+    fallback_used: bool,
+    fallback_reason: str | None,
+) -> pd.DataFrame:
+    frame = search_frame.copy()
+    if frame.empty:
+        frame = pd.DataFrame([{"threshold": float(selected_threshold), "objective_value": None}])
+    if "valid_candidate" not in frame.columns:
+        frame["valid_candidate"] = pd.to_numeric(frame["objective_value"], errors="coerce").notna()
+    frame["selected"] = pd.to_numeric(frame["threshold"], errors="coerce").eq(float(selected_threshold))
+    frame["status"] = status
+    frame["reason"] = reason
+    frame["fallback_used"] = bool(fallback_used)
+    frame["fallback_reason"] = fallback_reason
+    return frame
+
+
+def _threshold_search_failure_result(
+    *,
+    settings: DeepLearningSettings,
+    reason: str,
+    label_diagnostics_by_split: dict[str, dict[str, Any]],
+    signal_count_by_split: dict[str, int],
+    default_threshold: float,
+    search_frame: pd.DataFrame,
+) -> ThresholdSelectionResult:
+    summary = summarize_threshold_search(search_frame)
+    diagnostics = DegenerateExperimentDiagnostics(
+        stage="threshold_search",
+        reason=reason,
+        status="threshold_selection_failed",
+        model_name=settings.model.name,
+        source="deep_learning",
+        target_horizon=infer_horizon_label(settings.target.regression_column),
+        split="validation",
+        selected_threshold=float(default_threshold),
+        candidate_threshold_count=summary.get("candidate_count"),
+        valid_candidate_count=summary.get("valid_candidate_count"),
+        signal_count_by_split=signal_count_by_split,
+        tradeable_rate_by_split=_split_metric_map(label_diagnostics_by_split, "tradeable_rate"),
+        profitable_rate_by_split=_split_metric_map(label_diagnostics_by_split, "profitable_rate"),
+        future_net_return_bps_by_split=_return_summary_map(label_diagnostics_by_split),
+        fallback_used=bool(settings.threshold_search.allow_degenerate_fallback),
+        fallback_reason=reason if settings.threshold_search.allow_degenerate_fallback else None,
+        extra={"threshold_search_summary": summary},
+    )
+    if not settings.threshold_search.allow_degenerate_fallback:
+        raise DegenerateExperimentError(diagnostics)
+    warn_on_degenerate_experiment(diagnostics, stacklevel=3)
+    finalized = _finalize_threshold_search_frame(
+        search_frame,
+        selected_threshold=float(default_threshold),
+        status="degenerate_fallback",
+        reason=reason,
+        fallback_used=True,
+        fallback_reason=reason,
+    )
+    return ThresholdSelectionResult(
+        selected_threshold=float(default_threshold),
+        objective_value=None,
+        search_frame=finalized,
+        fallback_used=True,
+        fallback_reason=reason,
+    )
+
+
+def _threshold_search_success_result(
+    selected_threshold: float,
+    objective_value: float | None,
+    search_frame: pd.DataFrame,
+) -> ThresholdSelectionResult:
+    return ThresholdSelectionResult(
+        selected_threshold=float(selected_threshold),
+        objective_value=_safe_float(objective_value),
+        search_frame=_finalize_threshold_search_frame(
+            search_frame,
+            selected_threshold=float(selected_threshold),
+            status="ok",
+            reason=None,
+            fallback_used=False,
+            fallback_reason=None,
+        ),
+        fallback_used=False,
+        fallback_reason=None,
+    )
+
+
+def _warn_on_zero_signal_splits(
+    *,
+    settings: DeepLearningSettings,
+    label_diagnostics_by_split: dict[str, dict[str, Any]],
+    predictions: pd.DataFrame,
+) -> DegenerateExperimentDiagnostics | None:
+    signal_diagnostics_by_split = signal_split_diagnostics(
+        predictions,
+        signal_column="signal",
+        split_names=predictions["split"].dropna().astype(str).unique().tolist(),
+    )
+    flagged = [
+        (split_name, diagnostics)
+        for split_name, diagnostics in signal_diagnostics_by_split.items()
+        if split_name in {"validation", "test"} and diagnostics.get("status") != "ok"
+    ]
+    if not flagged:
+        return None
+    reason = "; ".join(
+        f"{split_name}: {diagnostics.get('reason') or diagnostics.get('status')}"
+        for split_name, diagnostics in flagged
+    )
+    diagnostics = DegenerateExperimentDiagnostics(
+        stage="signal_generation",
+        reason=reason,
+        status="no_tradable_signals",
+        model_name=settings.model.name,
+        source="deep_learning",
+        target_horizon=infer_horizon_label(settings.target.regression_column),
+        signal_count_by_split={
+            split_name: int(split_diagnostics.get("signal_count", 0))
+            for split_name, split_diagnostics in signal_diagnostics_by_split.items()
+        },
+        tradeable_rate_by_split=_split_metric_map(label_diagnostics_by_split, "tradeable_rate"),
+        profitable_rate_by_split=_split_metric_map(label_diagnostics_by_split, "profitable_rate"),
+        future_net_return_bps_by_split=_return_summary_map(label_diagnostics_by_split),
+    )
+    warn_on_degenerate_experiment(diagnostics, stacklevel=3)
+    return diagnostics
+
+
 def _score_frame(
     frame: pd.DataFrame,
     row_indices: np.ndarray,
@@ -855,12 +1058,38 @@ def _metric_value_for_threshold(
 def _select_threshold(
     validation_score_frame: pd.DataFrame,
     settings: DeepLearningSettings,
-) -> tuple[float, float | None, pd.DataFrame]:
+    *,
+    label_diagnostics_by_split: dict[str, dict[str, Any]],
+) -> ThresholdSelectionResult:
     default_threshold = _default_threshold(settings)
     candidates = sorted({float(value) for value in _default_threshold_grid(settings)} | {float(default_threshold)})
-    if not settings.threshold_search.enabled or validation_score_frame.empty:
-        return float(default_threshold), None, pd.DataFrame(
-            [{"threshold": float(default_threshold), "objective_value": None, "selected": True}]
+    if not settings.threshold_search.enabled:
+        return _threshold_search_success_result(
+            float(default_threshold),
+            None,
+            pd.DataFrame([{"threshold": float(default_threshold), "objective_value": None}]),
+        )
+    validation_support = label_diagnostics_by_split.get("validation", {})
+    if validation_score_frame.empty:
+        return _threshold_search_failure_result(
+            settings=settings,
+            reason="Validation split produced no score rows, so threshold selection cannot run.",
+            label_diagnostics_by_split=label_diagnostics_by_split,
+            signal_count_by_split={"validation": 0},
+            default_threshold=float(default_threshold),
+            search_frame=pd.DataFrame(),
+        )
+    if not bool(validation_support.get("supports_threshold_selection", True)):
+        return _threshold_search_failure_result(
+            settings=settings,
+            reason=(
+                "Validation split cannot support threshold selection because label diagnostics are "
+                f"degenerate: {validation_support.get('reason') or validation_support.get('status')}."
+            ),
+            label_diagnostics_by_split=label_diagnostics_by_split,
+            signal_count_by_split={"validation": 0},
+            default_threshold=float(default_threshold),
+            search_frame=pd.DataFrame(),
         )
 
     rows: list[dict[str, Any]] = []
@@ -873,13 +1102,35 @@ def _select_threshold(
             objective=settings.threshold_search.objective,
             top_quantile=settings.threshold_search.top_quantile,
         )
-        rows.append({"threshold": float(threshold), "objective_value": _safe_float(objective_value)})
+        rows.append(
+            {
+                "threshold": float(threshold),
+                "objective_value": _safe_float(objective_value),
+                "valid_candidate": _safe_float(objective_value) is not None,
+            }
+        )
         if objective_value > best_score:
             best_score = objective_value
             best_threshold = float(threshold)
-    for row in rows:
-        row["selected"] = float(row["threshold"]) == float(best_threshold)
-    return best_threshold, _safe_float(best_score), pd.DataFrame(rows)
+    search_frame = pd.DataFrame(rows)
+    signal_diagnostics = signal_split_diagnostics(
+        _apply_threshold(validation_score_frame, settings, best_threshold),
+        signal_column="signal",
+        split_names=["validation"],
+    )
+    if int(search_frame["valid_candidate"].sum()) == 0:
+        return _threshold_search_failure_result(
+            settings=settings,
+            reason="Threshold search found no valid candidate on the validation split.",
+            label_diagnostics_by_split=label_diagnostics_by_split,
+            signal_count_by_split={
+                split_name: int(diagnostics.get("signal_count", 0))
+                for split_name, diagnostics in signal_diagnostics.items()
+            },
+            default_threshold=float(default_threshold),
+            search_frame=search_frame,
+        )
+    return _threshold_search_success_result(best_threshold, best_score, search_frame)
 
 
 def _metric_row(predictions: pd.DataFrame, settings: DeepLearningSettings) -> dict[str, Any]:
@@ -1204,6 +1455,7 @@ def _fit_model_for_indices(
     selected_hyperparameters: dict[str, Any],
     feature_importance_method: str,
 ) -> dict[str, Any]:
+    label_diagnostics_by_split = _label_diagnostics_for_frame(frame, settings)
     stats = fit_normalization_stats(
         frame,
         feature_columns,
@@ -1257,6 +1509,7 @@ def _fit_model_for_indices(
     )
     history_rows: list[dict[str, Any]] = []
     stale_epochs = 0
+    fallback_warning_emitted = False
     selected_hyperparameters_json = _json_dumps(selected_hyperparameters)
 
     for epoch in range(1, settings.training.epochs + 1):
@@ -1287,10 +1540,14 @@ def _fit_model_for_indices(
             threshold_objective=settings.threshold_search.objective if settings.threshold_search.enabled else None,
             feature_importance_method=feature_importance_method,
         )
-        epoch_threshold, epoch_threshold_objective_value, threshold_search = _select_threshold(
+        threshold_selection = _select_threshold(
             validation_score_frame,
             settings,
+            label_diagnostics_by_split=label_diagnostics_by_split,
         )
+        epoch_threshold = threshold_selection.selected_threshold
+        epoch_threshold_objective_value = threshold_selection.objective_value
+        threshold_search = threshold_selection.search_frame
         validation_predictions = _apply_threshold(validation_score_frame, settings, epoch_threshold)
         validation_metrics = _metric_row(validation_predictions, settings)
 
@@ -1312,6 +1569,55 @@ def _fit_model_for_indices(
             validation_result["loss"],
             validation_metrics,
         )
+        if selection["fallback_used"]:
+            signal_counts = signal_split_diagnostics(
+                validation_predictions,
+                signal_column="signal",
+                split_names=["validation"],
+            )
+            diagnostics = DegenerateExperimentDiagnostics(
+                stage="checkpoint_selection",
+                reason=(
+                    f"Checkpoint selection metric '{settings.training.selection_metric}' was undefined on "
+                    "validation, so only the fallback metric remained."
+                ),
+                status="checkpoint_selection_failed",
+                model_name=settings.model.name,
+                source="deep_learning",
+                target_horizon=infer_horizon_label(settings.target.regression_column),
+                split="validation",
+                selected_threshold=_safe_float(epoch_threshold),
+                candidate_threshold_count=summarize_threshold_search(threshold_search).get(
+                    "candidate_count"
+                ),
+                valid_candidate_count=summarize_threshold_search(threshold_search).get(
+                    "valid_candidate_count"
+                ),
+                signal_count_by_split={
+                    split_name: int(split_diagnostics.get("signal_count", 0))
+                    for split_name, split_diagnostics in signal_counts.items()
+                },
+                tradeable_rate_by_split=_split_metric_map(
+                    label_diagnostics_by_split, "tradeable_rate"
+                ),
+                profitable_rate_by_split=_split_metric_map(
+                    label_diagnostics_by_split, "profitable_rate"
+                ),
+                future_net_return_bps_by_split=_return_summary_map(
+                    label_diagnostics_by_split
+                ),
+                fallback_used=bool(settings.training.allow_degenerate_fallback),
+                fallback_reason=(
+                    "Fell back to validation_loss because the configured checkpoint metric was undefined."
+                    if settings.training.allow_degenerate_fallback
+                    else None
+                ),
+            )
+            if not settings.training.allow_degenerate_fallback:
+                raise DegenerateExperimentError(diagnostics)
+            if not fallback_warning_emitted:
+                warn_on_degenerate_experiment(diagnostics, stacklevel=3)
+                fallback_warning_emitted = True
         row = {
             "epoch": epoch,
             "train_loss": _safe_float(train_result["loss"]),
@@ -1377,6 +1683,7 @@ def _fit_model_for_indices(
         "best_threshold_objective_value": _safe_float(best_threshold_objective_value),
         "best_validation_metrics": best_validation_metrics,
         "best_threshold_search": best_threshold_search,
+        "label_diagnostics_by_split": label_diagnostics_by_split,
         "loss_metadata": loss_metadata,
         "selected_hyperparameters_json": selected_hyperparameters_json,
         "selected_hyperparameters": selected_hyperparameters,
@@ -1637,7 +1944,9 @@ def _leaderboard(metrics: pd.DataFrame) -> pd.DataFrame:
     if metrics.empty:
         return metrics.copy()
     leaderboard = metrics[metrics["split"].isin(["validation", "test"])].copy()
+    leaderboard["has_signals"] = leaderboard["signal_count"].fillna(0).astype(float) > 0.0
     sort_keys = [
+        "has_signals",
         "task",
         "split",
         "avg_signal_return_bps",
@@ -1757,6 +2066,14 @@ def _write_report(
     loss_metadata: dict[str, Any],
     tuning_results: pd.DataFrame,
     diagnostic_paths: dict[str, str],
+    label_diagnostics_by_split: dict[str, dict[str, Any]],
+    signal_count_by_split: dict[str, int],
+    degenerate_experiment: bool,
+    degenerate_stage: str | None,
+    degenerate_reason: str | None,
+    fallback_used: bool,
+    fallback_reason: str | None,
+    threshold_search_summary: dict[str, Any],
 ) -> str | None:
     if not settings.output.write_markdown_report:
         return None
@@ -1776,8 +2093,17 @@ def _write_report(
         f"- Effective checkpoint selection metric: `{best_selection_effective_metric}`",
         f"- Effective checkpoint selection value: `{best_selection_effective_value}`",
         f"- Checkpoint metric fallback used: `{best_selection_fallback_used}`",
+        f"- Degenerate experiment: `{degenerate_experiment}`",
+        f"- Degenerate stage: `{degenerate_stage}`",
+        f"- Degenerate reason: `{degenerate_reason}`",
+        f"- Fallback used: `{fallback_used}`",
+        f"- Fallback reason: `{fallback_reason}`",
         f"- Selected threshold: `{selected_threshold}`",
         f"- Threshold objective: `{settings.threshold_search.objective if settings.threshold_search.enabled else 'disabled'}`",
+        f"- Threshold search summary: `{threshold_search_summary}`",
+        f"- Signal count by split: `{signal_count_by_split}`",
+        f"- Tradeable rate by split: `{_split_metric_map(label_diagnostics_by_split, 'tradeable_rate')}`",
+        f"- Profitable rate by split: `{_split_metric_map(label_diagnostics_by_split, 'profitable_rate')}`",
         f"- Prediction mode: `{settings.prediction.mode}`",
         f"- Loss metadata: `{loss_metadata}`",
         f"- Preprocessing scaler: `{settings.preprocessing.scaler}`",
@@ -1793,6 +2119,10 @@ def _write_report(
         "## Full Metrics",
         "",
         _table_to_markdown(metrics),
+        "",
+        "## Label Diagnostics",
+        "",
+        _table_to_markdown(pd.DataFrame(label_diagnostics_by_split).T.reset_index().rename(columns={"index": "split"})),
         "",
         "## Training History",
         "",
@@ -1973,9 +2303,64 @@ def run_deep_learning_pipeline(settings: DeepLearningSettings) -> DeepLearningAr
         predictions,
         top_quantile=effective_settings.threshold_search.top_quantile,
     )
+    signal_diagnostics = signal_split_diagnostics(predictions, signal_column="signal")
+    signal_count_by_split = {
+        split_name: int(split_diagnostics.get("signal_count", 0))
+        for split_name, split_diagnostics in signal_diagnostics.items()
+    }
+    signal_warning = _warn_on_zero_signal_splits(
+        settings=effective_settings,
+        label_diagnostics_by_split=fit_result["label_diagnostics_by_split"],
+        predictions=predictions,
+    )
+    threshold_search_summary = summarize_threshold_search(fit_result["best_threshold_search"])
+    threshold_fallback_used = bool(
+        fit_result["best_threshold_search"].get("fallback_used", pd.Series(dtype=bool))
+        .fillna(False)
+        .astype(bool)
+        .any()
+    )
+    threshold_fallback_reason_series = fit_result["best_threshold_search"].get(
+        "fallback_reason",
+        pd.Series(dtype=object),
+    )
+    threshold_fallback_reason = None
+    if hasattr(threshold_fallback_reason_series, "dropna"):
+        non_null_reasons = threshold_fallback_reason_series.dropna().astype(str)
+        if not non_null_reasons.empty:
+            threshold_fallback_reason = non_null_reasons.iloc[0]
+    checkpoint_fallback_reason = (
+        "Fell back to validation_loss because the configured checkpoint metric was undefined."
+        if fit_result["best_selection_fallback_used"]
+        else None
+    )
+    fallback_used = bool(fit_result["best_selection_fallback_used"] or threshold_fallback_used)
+    fallback_reason = threshold_fallback_reason or checkpoint_fallback_reason
+    degenerate_experiment = bool(
+        signal_warning is not None or fallback_used
+    )
+    degenerate_stage = (
+        signal_warning.stage
+        if signal_warning is not None
+        else "threshold_search"
+        if threshold_fallback_used
+        else "checkpoint_selection"
+        if fit_result["best_selection_fallback_used"]
+        else None
+    )
+    degenerate_reason = (
+        signal_warning.reason
+        if signal_warning is not None
+        else fallback_reason
+    )
     metadata_columns = {
         **prediction_metadata_columns,
         "threshold_objective": effective_settings.threshold_search.objective if effective_settings.threshold_search.enabled else None,
+        "degenerate_experiment": degenerate_experiment,
+        "degenerate_stage": degenerate_stage,
+        "degenerate_reason": degenerate_reason,
+        "fallback_used": fallback_used,
+        "fallback_reason": fallback_reason,
     }
     for column, value in metadata_columns.items():
         metrics[column] = value
@@ -2047,6 +2432,14 @@ def run_deep_learning_pipeline(settings: DeepLearningSettings) -> DeepLearningAr
         loss_metadata=fit_result["loss_metadata"],
         tuning_results=tuning_results,
         diagnostic_paths=diagnostic_paths,
+        label_diagnostics_by_split=fit_result["label_diagnostics_by_split"],
+        signal_count_by_split=signal_count_by_split,
+        degenerate_experiment=degenerate_experiment,
+        degenerate_stage=degenerate_stage,
+        degenerate_reason=degenerate_reason,
+        fallback_used=fallback_used,
+        fallback_reason=fallback_reason,
+        threshold_search_summary=threshold_search_summary,
     )
 
     manifest = {
@@ -2064,6 +2457,21 @@ def run_deep_learning_pipeline(settings: DeepLearningSettings) -> DeepLearningAr
         "row_count": int(len(frame)),
         "feature_count": len(feature_columns),
         "sample_counts": {split_name: len(indices) for split_name, indices in sample_indices.items()},
+        "signal_count_by_split": signal_count_by_split,
+        "label_diagnostics_by_split": fit_result["label_diagnostics_by_split"],
+        "tradeable_rate_by_split": _split_metric_map(
+            fit_result["label_diagnostics_by_split"], "tradeable_rate"
+        ),
+        "profitable_rate_by_split": _split_metric_map(
+            fit_result["label_diagnostics_by_split"], "profitable_rate"
+        ),
+        "degenerate_experiment": degenerate_experiment,
+        "status": "ok" if not degenerate_experiment else "warning",
+        "degenerate_stage": degenerate_stage,
+        "degenerate_reason": degenerate_reason,
+        "reason": degenerate_reason,
+        "fallback_used": fallback_used,
+        "fallback_reason": fallback_reason,
         "best_epoch": int(fit_result["best_epoch"]),
         "best_validation_loss": _safe_float(fit_result["best_validation_loss"]),
         "best_checkpoint_metric": effective_settings.training.selection_metric,
@@ -2074,6 +2482,7 @@ def run_deep_learning_pipeline(settings: DeepLearningSettings) -> DeepLearningAr
         "selected_threshold": _safe_float(fit_result["best_threshold"]),
         "selected_threshold_objective": effective_settings.threshold_search.objective if effective_settings.threshold_search.enabled else None,
         "selected_threshold_objective_value": _safe_float(fit_result["best_threshold_objective_value"]),
+        "threshold_search_summary": threshold_search_summary,
         "selected_loss": fit_result["loss_metadata"].get("loss_name"),
         "loss_metadata": fit_result["loss_metadata"],
         "selected_hyperparameters": selected_hyperparameters,

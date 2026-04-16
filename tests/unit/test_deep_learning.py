@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import pytest
 import torch
 
 from funding_arb.config.models import DeepLearningSettings
@@ -18,6 +19,7 @@ from funding_arb.models.deep_learning import (
     build_sequence_model,
     build_sequence_indices,
 )
+from funding_arb.utils.degeneracy import DegenerateExperimentError
 
 
 
@@ -224,13 +226,63 @@ def test_threshold_selection_uses_validation_objective() -> None:
         }
     )
 
-    threshold, objective_value, search = _select_threshold(validation_scores, settings)
-    predictions = _apply_threshold(validation_scores, settings, threshold)
+    result = _select_threshold(
+        validation_scores,
+        settings,
+        label_diagnostics_by_split={
+            "validation": {
+                "supports_threshold_selection": True,
+                "tradeable_rate": 0.5,
+                "profitable_rate": 0.5,
+                "future_net_return_bps": {"min": -2.0, "max": 4.0, "mean": 0.875},
+            }
+        },
+    )
+    predictions = _apply_threshold(validation_scores, settings, result.selected_threshold)
 
-    assert float(threshold) in {-5.0, 0.0, 2.5, 5.0, 7.5, 10.0}
-    assert objective_value is not None
-    assert search["selected"].sum() == 1
+    assert float(result.selected_threshold) in {-5.0, 0.0, 2.5, 5.0, 7.5, 10.0}
+    assert result.objective_value is not None
+    assert result.search_frame["selected"].sum() == 1
     assert "signal" in predictions.columns
+
+
+def test_threshold_selection_raises_on_no_valid_candidates() -> None:
+    settings = _settings()
+    settings.threshold_search.enabled = True
+    validation_scores = pd.DataFrame(
+        {
+            "timestamp": pd.date_range("2024-01-01", periods=4, freq="h", tz="UTC"),
+            "split": ["validation"] * 4,
+            "model_name": ["lstm"] * 4,
+            "model_family": ["deep_learning"] * 4,
+            "task": ["regression"] * 4,
+            "signal_direction": ["short_perp_long_spot"] * 4,
+            "decision_score": [-6.0, -7.0, -8.0, -9.0],
+            "predicted_probability": [np.nan] * 4,
+            "predicted_return_bps": [-6.0, -7.0, -8.0, -9.0],
+            "actual_label": [0, 0, 0, 0],
+            "actual_return_bps": [-4.0, -1.0, -2.0, -0.5],
+            "selected_hyperparameters_json": ["{}"] * 4,
+            "selected_threshold_objective": ["avg_signal_return_bps"] * 4,
+            "calibration_method": ["none"] * 4,
+            "feature_importance_method": ["ablation_validation"] * 4,
+            "prediction_mode": ["static"] * 4,
+        }
+    )
+
+    with pytest.raises(DegenerateExperimentError, match="threshold_search"):
+        _select_threshold(
+            validation_scores,
+            settings,
+            label_diagnostics_by_split={
+                "validation": {
+                    "supports_threshold_selection": True,
+                    "tradeable_rate": 0.25,
+                    "profitable_rate": 0.25,
+                    "future_net_return_bps": {"min": -4.0, "max": 1.0, "mean": -1.875},
+                }
+            },
+        )
 
 
 def test_selection_metric_falls_back_to_validation_loss_when_signal_metric_is_missing() -> None:

@@ -27,6 +27,7 @@ from funding_arb.evaluation.metrics import (
     calculate_sharpe_ratio,
     calculate_total_return,
 )
+from funding_arb.utils.degeneracy import signal_split_diagnostics
 from funding_arb.utils.paths import ensure_directory, repo_path
 
 PLOT_COLORS = [
@@ -295,9 +296,37 @@ def _constant_numeric_value(values: pd.Series) -> float | None:
 
 def _strategy_signal_metadata(strategy_frame: pd.DataFrame) -> dict[str, Any]:
     signal_threshold, signal_threshold_mode = _signal_threshold_metadata(strategy_frame["signal_threshold"])
+    split_diagnostics = signal_split_diagnostics(
+        strategy_frame,
+        signal_column="should_trade",
+        split_names=strategy_frame["split"].dropna().astype(str).unique().tolist(),
+    )
+    signal_count_by_split = {
+        split_name: int(diagnostics.get("signal_count", 0))
+        for split_name, diagnostics in split_diagnostics.items()
+    }
+    flagged = [
+        (split_name, diagnostics)
+        for split_name, diagnostics in split_diagnostics.items()
+        if diagnostics.get("status") != "ok"
+    ]
     return {
         "signal_threshold": signal_threshold,
         "signal_threshold_mode": signal_threshold_mode,
+        "signal_count_by_split": signal_count_by_split,
+        "signal_status": (
+            "ok"
+            if not flagged
+            else "no_tradable_signals"
+        ),
+        "signal_status_reason": (
+            None
+            if not flagged
+            else "; ".join(
+                f"{split_name}: {diagnostics.get('reason') or diagnostics.get('status')}"
+                for split_name, diagnostics in flagged
+            )
+        ),
         "threshold_objective": _safe_text(_constant_signal_value(strategy_frame["threshold_objective"])),
         "selected_threshold_objective_value": _constant_numeric_value(strategy_frame["selected_threshold_objective_value"]),
         "prediction_mode": _safe_text(_constant_signal_value(strategy_frame["prediction_mode"])),
@@ -1060,10 +1089,12 @@ def summarize_strategy_backtest(
 ) -> dict[str, Any]:
     """Summarize a backtest into report-friendly, strategy-aware metrics."""
     trade_count = int(len(trade_log))
-    win_rate = float((trade_log["net_pnl_usd"] > 0).mean()) if trade_count else 0.0
-    average_trade_return_bps = float(trade_log["net_return_bps"].mean()) if trade_count else 0.0
-    median_trade_return_bps = float(trade_log["net_return_bps"].median()) if trade_count else 0.0
-    average_trade_pnl_usd = float(trade_log["net_pnl_usd"].mean()) if trade_count else 0.0
+    no_trades = trade_count == 0
+    nan_metric = float("nan")
+    win_rate = float((trade_log["net_pnl_usd"] > 0).mean()) if trade_count else nan_metric
+    average_trade_return_bps = float(trade_log["net_return_bps"].mean()) if trade_count else nan_metric
+    median_trade_return_bps = float(trade_log["net_return_bps"].median()) if trade_count else nan_metric
+    average_trade_pnl_usd = float(trade_log["net_pnl_usd"].mean()) if trade_count else nan_metric
     expectancy_per_trade_usd = average_trade_pnl_usd
     expectancy_per_trade_bps = average_trade_return_bps
     total_turnover_usd = float(trade_log["turnover_usd"].sum()) if trade_count else 0.0
@@ -1081,9 +1112,9 @@ def summarize_strategy_backtest(
     total_funding_pnl_usd = float(trade_log["funding_pnl_usd"].sum()) if trade_count else 0.0
     total_gross_pnl_usd = float(trade_log["gross_pnl_usd"].sum()) if trade_count else 0.0
     total_net_pnl_usd = float(trade_log["net_pnl_usd"].sum()) if trade_count else 0.0
-    average_holding_hours = float(trade_log["holding_hours"].mean()) if trade_count else 0.0
-    median_holding_hours = float(trade_log["holding_hours"].median()) if trade_count else 0.0
-    profit_factor = calculate_profit_factor(trade_log["net_pnl_usd"]) if trade_count else 0.0
+    average_holding_hours = float(trade_log["holding_hours"].mean()) if trade_count else nan_metric
+    median_holding_hours = float(trade_log["holding_hours"].median()) if trade_count else nan_metric
+    profit_factor = calculate_profit_factor(trade_log["net_pnl_usd"]) if trade_count else nan_metric
     max_consecutive_losses = calculate_max_consecutive_losses(trade_log["net_pnl_usd"]) if trade_count else 0
     funding_contribution_share = (
         float(total_funding_pnl_usd / abs(total_net_pnl_usd)) if not math.isclose(total_net_pnl_usd, 0.0) else 0.0
@@ -1104,22 +1135,34 @@ def summarize_strategy_backtest(
     realized_annualized_return = _annualized_return(equity_curve, initial_capital, equity_column=realized_equity_column)
     sharpe_ratio = (
         calculate_sharpe_ratio(equity_curve[mtm_return_column], periods_per_year=PERIODS_PER_YEAR_1H)
-        if not equity_curve.empty
-        else 0.0
+        if not equity_curve.empty and not no_trades
+        else nan_metric
     )
-    raw_period_sharpe = calculate_period_sharpe_ratio(equity_curve[mtm_return_column]) if not equity_curve.empty else 0.0
+    raw_period_sharpe = (
+        calculate_period_sharpe_ratio(equity_curve[mtm_return_column])
+        if not equity_curve.empty and not no_trades
+        else nan_metric
+    )
     autocorr_adjusted_sharpe = (
         calculate_autocorrelation_adjusted_sharpe(equity_curve[mtm_return_column], periods_per_year=PERIODS_PER_YEAR_1H)
-        if not equity_curve.empty
-        else 0.0
+        if not equity_curve.empty and not no_trades
+        else nan_metric
     )
     realized_sharpe_ratio = (
         calculate_sharpe_ratio(equity_curve[realized_return_column], periods_per_year=PERIODS_PER_YEAR_1H)
-        if not equity_curve.empty
-        else 0.0
+        if not equity_curve.empty and not no_trades
+        else nan_metric
     )
-    mark_to_market_max_drawdown = calculate_max_drawdown(equity_curve[mtm_equity_column]) if not equity_curve.empty else 0.0
-    realized_max_drawdown = calculate_max_drawdown(equity_curve[realized_equity_column]) if not equity_curve.empty else 0.0
+    mark_to_market_max_drawdown = (
+        calculate_max_drawdown(equity_curve[mtm_equity_column])
+        if not equity_curve.empty and not no_trades
+        else nan_metric
+    )
+    realized_max_drawdown = (
+        calculate_max_drawdown(equity_curve[realized_equity_column])
+        if not equity_curve.empty and not no_trades
+        else nan_metric
+    )
     max_drawdown = mark_to_market_max_drawdown
     exposure_time_fraction = (
         float((equity_curve["open_position_count"] > 0).mean())
@@ -1138,12 +1181,30 @@ def summarize_strategy_backtest(
     )
     active_signal_count = int(trade_log["entry_timestamp"].count())
     metadata = strategy_metadata or {}
+    signal_count_by_split = metadata.get("signal_count_by_split", {}) or {}
+    evaluation_signal_count = signal_count_by_split.get(evaluation_split)
+    status = "completed"
+    diagnostic_reason = None
+    if no_trades:
+        if evaluation_signal_count == 0:
+            status = "no_tradable_signals"
+            diagnostic_reason = metadata.get("signal_status_reason") or (
+                f"signal_count == 0 for evaluation split '{evaluation_split}'."
+            )
+        else:
+            status = "no_executed_trades"
+            diagnostic_reason = (
+                f"No closed trades were executed for evaluation split '{evaluation_split}'."
+            )
     return {
         "strategy_name": strategy_name,
         "source": source,
         "source_subtype": source_subtype,
         "task": task,
         "evaluation_split": evaluation_split,
+        "status": status,
+        "diagnostic_reason": diagnostic_reason,
+        "skip_reason": diagnostic_reason if no_trades else None,
         "signal_threshold": metadata.get("signal_threshold"),
         "signal_threshold_mode": metadata.get("signal_threshold_mode"),
         "threshold_objective": metadata.get("threshold_objective"),
@@ -1163,6 +1224,11 @@ def summarize_strategy_backtest(
         "preprocessing_scaler": metadata.get("preprocessing_scaler"),
         "winsorize_lower_quantile": metadata.get("winsorize_lower_quantile"),
         "winsorize_upper_quantile": metadata.get("winsorize_upper_quantile"),
+        "signal_count_by_split": json.dumps(
+            metadata.get("signal_count_by_split", {}),
+            ensure_ascii=True,
+            sort_keys=True,
+        ),
         "trade_count": trade_count,
         "active_position_count": active_signal_count,
         "cumulative_return": float(total_return),
@@ -1424,12 +1490,15 @@ def _build_markdown_report(
         f"Gas cost is `{settings.costs.gas_cost_usd}` USD per closed trade.",
         f"Stop logic is `{settings.execution.stop_observation_mode}` and `{settings.execution.stop_execution_mode}`, not intrabar execution.",
         "Simple annualized Sharpe uses square-root scaling and may be distorted by sparse, serially correlated trading returns.",
+        "When a strategy has zero executable trades on the evaluation split, Sharpe and drawdown fields are reported as NaN because they are not meaningful for a flat path.",
     ]
     figure_markdown = "\n".join(f"![{Path(path).stem}](figures/{Path(path).name})" for path in figure_paths)
     manifest_lines = ""
     if signal_manifest is not None:
         manifest_lines += f"- Signal rows: `{signal_manifest.get('summary', {}).get('row_count', 'n/a')}`\n"
         manifest_lines += f"- Active signal count: `{signal_manifest.get('summary', {}).get('active_signal_count', 'n/a')}`\n"
+        manifest_lines += f"- Signal status: `{signal_manifest.get('status', 'n/a')}`\n"
+        manifest_lines += f"- Signal reason: `{signal_manifest.get('reason', 'n/a')}`\n"
         manifest_lines += f"- Signal prediction modes: `{signal_manifest.get('summary', {}).get('prediction_modes', [])}`\n"
         manifest_lines += f"- Signal calibration methods: `{signal_manifest.get('summary', {}).get('calibration_methods', [])}`\n"
         manifest_lines += f"- Signal checkpoint metrics: `{signal_manifest.get('summary', {}).get('checkpoint_selection_metrics', [])}`\n"
@@ -1455,6 +1524,8 @@ def _build_markdown_report(
                 "strategy_name",
                 "source_subtype",
                 "evaluation_split",
+                "status",
+                "diagnostic_reason",
                 "prediction_mode",
                 "calibration_method",
                 "checkpoint_selection_effective_metric",
@@ -1659,6 +1730,9 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
                 "source_subtype",
                 "task",
                 "evaluation_split",
+                "status",
+                "diagnostic_reason",
+                "skip_reason",
                 "signal_threshold",
                 "signal_threshold_mode",
                 "threshold_objective",
@@ -1677,6 +1751,7 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
                 "preprocessing_scaler",
                 "winsorize_lower_quantile",
                 "winsorize_upper_quantile",
+                "signal_count_by_split",
                 "has_trades",
                 "trade_count",
                 "cumulative_return",
@@ -1809,12 +1884,24 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
             "combined_trade_count": int(combined_strategy_metrics["trade_count"].sum()) if not combined_strategy_metrics.empty else int(len(trade_log_frame)),
             "primary_split": settings.reporting.primary_split,
             "best_strategy": None if leaderboard.empty else str(leaderboard.iloc[0]["strategy_name"]),
-            "best_sharpe_ratio": None if leaderboard.empty else float(leaderboard.iloc[0]["sharpe_ratio"]),
-            "best_cumulative_return": None if leaderboard.empty else float(leaderboard.iloc[0]["cumulative_return"]),
+            "best_strategy_status": None if leaderboard.empty else _safe_text(leaderboard.iloc[0]["status"]),
+            "best_sharpe_ratio": None if leaderboard.empty else _safe_float(leaderboard.iloc[0]["sharpe_ratio"]),
+            "best_cumulative_return": None if leaderboard.empty else _safe_float(leaderboard.iloc[0]["cumulative_return"]),
             "best_mark_to_market_max_drawdown": None
             if leaderboard.empty
-            else float(leaderboard.iloc[0]["mark_to_market_max_drawdown"]),
-            "best_realized_max_drawdown": None if leaderboard.empty else float(leaderboard.iloc[0]["realized_max_drawdown"]),
+            else _safe_float(leaderboard.iloc[0]["mark_to_market_max_drawdown"]),
+            "best_realized_max_drawdown": None if leaderboard.empty else _safe_float(leaderboard.iloc[0]["realized_max_drawdown"]),
+            "status_counts": {}
+            if strategy_metrics.empty
+            else {
+                str(key): int(value)
+                for key, value in strategy_metrics["status"]
+                .fillna("unknown")
+                .astype(str)
+                .value_counts()
+                .to_dict()
+                .items()
+            },
             "prediction_modes": []
             if strategy_metrics.empty
             else sorted(strategy_metrics["prediction_mode"].dropna().astype(str).unique().tolist()),
@@ -1866,6 +1953,7 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
             "Slippage is modeled by adverse execution prices; embedded_slippage_cost_usd is the preferred diagnostic and is not deducted twice.",
             f"Stop logic is {settings.execution.stop_observation_mode} and {settings.execution.stop_execution_mode}.",
             "Simple annualized Sharpe uses square-root scaling and should be interpreted cautiously for sparse or serially correlated returns.",
+            "Strategies with no executable trades keep cumulative return at zero but report Sharpe and drawdown as NaN because those risk metrics are not meaningful without positions.",
         ],
     }
     manifest_path = output_dir / "backtest_manifest.json"

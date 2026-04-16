@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import math
+import warnings
 from dataclasses import dataclass
 from itertools import product
 from pathlib import Path
@@ -43,6 +44,17 @@ from funding_arb.config.models import (
     RuleBaselineSpec,
     TreeBaselineSettings,
 )
+from funding_arb.utils.degeneracy import (
+    DegenerateExperimentDiagnostics,
+    DegenerateExperimentError,
+    infer_horizon_label,
+    infer_profitable_column,
+    infer_tradeable_column,
+    label_split_diagnostics,
+    signal_split_diagnostics,
+    summarize_threshold_search,
+    warn_on_degenerate_experiment,
+)
 from funding_arb.utils.paths import ensure_directory, repo_path
 
 
@@ -62,6 +74,17 @@ class BaselineArtifacts:
     feature_columns_path: str
     model_paths: dict[str, str]
     diagnostic_paths: dict[str, str]
+
+
+@dataclass(frozen=True)
+class ThresholdSelectionResult:
+    """Outcome of selecting a decision threshold on the validation split."""
+
+    selected_threshold: float
+    objective_value: float | None
+    search_frame: pd.DataFrame
+    fallback_used: bool = False
+    fallback_reason: str | None = None
 
 
 def describe_baseline_job(config: BaselineSettings | dict[str, Any]) -> str:
@@ -1109,11 +1132,17 @@ def evaluate_prediction_table(
             if task == "regression"
             else _classification_metrics(group, top_quantile=top_quantile)
         )
+        signal_count = int(metrics.get("signal_count", 0) or 0)
         row = {
             "model_name": model_name,
             "model_family": model_family,
             "task": task,
             "split": split,
+            "status": "ok" if signal_count > 0 else "no_tradable_signals",
+            "diagnostic_reason": (
+                None if signal_count > 0 else f"signal_count == 0 for split '{split}'."
+            ),
+            "degenerate_experiment": bool(signal_count == 0),
         }
         row.update(metrics)
         rows.append(row)
@@ -1128,7 +1157,9 @@ def _build_leaderboard(metrics: pd.DataFrame) -> pd.DataFrame:
     if metrics.empty:
         return metrics.copy()
     leaderboard = metrics[metrics["split"].isin(["validation", "test"])].copy()
+    leaderboard["has_signals"] = leaderboard["signal_count"].fillna(0).astype(float) > 0.0
     sort_keys = [
+        "has_signals",
         "task",
         "split",
         "avg_signal_return_bps",
@@ -1474,13 +1505,258 @@ def _default_regression_threshold_grid() -> list[float]:
     return [-5.0, 0.0, 2.5, 5.0, 7.5, 10.0]
 
 
+def _split_metric_map(
+    diagnostics_by_split: dict[str, dict[str, Any]],
+    key: str,
+) -> dict[str, Any]:
+    return {
+        split_name: diagnostics.get(key)
+        for split_name, diagnostics in diagnostics_by_split.items()
+    }
+
+
+def _return_summary_map(
+    diagnostics_by_split: dict[str, dict[str, Any]],
+) -> dict[str, dict[str, float | None]]:
+    return {
+        split_name: diagnostics.get("future_net_return_bps", {})
+        for split_name, diagnostics in diagnostics_by_split.items()
+    }
+
+
+def _label_diagnostics_for_modeling_frame(
+    modeling_frame: pd.DataFrame,
+    settings: BaselineSettings,
+) -> dict[str, dict[str, Any]]:
+    regression_column = settings.target.regression_column
+    tradeable_threshold_bps = 5.0
+    profitable_threshold_bps = 0.0
+    if settings.input.manifest_path:
+        manifest_path = _resolve_path(settings.input.manifest_path)
+        if manifest_path.exists():
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            target_config = manifest.get("target", {})
+            tradeable_threshold_bps = float(
+                target_config.get("min_expected_edge_bps", tradeable_threshold_bps)
+            )
+            profitable_threshold_bps = float(
+                target_config.get("positive_return_threshold_bps", profitable_threshold_bps)
+            )
+    return label_split_diagnostics(
+        modeling_frame,
+        split_column=settings.target.split_column,
+        net_return_column=regression_column,
+        tradeable_column=infer_tradeable_column(regression_column),
+        profitable_column=infer_profitable_column(regression_column),
+        tradeable_threshold_bps=tradeable_threshold_bps,
+        profitable_threshold_bps=profitable_threshold_bps,
+    )
+
+
+def _finalize_threshold_search_frame(
+    search_frame: pd.DataFrame,
+    *,
+    selected_threshold: float,
+    status: str,
+    reason: str | None,
+    fallback_used: bool,
+    fallback_reason: str | None,
+) -> pd.DataFrame:
+    frame = search_frame.copy()
+    if frame.empty:
+        frame = pd.DataFrame([{"threshold": float(selected_threshold), "objective_value": None}])
+    if "valid_candidate" not in frame.columns:
+        frame["valid_candidate"] = pd.to_numeric(frame["objective_value"], errors="coerce").notna()
+    threshold_series = pd.to_numeric(frame["threshold"], errors="coerce")
+    frame["selected"] = threshold_series.eq(float(selected_threshold))
+    frame["status"] = status
+    frame["reason"] = reason
+    frame["fallback_used"] = bool(fallback_used)
+    frame["fallback_reason"] = fallback_reason
+    return frame
+
+
+def _threshold_search_failure_result(
+    *,
+    settings: BaselineSettings,
+    model_name: str,
+    source: str,
+    reason: str,
+    label_diagnostics_by_split: dict[str, dict[str, Any]],
+    signal_count_by_split: dict[str, int],
+    default_threshold: float,
+    search_frame: pd.DataFrame,
+) -> ThresholdSelectionResult:
+    summary = summarize_threshold_search(search_frame)
+    diagnostics = DegenerateExperimentDiagnostics(
+        stage="threshold_search",
+        reason=reason,
+        status="threshold_selection_failed",
+        model_name=model_name,
+        source=source,
+        target_horizon=infer_horizon_label(settings.target.regression_column),
+        split="validation",
+        selected_threshold=float(default_threshold),
+        candidate_threshold_count=summary.get("candidate_count"),
+        valid_candidate_count=summary.get("valid_candidate_count"),
+        signal_count_by_split=signal_count_by_split,
+        tradeable_rate_by_split=_split_metric_map(label_diagnostics_by_split, "tradeable_rate"),
+        profitable_rate_by_split=_split_metric_map(label_diagnostics_by_split, "profitable_rate"),
+        future_net_return_bps_by_split=_return_summary_map(label_diagnostics_by_split),
+        fallback_used=bool(settings.threshold_search.allow_degenerate_fallback),
+        fallback_reason=reason if settings.threshold_search.allow_degenerate_fallback else None,
+        extra={"threshold_search_summary": summary},
+    )
+    if not settings.threshold_search.allow_degenerate_fallback:
+        raise DegenerateExperimentError(diagnostics)
+    warn_on_degenerate_experiment(diagnostics, stacklevel=3)
+    finalized = _finalize_threshold_search_frame(
+        search_frame,
+        selected_threshold=float(default_threshold),
+        status="degenerate_fallback",
+        reason=reason,
+        fallback_used=True,
+        fallback_reason=reason,
+    )
+    return ThresholdSelectionResult(
+        selected_threshold=float(default_threshold),
+        objective_value=None,
+        search_frame=finalized,
+        fallback_used=True,
+        fallback_reason=reason,
+    )
+
+
+def _threshold_search_success_result(
+    selected_threshold: float,
+    objective_value: float | None,
+    search_frame: pd.DataFrame,
+) -> ThresholdSelectionResult:
+    return ThresholdSelectionResult(
+        selected_threshold=float(selected_threshold),
+        objective_value=_safe_float(objective_value),
+        search_frame=_finalize_threshold_search_frame(
+            search_frame,
+            selected_threshold=float(selected_threshold),
+            status="ok",
+            reason=None,
+            fallback_used=False,
+            fallback_reason=None,
+        ),
+        fallback_used=False,
+        fallback_reason=None,
+    )
+
+
+def _warn_on_zero_signal_splits(
+    *,
+    model_name: str,
+    source: str,
+    settings: BaselineSettings,
+    label_diagnostics_by_split: dict[str, dict[str, Any]],
+    signal_diagnostics_by_split: dict[str, dict[str, Any]],
+) -> DegenerateExperimentDiagnostics | None:
+    flagged = [
+        (split_name, diagnostics)
+        for split_name, diagnostics in signal_diagnostics_by_split.items()
+        if split_name in {"validation", "test"} and diagnostics.get("status") != "ok"
+    ]
+    if not flagged:
+        return None
+    reason = "; ".join(
+        f"{split_name}: {diagnostics.get('reason') or diagnostics.get('status')}"
+        for split_name, diagnostics in flagged
+    )
+    diagnostics = DegenerateExperimentDiagnostics(
+        stage="signal_generation",
+        reason=reason,
+        status="no_tradable_signals",
+        model_name=model_name,
+        source=source,
+        target_horizon=infer_horizon_label(settings.target.regression_column),
+        signal_count_by_split={
+            split_name: int(split_diagnostics.get("signal_count", 0))
+            for split_name, split_diagnostics in signal_diagnostics_by_split.items()
+        },
+        tradeable_rate_by_split=_split_metric_map(label_diagnostics_by_split, "tradeable_rate"),
+        profitable_rate_by_split=_split_metric_map(label_diagnostics_by_split, "profitable_rate"),
+        future_net_return_bps_by_split=_return_summary_map(label_diagnostics_by_split),
+    )
+    warn_on_degenerate_experiment(diagnostics, stacklevel=3)
+    return diagnostics
+
+
+def _model_diagnostics_payload(
+    *,
+    model_name: str,
+    source: str,
+    settings: BaselineSettings,
+    label_diagnostics_by_split: dict[str, dict[str, Any]],
+    predictions: pd.DataFrame,
+    threshold_search_frame: pd.DataFrame | None = None,
+    threshold_selection: ThresholdSelectionResult | None = None,
+) -> dict[str, Any]:
+    signal_diagnostics_by_split = signal_split_diagnostics(
+        predictions,
+        signal_column="signal",
+        split_names=predictions["split"].dropna().astype(str).unique().tolist(),
+    )
+    signal_warning = _warn_on_zero_signal_splits(
+        model_name=model_name,
+        source=source,
+        settings=settings,
+        label_diagnostics_by_split=label_diagnostics_by_split,
+        signal_diagnostics_by_split=signal_diagnostics_by_split,
+    )
+    threshold_summary = (
+        summarize_threshold_search(threshold_search_frame)
+        if threshold_search_frame is not None
+        else None
+    )
+    status = "ok"
+    reason = None
+    degenerate_stage = None
+    degenerate_experiment = False
+    if signal_warning is not None:
+        status = signal_warning.status
+        reason = signal_warning.reason
+        degenerate_stage = signal_warning.stage
+        degenerate_experiment = True
+    if threshold_selection is not None and threshold_selection.fallback_used:
+        status = "degenerate_fallback"
+        reason = threshold_selection.fallback_reason
+        degenerate_stage = "threshold_search"
+        degenerate_experiment = True
+    return {
+        "status": status,
+        "reason": reason,
+        "degenerate_experiment": bool(degenerate_experiment),
+        "degenerate_stage": degenerate_stage,
+        "fallback_used": bool(threshold_selection.fallback_used) if threshold_selection is not None else False,
+        "fallback_reason": (
+            threshold_selection.fallback_reason if threshold_selection is not None else None
+        ),
+        "signal_count_by_split": {
+            split_name: int(split_diagnostics.get("signal_count", 0))
+            for split_name, split_diagnostics in signal_diagnostics_by_split.items()
+        },
+        "tradeable_rate_by_split": _split_metric_map(label_diagnostics_by_split, "tradeable_rate"),
+        "profitable_rate_by_split": _split_metric_map(label_diagnostics_by_split, "profitable_rate"),
+        "future_net_return_bps_by_split": _return_summary_map(label_diagnostics_by_split),
+        "threshold_search_summary": threshold_summary,
+    }
+
+
 def _select_classifier_threshold(
     validation_score_frame: pd.DataFrame,
     settings: BaselineSettings,
     *,
+    model_name: str,
+    source: str,
+    label_diagnostics_by_split: dict[str, dict[str, Any]],
     default_threshold: float,
     threshold_grid: list[float],
-) -> tuple[float, float | None, pd.DataFrame]:
+) -> ThresholdSelectionResult:
     candidates = sorted(
         {
             float(value)
@@ -1492,15 +1768,44 @@ def _select_classifier_threshold(
         }
         | {float(default_threshold)}
     )
-    if not settings.threshold_search.enabled or validation_score_frame.empty:
-        return float(default_threshold), None, pd.DataFrame(
-            [
-                {
-                    "threshold": float(default_threshold),
-                    "objective_value": None,
-                    "selected": True,
-                }
-            ]
+    if not settings.threshold_search.enabled:
+        return _threshold_search_success_result(
+            float(default_threshold),
+            None,
+            pd.DataFrame(
+                [
+                    {
+                        "threshold": float(default_threshold),
+                        "objective_value": None,
+                    }
+                ]
+            ),
+        )
+    validation_support = label_diagnostics_by_split.get("validation", {})
+    if validation_score_frame.empty:
+        return _threshold_search_failure_result(
+            settings=settings,
+            model_name=model_name,
+            source=source,
+            reason="Validation split produced no score rows, so threshold selection cannot run.",
+            label_diagnostics_by_split=label_diagnostics_by_split,
+            signal_count_by_split={"validation": 0},
+            default_threshold=float(default_threshold),
+            search_frame=pd.DataFrame(),
+        )
+    if not bool(validation_support.get("supports_threshold_selection", True)):
+        return _threshold_search_failure_result(
+            settings=settings,
+            model_name=model_name,
+            source=source,
+            reason=(
+                "Validation split cannot support threshold selection because label diagnostics are "
+                f"degenerate: {validation_support.get('reason') or validation_support.get('status')}."
+            ),
+            label_diagnostics_by_split=label_diagnostics_by_split,
+            signal_count_by_split={"validation": 0},
+            default_threshold=float(default_threshold),
+            search_frame=pd.DataFrame(),
         )
     rows: list[dict[str, Any]] = []
     best_threshold = float(default_threshold)
@@ -1516,23 +1821,45 @@ def _select_classifier_threshold(
             {
                 "threshold": float(threshold),
                 "objective_value": _safe_float(objective_value),
+                "valid_candidate": _safe_float(objective_value) is not None,
             }
         )
         if objective_value > best_score:
             best_score = objective_value
             best_threshold = float(threshold)
-    for row in rows:
-        row["selected"] = float(row["threshold"]) == float(best_threshold)
-    return best_threshold, _safe_float(best_score), pd.DataFrame(rows)
+    search_frame = pd.DataFrame(rows)
+    signal_diagnostics = signal_split_diagnostics(
+        _apply_classifier_threshold(validation_score_frame, best_threshold),
+        signal_column="signal",
+        split_names=["validation"],
+    )
+    if int(search_frame["valid_candidate"].sum()) == 0:
+        return _threshold_search_failure_result(
+            settings=settings,
+            model_name=model_name,
+            source=source,
+            reason="Threshold search found no valid classifier candidate on the validation split.",
+            label_diagnostics_by_split=label_diagnostics_by_split,
+            signal_count_by_split={
+                split_name: int(diagnostics.get("signal_count", 0))
+                for split_name, diagnostics in signal_diagnostics.items()
+            },
+            default_threshold=float(default_threshold),
+            search_frame=search_frame,
+        )
+    return _threshold_search_success_result(best_threshold, best_score, search_frame)
 
 
 def _select_regression_threshold(
     validation_score_frame: pd.DataFrame,
     settings: BaselineSettings,
     *,
+    model_name: str,
+    source: str,
+    label_diagnostics_by_split: dict[str, dict[str, Any]],
     default_threshold: float,
     threshold_grid: list[float],
-) -> tuple[float, float | None, pd.DataFrame]:
+) -> ThresholdSelectionResult:
     candidates = sorted(
         {
             float(value)
@@ -1544,15 +1871,44 @@ def _select_regression_threshold(
         }
         | {float(default_threshold)}
     )
-    if not settings.threshold_search.enabled or validation_score_frame.empty:
-        return float(default_threshold), None, pd.DataFrame(
-            [
-                {
-                    "threshold": float(default_threshold),
-                    "objective_value": None,
-                    "selected": True,
-                }
-            ]
+    if not settings.threshold_search.enabled:
+        return _threshold_search_success_result(
+            float(default_threshold),
+            None,
+            pd.DataFrame(
+                [
+                    {
+                        "threshold": float(default_threshold),
+                        "objective_value": None,
+                    }
+                ]
+            ),
+        )
+    validation_support = label_diagnostics_by_split.get("validation", {})
+    if validation_score_frame.empty:
+        return _threshold_search_failure_result(
+            settings=settings,
+            model_name=model_name,
+            source=source,
+            reason="Validation split produced no score rows, so threshold selection cannot run.",
+            label_diagnostics_by_split=label_diagnostics_by_split,
+            signal_count_by_split={"validation": 0},
+            default_threshold=float(default_threshold),
+            search_frame=pd.DataFrame(),
+        )
+    if not bool(validation_support.get("supports_threshold_selection", True)):
+        return _threshold_search_failure_result(
+            settings=settings,
+            model_name=model_name,
+            source=source,
+            reason=(
+                "Validation split cannot support threshold selection because label diagnostics are "
+                f"degenerate: {validation_support.get('reason') or validation_support.get('status')}."
+            ),
+            label_diagnostics_by_split=label_diagnostics_by_split,
+            signal_count_by_split={"validation": 0},
+            default_threshold=float(default_threshold),
+            search_frame=pd.DataFrame(),
         )
     rows: list[dict[str, Any]] = []
     best_threshold = float(default_threshold)
@@ -1568,14 +1924,33 @@ def _select_regression_threshold(
             {
                 "threshold": float(threshold),
                 "objective_value": _safe_float(objective_value),
+                "valid_candidate": _safe_float(objective_value) is not None,
             }
         )
         if objective_value > best_score:
             best_score = objective_value
             best_threshold = float(threshold)
-    for row in rows:
-        row["selected"] = float(row["threshold"]) == float(best_threshold)
-    return best_threshold, _safe_float(best_score), pd.DataFrame(rows)
+    search_frame = pd.DataFrame(rows)
+    signal_diagnostics = signal_split_diagnostics(
+        _apply_regression_threshold(validation_score_frame, best_threshold),
+        signal_column="signal",
+        split_names=["validation"],
+    )
+    if int(search_frame["valid_candidate"].sum()) == 0:
+        return _threshold_search_failure_result(
+            settings=settings,
+            model_name=model_name,
+            source=source,
+            reason="Threshold search found no valid regression candidate on the validation split.",
+            label_diagnostics_by_split=label_diagnostics_by_split,
+            signal_count_by_split={
+                split_name: int(diagnostics.get("signal_count", 0))
+                for split_name, diagnostics in signal_diagnostics.items()
+            },
+            default_threshold=float(default_threshold),
+            search_frame=search_frame,
+        )
+    return _threshold_search_success_result(best_threshold, best_score, search_frame)
 
 
 def _walk_forward_history(
@@ -1949,6 +2324,7 @@ def _write_markdown_report(
     metrics: pd.DataFrame,
     leaderboard: pd.DataFrame,
     model_summary: pd.DataFrame,
+    label_diagnostics_by_split: dict[str, dict[str, Any]],
     output_dir: Path,
 ) -> str | None:
     if not settings.output.write_markdown_report:
@@ -1970,6 +2346,8 @@ def _write_markdown_report(
         "roc_auc",
         "average_precision",
         "brier_score",
+        "status",
+        "diagnostic_reason",
     ]
     regression_columns = [
         "model_name",
@@ -1985,6 +2363,8 @@ def _write_markdown_report(
         "r2",
         "pearson_corr",
         "directional_accuracy",
+        "status",
+        "diagnostic_reason",
     ]
     summary_columns = [
         "model_name",
@@ -1997,8 +2377,20 @@ def _write_markdown_report(
         "threshold_objective",
         "threshold_objective_value",
         "tuning_metric",
+        "status",
+        "reason",
+        "fallback_used",
         "selected_params_json",
     ]
+    degenerate_experiment = any(
+        diagnostics.get("status") != "ok"
+        for split_name, diagnostics in label_diagnostics_by_split.items()
+        if split_name in {"validation", "test"}
+    ) or (
+        bool(model_summary["degenerate_experiment"].fillna(False).astype(bool).any())
+        if "degenerate_experiment" in model_summary.columns and not model_summary.empty
+        else False
+    )
     lines = [
         "# Baseline Models Report",
         "",
@@ -2010,11 +2402,19 @@ def _write_markdown_report(
         f"- Prediction mode: `{settings.prediction.mode}`",
         f"- Threshold objective: `{settings.threshold_search.objective}`",
         f"- Remaining imputation strategy: `{settings.imputation.remaining_strategy}`",
+        f"- Degenerate experiment: `{degenerate_experiment}`",
+        f"- Tradeable rate by split: `{_json_dumps(_split_metric_map(label_diagnostics_by_split, 'tradeable_rate'))}`",
+        f"- Profitable rate by split: `{_json_dumps(_split_metric_map(label_diagnostics_by_split, 'profitable_rate'))}`",
+        f"- Signal count by split is reported per model in the configuration summary.",
         f"- Output directory: `{output_dir}`",
         "",
         "## Validation/Test Leaderboard",
         "",
         _table_to_markdown(leaderboard),
+        "",
+        "## Label Diagnostics",
+        "",
+        _table_to_markdown(pd.DataFrame(label_diagnostics_by_split).T.reset_index().rename(columns={"index": "split"})),
         "",
         "## Model Configuration Summary",
         "",
@@ -2079,6 +2479,7 @@ def run_baseline_pipeline(
     train_split = modeling_frame[modeling_frame[split_column] == "train"].copy()
     validation_split = modeling_frame[modeling_frame[split_column] == "validation"].copy()
     validation_available = not validation_split.empty
+    label_diagnostics_by_split = _label_diagnostics_for_modeling_frame(modeling_frame, settings)
 
     for rule in settings.rules:
         if not rule.enabled:
@@ -2100,6 +2501,14 @@ def run_baseline_pipeline(
                 settings.threshold_search.objective
             )
         prediction_frames.append(rule_predictions)
+        rule_diagnostics = _model_diagnostics_payload(
+            model_name=selected_rule.name,
+            source="baseline",
+            settings=settings,
+            label_diagnostics_by_split=label_diagnostics_by_split,
+            predictions=rule_predictions,
+            threshold_search_frame=threshold_search_frame,
+        )
         model_records.append(
             {
                 "model_name": selected_rule.name,
@@ -2130,6 +2539,7 @@ def run_baseline_pipeline(
                         "regime_value": selected_rule.regime_value,
                     }
                 ),
+                **rule_diagnostics,
             }
         )
 
@@ -2185,27 +2595,32 @@ def run_baseline_pipeline(
                     else None,
                     model_spec=model_spec,
                 )
-                selected_threshold, threshold_score, threshold_search = _select_classifier_threshold(
+                threshold_selection = _select_classifier_threshold(
                     validation_scores,
                     settings,
+                    model_name=model_spec.name,
+                    source="baseline",
+                    label_diagnostics_by_split=label_diagnostics_by_split,
                     default_threshold=model_spec.probability_threshold,
                     threshold_grid=model_spec.probability_threshold_grid,
                 )
-                threshold_search.to_csv(threshold_path, index=False)
+                threshold_selection.search_frame.to_csv(threshold_path, index=False)
                 bundle = {
                     "prediction_model": prediction_model,
                     "diagnostic_model": diagnostic_model,
                     "selected_params": selected_params,
-                    "selected_threshold": selected_threshold,
+                    "selected_threshold": threshold_selection.selected_threshold,
                     "threshold_objective": settings.threshold_search.objective
                     if settings.threshold_search.enabled
                     else None,
-                    "threshold_objective_value": threshold_score,
+                    "threshold_objective_value": threshold_selection.objective_value,
                     "calibration_method": calibration_used,
                     "prediction_mode": settings.prediction.mode,
                     "tuning_metric": settings.tuning.classification_metric
                     if settings.tuning.enabled
                     else None,
+                    "fallback_used": threshold_selection.fallback_used,
+                    "fallback_reason": threshold_selection.fallback_reason,
                 }
                 _save_model_bundle(model_path, bundle)
             else:
@@ -2219,6 +2634,19 @@ def run_baseline_pipeline(
                     or model_spec.probability_threshold
                 )
                 threshold_score = _safe_float(bundle.get("threshold_objective_value"))
+                threshold_selection = ThresholdSelectionResult(
+                    selected_threshold=float(selected_threshold),
+                    objective_value=threshold_score,
+                    search_frame=(
+                        pd.read_csv(threshold_path)
+                        if threshold_path.exists()
+                        else pd.DataFrame()
+                    ),
+                    fallback_used=bool(bundle.get("fallback_used", False)),
+                    fallback_reason=bundle.get("fallback_reason"),
+                )
+            selected_threshold = float(threshold_selection.selected_threshold)
+            threshold_score = threshold_selection.objective_value
 
             model_paths[model_spec.name] = str(model_path)
             if cv_results_path.exists():
@@ -2241,6 +2669,15 @@ def run_baseline_pipeline(
             )
             predictions = _apply_classifier_threshold(full_scores, selected_threshold)
             prediction_frames.append(predictions)
+            model_diagnostics = _model_diagnostics_payload(
+                model_name=model_spec.name,
+                source="baseline",
+                settings=settings,
+                label_diagnostics_by_split=label_diagnostics_by_split,
+                predictions=predictions,
+                threshold_search_frame=threshold_selection.search_frame,
+                threshold_selection=threshold_selection,
+            )
 
             coefficient_path = _write_diagnostic_frame(
                 diagnostics_dir,
@@ -2299,6 +2736,7 @@ def run_baseline_pipeline(
                     "threshold_objective_value": threshold_score,
                     "tuning_metric": bundle.get("tuning_metric"),
                     "selected_params_json": _json_dumps(selected_params),
+                    **model_diagnostics,
                 }
             )
 
@@ -2342,27 +2780,32 @@ def run_baseline_pipeline(
                     else None,
                     model_spec=model_spec,
                 )
-                selected_threshold, threshold_score, threshold_search = _select_regression_threshold(
+                threshold_selection = _select_regression_threshold(
                     validation_scores,
                     settings,
+                    model_name=model_spec.name,
+                    source="baseline",
+                    label_diagnostics_by_split=label_diagnostics_by_split,
                     default_threshold=model_spec.trade_threshold_bps,
                     threshold_grid=model_spec.trade_threshold_grid_bps,
                 )
-                threshold_search.to_csv(threshold_path, index=False)
+                threshold_selection.search_frame.to_csv(threshold_path, index=False)
                 bundle = {
                     "prediction_model": prediction_model,
                     "diagnostic_model": prediction_model,
                     "selected_params": selected_params,
-                    "selected_threshold": selected_threshold,
+                    "selected_threshold": threshold_selection.selected_threshold,
                     "threshold_objective": settings.threshold_search.objective
                     if settings.threshold_search.enabled
                     else None,
-                    "threshold_objective_value": threshold_score,
+                    "threshold_objective_value": threshold_selection.objective_value,
                     "calibration_method": "none",
                     "prediction_mode": settings.prediction.mode,
                     "tuning_metric": settings.tuning.regression_metric
                     if settings.tuning.enabled
                     else None,
+                    "fallback_used": threshold_selection.fallback_used,
+                    "fallback_reason": threshold_selection.fallback_reason,
                 }
                 _save_model_bundle(model_path, bundle)
             else:
@@ -2374,6 +2817,19 @@ def run_baseline_pipeline(
                     or model_spec.trade_threshold_bps
                 )
                 threshold_score = _safe_float(bundle.get("threshold_objective_value"))
+                threshold_selection = ThresholdSelectionResult(
+                    selected_threshold=float(selected_threshold),
+                    objective_value=threshold_score,
+                    search_frame=(
+                        pd.read_csv(threshold_path)
+                        if threshold_path.exists()
+                        else pd.DataFrame()
+                    ),
+                    fallback_used=bool(bundle.get("fallback_used", False)),
+                    fallback_reason=bundle.get("fallback_reason"),
+                )
+            selected_threshold = float(threshold_selection.selected_threshold)
+            threshold_score = threshold_selection.objective_value
 
             model_paths[model_spec.name] = str(model_path)
             if cv_results_path.exists():
@@ -2395,6 +2851,15 @@ def run_baseline_pipeline(
             )
             predictions = _apply_regression_threshold(full_scores, selected_threshold)
             prediction_frames.append(predictions)
+            model_diagnostics = _model_diagnostics_payload(
+                model_name=model_spec.name,
+                source="baseline",
+                settings=settings,
+                label_diagnostics_by_split=label_diagnostics_by_split,
+                predictions=predictions,
+                threshold_search_frame=threshold_selection.search_frame,
+                threshold_selection=threshold_selection,
+            )
 
             coefficient_path = _write_diagnostic_frame(
                 diagnostics_dir,
@@ -2437,6 +2902,7 @@ def run_baseline_pipeline(
                     "threshold_objective_value": threshold_score,
                     "tuning_metric": bundle.get("tuning_metric"),
                     "selected_params_json": _json_dumps(selected_params),
+                    **model_diagnostics,
                 }
             )
 
@@ -2481,27 +2947,32 @@ def run_baseline_pipeline(
                     tree_mode=True,
                     model_spec=settings.predictive.classification,
                 )
-                selected_threshold, threshold_score, threshold_search = _select_classifier_threshold(
+                threshold_selection = _select_classifier_threshold(
                     validation_scores,
                     settings,
+                    model_name=classifier_name,
+                    source="baseline",
+                    label_diagnostics_by_split=label_diagnostics_by_split,
                     default_threshold=settings.predictive.tree.classification_probability_threshold,
                     threshold_grid=settings.predictive.tree.classification_probability_threshold_grid,
                 )
-                threshold_search.to_csv(classifier_threshold_path, index=False)
+                threshold_selection.search_frame.to_csv(classifier_threshold_path, index=False)
                 bundle = {
                     "prediction_model": prediction_model,
                     "diagnostic_model": diagnostic_model,
                     "selected_params": selected_params,
-                    "selected_threshold": selected_threshold,
+                    "selected_threshold": threshold_selection.selected_threshold,
                     "threshold_objective": settings.threshold_search.objective
                     if settings.threshold_search.enabled
                     else None,
-                    "threshold_objective_value": threshold_score,
+                    "threshold_objective_value": threshold_selection.objective_value,
                     "calibration_method": calibration_used,
                     "prediction_mode": settings.prediction.mode,
                     "tuning_metric": settings.tuning.classification_metric
                     if settings.tuning.enabled
                     else None,
+                    "fallback_used": threshold_selection.fallback_used,
+                    "fallback_reason": threshold_selection.fallback_reason,
                 }
                 _save_model_bundle(classifier_path, bundle)
             else:
@@ -2518,6 +2989,19 @@ def run_baseline_pipeline(
                     or settings.predictive.tree.classification_probability_threshold
                 )
                 threshold_score = _safe_float(bundle.get("threshold_objective_value"))
+                threshold_selection = ThresholdSelectionResult(
+                    selected_threshold=float(selected_threshold),
+                    objective_value=threshold_score,
+                    search_frame=(
+                        pd.read_csv(classifier_threshold_path)
+                        if classifier_threshold_path.exists()
+                        else pd.DataFrame()
+                    ),
+                    fallback_used=bool(bundle.get("fallback_used", False)),
+                    fallback_reason=bundle.get("fallback_reason"),
+                )
+            selected_threshold = float(threshold_selection.selected_threshold)
+            threshold_score = threshold_selection.objective_value
 
             model_paths[classifier_name] = str(classifier_path)
             if classifier_cv_path.exists():
@@ -2541,6 +3025,15 @@ def run_baseline_pipeline(
             )
             predictions = _apply_classifier_threshold(full_scores, selected_threshold)
             prediction_frames.append(predictions)
+            model_diagnostics = _model_diagnostics_payload(
+                model_name=classifier_name,
+                source="baseline",
+                settings=settings,
+                label_diagnostics_by_split=label_diagnostics_by_split,
+                predictions=predictions,
+                threshold_search_frame=threshold_selection.search_frame,
+                threshold_selection=threshold_selection,
+            )
 
             impurity_path = _write_diagnostic_frame(
                 diagnostics_dir,
@@ -2599,6 +3092,7 @@ def run_baseline_pipeline(
                     "threshold_objective_value": threshold_score,
                     "tuning_metric": bundle.get("tuning_metric"),
                     "selected_params_json": _json_dumps(selected_params),
+                    **model_diagnostics,
                 }
             )
 
@@ -2641,27 +3135,32 @@ def run_baseline_pipeline(
                     tree_mode=True,
                     model_spec=settings.predictive.regression,
                 )
-                selected_threshold, threshold_score, threshold_search = _select_regression_threshold(
+                threshold_selection = _select_regression_threshold(
                     validation_scores,
                     settings,
+                    model_name=regressor_name,
+                    source="baseline",
+                    label_diagnostics_by_split=label_diagnostics_by_split,
                     default_threshold=settings.predictive.tree.regression_trade_threshold_bps,
                     threshold_grid=settings.predictive.tree.regression_trade_threshold_grid_bps,
                 )
-                threshold_search.to_csv(regressor_threshold_path, index=False)
+                threshold_selection.search_frame.to_csv(regressor_threshold_path, index=False)
                 bundle = {
                     "prediction_model": prediction_model,
                     "diagnostic_model": prediction_model,
                     "selected_params": selected_params,
-                    "selected_threshold": selected_threshold,
+                    "selected_threshold": threshold_selection.selected_threshold,
                     "threshold_objective": settings.threshold_search.objective
                     if settings.threshold_search.enabled
                     else None,
-                    "threshold_objective_value": threshold_score,
+                    "threshold_objective_value": threshold_selection.objective_value,
                     "calibration_method": "none",
                     "prediction_mode": settings.prediction.mode,
                     "tuning_metric": settings.tuning.regression_metric
                     if settings.tuning.enabled
                     else None,
+                    "fallback_used": threshold_selection.fallback_used,
+                    "fallback_reason": threshold_selection.fallback_reason,
                 }
                 _save_model_bundle(regressor_path, bundle)
             else:
@@ -2676,6 +3175,19 @@ def run_baseline_pipeline(
                     or settings.predictive.tree.regression_trade_threshold_bps
                 )
                 threshold_score = _safe_float(bundle.get("threshold_objective_value"))
+                threshold_selection = ThresholdSelectionResult(
+                    selected_threshold=float(selected_threshold),
+                    objective_value=threshold_score,
+                    search_frame=(
+                        pd.read_csv(regressor_threshold_path)
+                        if regressor_threshold_path.exists()
+                        else pd.DataFrame()
+                    ),
+                    fallback_used=bool(bundle.get("fallback_used", False)),
+                    fallback_reason=bundle.get("fallback_reason"),
+                )
+            selected_threshold = float(threshold_selection.selected_threshold)
+            threshold_score = threshold_selection.objective_value
 
             model_paths[regressor_name] = str(regressor_path)
             if regressor_cv_path.exists():
@@ -2698,6 +3210,15 @@ def run_baseline_pipeline(
             )
             predictions = _apply_regression_threshold(full_scores, selected_threshold)
             prediction_frames.append(predictions)
+            model_diagnostics = _model_diagnostics_payload(
+                model_name=regressor_name,
+                source="baseline",
+                settings=settings,
+                label_diagnostics_by_split=label_diagnostics_by_split,
+                predictions=predictions,
+                threshold_search_frame=threshold_selection.search_frame,
+                threshold_selection=threshold_selection,
+            )
 
             impurity_path = _write_diagnostic_frame(
                 diagnostics_dir,
@@ -2740,6 +3261,7 @@ def run_baseline_pipeline(
                     "threshold_objective_value": threshold_score,
                     "tuning_metric": bundle.get("tuning_metric"),
                     "selected_params_json": _json_dumps(selected_params),
+                    **model_diagnostics,
                 }
             )
 
@@ -2776,6 +3298,7 @@ def run_baseline_pipeline(
         metrics,
         leaderboard,
         model_summary,
+        label_diagnostics_by_split,
         output_dir,
     )
 
@@ -2783,6 +3306,21 @@ def run_baseline_pipeline(
         split_name: int((frame[split_column] == split_name).sum())
         for split_name in ["train", "validation", "test"]
     }
+    degenerate_models = [
+        record["model_name"]
+        for record in model_records
+        if bool(record.get("degenerate_experiment"))
+    ]
+    fallback_models = [
+        record["model_name"]
+        for record in model_records
+        if bool(record.get("fallback_used"))
+    ]
+    label_degenerate_reasons = [
+        f"{split_name}: {diagnostics.get('reason') or diagnostics.get('status')}"
+        for split_name, diagnostics in label_diagnostics_by_split.items()
+        if split_name in {"validation", "test"} and diagnostics.get("status") != "ok"
+    ]
     manifest = {
         "input": settings.input.model_dump(),
         "target": settings.target.model_dump(),
@@ -2797,6 +3335,62 @@ def run_baseline_pipeline(
         "row_count": int(len(frame)),
         "split_counts": split_counts,
         "feature_count": len(feature_columns),
+        "label_diagnostics_by_split": label_diagnostics_by_split,
+        "tradeable_rate_by_split": _split_metric_map(label_diagnostics_by_split, "tradeable_rate"),
+        "profitable_rate_by_split": _split_metric_map(label_diagnostics_by_split, "profitable_rate"),
+        "degenerate_experiment": bool(label_degenerate_reasons or degenerate_models),
+        "status": (
+            "ok"
+            if not (label_degenerate_reasons or degenerate_models)
+            else "warning"
+        ),
+        "degenerate_stage": (
+            "labels"
+            if label_degenerate_reasons
+            else next(
+                (
+                    record.get("degenerate_stage")
+                    for record in model_records
+                    if record.get("degenerate_stage")
+                ),
+                None,
+            )
+        ),
+        "degenerate_reason": (
+            "; ".join(label_degenerate_reasons)
+            if label_degenerate_reasons
+            else next(
+                (
+                    record.get("reason")
+                    for record in model_records
+                    if record.get("reason")
+                ),
+                None,
+            )
+        ),
+        "reason": (
+            "; ".join(label_degenerate_reasons)
+            if label_degenerate_reasons
+            else next(
+                (
+                    record.get("reason")
+                    for record in model_records
+                    if record.get("reason")
+                ),
+                None,
+            )
+        ),
+        "fallback_used": bool(fallback_models),
+        "fallback_reason": next(
+            (
+                record.get("fallback_reason")
+                for record in model_records
+                if record.get("fallback_reason")
+            ),
+            None,
+        ),
+        "degenerate_models": degenerate_models,
+        "fallback_models": fallback_models,
         "feature_columns_path": str(feature_columns_path),
         "preprocessing": preprocessing_metadata,
         "predictions_path": predictions_primary_path,

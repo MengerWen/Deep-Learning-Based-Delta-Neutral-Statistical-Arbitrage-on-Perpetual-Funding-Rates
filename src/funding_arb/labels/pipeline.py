@@ -11,6 +11,11 @@ import pandas as pd
 
 from funding_arb.config.models import LabelPipelineSettings
 from funding_arb.labels.generator import assign_time_series_split, build_label_table
+from funding_arb.utils.degeneracy import (
+    infer_profitable_column,
+    infer_tradeable_column,
+    label_split_diagnostics,
+)
 from funding_arb.utils.paths import ensure_directory, repo_path
 
 
@@ -126,6 +131,20 @@ def run_label_pipeline(settings: LabelPipelineSettings) -> LabelPipelineArtifact
     target_columns = [column for column in label_table.columns if column != "timestamp"]
     primary_horizon = settings.target.primary_horizon_hours
     primary_target = f"target_future_net_return_bps_{primary_horizon}h"
+    label_diagnostics = label_split_diagnostics(
+        supervised,
+        split_column="split",
+        net_return_column=primary_target,
+        tradeable_column=infer_tradeable_column(primary_target),
+        profitable_column=infer_profitable_column(primary_target),
+        tradeable_threshold_bps=settings.target.min_expected_edge_bps,
+        profitable_threshold_bps=settings.target.positive_return_threshold_bps,
+    )
+    degenerate_summaries = [
+        diagnostics
+        for split_name, diagnostics in label_diagnostics.items()
+        if split_name in {"validation", "test"} and diagnostics.get("status") != "ok"
+    ]
     split_counts = {
         split_name: int(((supervised["split"] == split_name) & (supervised["supervised_ready"] == 1)).sum())
         for split_name in ["train", "validation", "test"]
@@ -140,6 +159,26 @@ def run_label_pipeline(settings: LabelPipelineSettings) -> LabelPipelineArtifact
         "primary_target": primary_target,
         "target_columns": target_columns,
         "split_counts": split_counts,
+        "label_diagnostics_by_split": label_diagnostics,
+        "tradeable_rate_by_split": {
+            split_name: diagnostics.get("tradeable_rate")
+            for split_name, diagnostics in label_diagnostics.items()
+        },
+        "profitable_rate_by_split": {
+            split_name: diagnostics.get("profitable_rate")
+            for split_name, diagnostics in label_diagnostics.items()
+        },
+        "degenerate_experiment": bool(degenerate_summaries),
+        "degenerate_stage": "labels" if degenerate_summaries else None,
+        "degenerate_reason": (
+            "; ".join(
+                f"{split_name}: {diagnostics.get('reason') or diagnostics.get('status')}"
+                for split_name, diagnostics in label_diagnostics.items()
+                if split_name in {"validation", "test"} and diagnostics.get("status") != "ok"
+            )
+            if degenerate_summaries
+            else None
+        ),
         "supervised_dataset_path": primary_supervised_path,
         "supervised_dataset_csv_path": supervised_csv_path,
         "label_table_path": primary_label_path,

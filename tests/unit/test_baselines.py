@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pandas as pd
+import pytest
 
 from funding_arb.config.models import BaselineSettings, RuleBaselineSpec
 from funding_arb.models.baselines import (
@@ -12,6 +13,7 @@ from funding_arb.models.baselines import (
     make_time_series_folds,
     select_feature_columns,
 )
+from funding_arb.utils.degeneracy import DegenerateExperimentError
 
 
 def _baseline_settings() -> BaselineSettings:
@@ -179,16 +181,69 @@ def test_select_classifier_threshold_prefers_higher_validation_signal_quality() 
         }
     )
 
-    threshold, score, search = _select_classifier_threshold(
+    result = _select_classifier_threshold(
         score_frame,
         settings,
+        model_name="logit",
+        source="baseline",
+        label_diagnostics_by_split={
+            "validation": {
+                "supports_threshold_selection": True,
+                "tradeable_rate": 0.5,
+                "profitable_rate": 0.5,
+                "future_net_return_bps": {"min": -5.0, "max": 10.0, "mean": 1.25},
+            }
+        },
         default_threshold=0.5,
         threshold_grid=[0.5, 0.75],
     )
 
-    assert threshold == 0.75
-    assert score == 10.0
-    assert search.loc[search["selected"], "threshold"].iloc[0] == 0.75
+    assert result.selected_threshold == 0.75
+    assert result.objective_value == 10.0
+    assert result.search_frame.loc[result.search_frame["selected"], "threshold"].iloc[0] == 0.75
+
+
+def test_select_classifier_threshold_raises_on_no_valid_candidates() -> None:
+    settings = _baseline_settings()
+    settings.threshold_search.objective = "avg_signal_return_bps"
+    score_frame = pd.DataFrame(
+        {
+            "timestamp": pd.date_range("2024-01-01", periods=4, freq="h", tz="UTC"),
+            "split": ["validation"] * 4,
+            "model_name": ["logit"] * 4,
+            "model_family": ["linear"] * 4,
+            "task": ["classification"] * 4,
+            "signal_direction": ["short_perp_long_spot"] * 4,
+            "decision_score": [0.1, 0.2, 0.1, 0.2],
+            "predicted_probability": [0.1, 0.2, 0.1, 0.2],
+            "predicted_return_bps": [None, None, None, None],
+            "actual_label": [0, 0, 0, 0],
+            "actual_return_bps": [-2.0, -1.0, -3.0, -0.5],
+            "selected_hyperparameters_json": ["{}"] * 4,
+            "selected_threshold_objective": [None] * 4,
+            "calibration_method": ["none"] * 4,
+            "feature_importance_method": ["permutation_validation"] * 4,
+            "prediction_mode": ["static"] * 4,
+        }
+    )
+
+    with pytest.raises(DegenerateExperimentError, match="threshold_search"):
+        _select_classifier_threshold(
+            score_frame,
+            settings,
+            model_name="logit",
+            source="baseline",
+            label_diagnostics_by_split={
+                "validation": {
+                    "supports_threshold_selection": True,
+                    "tradeable_rate": 0.25,
+                    "profitable_rate": 0.25,
+                    "future_net_return_bps": {"min": -3.0, "max": 1.0, "mean": -1.375},
+                }
+            },
+            default_threshold=0.5,
+            threshold_grid=[0.5, 0.75],
+        )
 
 
 def test_fit_classifier_with_calibration_returns_sigmoid_model_when_enabled() -> None:

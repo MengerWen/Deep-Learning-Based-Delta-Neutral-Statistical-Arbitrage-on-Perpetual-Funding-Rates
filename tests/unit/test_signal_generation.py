@@ -97,7 +97,9 @@ def _settings(tmp_dir: Path, source_name: str) -> SignalSettings:
         {
             'input': {
                 'baseline_predictions_path': str(baseline_path),
+                'baseline_manifest_path': None,
                 'dl_predictions_path': str(dl_path),
+                'dl_manifest_path': None,
                 'provider': 'binance',
                 'symbol': 'BTCUSDT',
                 'venue': 'binance',
@@ -187,5 +189,10 @@ def test_run_signal_generation_preserves_dl_metadata_in_manifest() -> None:
         assert 'huber' in manifest['summary']['selected_losses']
         assert 'robust' in manifest['summary']['preprocessing_scalers']
         assert manifest['summary']['checkpoint_selection_fallback_count'] == 2
+        assert manifest['degenerate_experiment'] is True
+        assert manifest['status'] == 'warning'
+        assert manifest['summary']['strategy_summary'][0]['status'] == 'no_tradable_signals'
+        assert 'test' in manifest['summary']['strategy_summary'][0]['reason']
+        assert 'threshold_search_summary' in manifest
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)

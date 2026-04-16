@@ -272,6 +272,7 @@ def _strategy_rows(summary: dict[str, Any]) -> list[dict[str, Any]]:
                 "strategy": row.get("strategy_name", "n/a"),
                 "source": row.get("source_subtype", "n/a"),
                 "split": row.get("evaluation_split", "n/a"),
+                "status": row.get("status", "ok"),
                 "trades": _fmt_int(row.get("trade_count")),
                 "cum_return": _fmt_pct(row.get("cumulative_return")),
                 "mtm_dd": _fmt_pct(
@@ -279,6 +280,7 @@ def _strategy_rows(summary: dict[str, Any]) -> list[dict[str, Any]]:
                 ),
                 "mtm_sharpe": _fmt_num(row.get("sharpe_ratio"), 3),
                 "net_pnl": _fmt_usd(row.get("total_net_pnl_usd")),
+                "reason": row.get("diagnostic_reason") or row.get("skip_reason") or "",
             }
         )
     return rows
@@ -374,11 +376,13 @@ def _build_markdown(summary: dict[str, Any]) -> str:
         ("Strategy", "strategy"),
         ("Source", "source"),
         ("Split", "split"),
+        ("Status", "status"),
         ("Trades", "trades"),
         ("Cum Return", "cum_return"),
         ("MTM Drawdown", "mtm_dd"),
         ("MTM Sharpe", "mtm_sharpe"),
         ("Net PnL", "net_pnl"),
+        ("Reason", "reason"),
     ],
 )}
 
@@ -602,11 +606,13 @@ def _build_html(summary: dict[str, Any]) -> str:
                   ("Strategy", "strategy"),
                   ("Source", "source"),
                   ("Split", "split"),
+                  ("Status", "status"),
                   ("Trades", "trades"),
                   ("Cum Return", "cum_return"),
                   ("MTM Drawdown", "mtm_dd"),
                   ("MTM Sharpe", "mtm_sharpe"),
                   ("Net PnL", "net_pnl"),
+                  ("Reason", "reason"),
               ],
           )}
         </div>

@@ -60,6 +60,7 @@ def test_train_baseline_default_config_loads_typed_model() -> None:
     assert config.predictive.classification.enabled is True
     assert config.tuning.gap == 24
     assert config.threshold_search.objective == "avg_signal_return_bps"
+    assert config.threshold_search.allow_degenerate_fallback is False
     assert config.imputation.add_missing_indicators is True
     assert len(config.predictive.classification.additional_models) >= 2
     assert config.predictive.classification.calibration_method == "sigmoid"
@@ -75,6 +76,8 @@ def test_train_dl_default_config_loads_typed_model() -> None:
     assert config.model.name == "lstm"
     assert config.training.selection_metric == "validation_avg_signal_return_bps"
     assert config.threshold_search.enabled is True
+    assert config.threshold_search.allow_degenerate_fallback is False
+    assert config.training.allow_degenerate_fallback is False
     assert config.preprocessing.scaler == "robust"
     assert config.prediction.mode == "static"
 
