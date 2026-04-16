@@ -1074,6 +1074,52 @@ class DataQualityReportSettings(SettingsBase):
     notes: dict[str, Any] = Field(default_factory=dict)
 
 
+class FinalReportMetadataSettings(SettingsBase):
+    title: str = "Deep Learning-Based Delta-Neutral Statistical Arbitrage on Perpetual Funding Rates"
+    subtitle: str = "Final technical report for the project prototype."
+    course: str = "Course Project"
+    authors: list[str] = Field(default_factory=list)
+    repository_url: str = ""
+    provider: str = "binance"
+    symbol: str = "BTCUSDT"
+    frequency: str = "1h"
+
+
+class FinalReportInputSettings(SettingsBase):
+    demo_snapshot_path: str = "data/artifacts/demo/demo_snapshot.json"
+    robustness_summary_path: str | None = "reports/robustness/binance/btcusdt/1h/summary.json"
+
+
+class FinalReportSectionSettings(SettingsBase):
+    executive_summary: list[str] = Field(default_factory=list)
+    contributions: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+    future_work: list[str] = Field(default_factory=list)
+
+
+class FinalReportOutputSettings(SettingsBase):
+    artifact_dir: str = "reports/final"
+    frontend_public_dir: str = "frontend/public/report"
+    write_markdown: bool = True
+    write_html: bool = True
+    write_json_summary: bool = True
+    copy_to_frontend_public: bool = True
+
+
+class FinalReportSettings(SettingsBase):
+    metadata: FinalReportMetadataSettings = Field(
+        default_factory=FinalReportMetadataSettings
+    )
+    input: FinalReportInputSettings = Field(default_factory=FinalReportInputSettings)
+    sections: FinalReportSectionSettings = Field(
+        default_factory=FinalReportSectionSettings
+    )
+    output: FinalReportOutputSettings = Field(
+        default_factory=FinalReportOutputSettings
+    )
+    notes: dict[str, Any] = Field(default_factory=dict)
+
+
 class RobustnessInputSettings(SettingsBase):
     provider: str = "binance"
     symbol: str = "BTCUSDT"

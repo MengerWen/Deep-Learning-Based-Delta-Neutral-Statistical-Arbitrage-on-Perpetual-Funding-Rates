@@ -237,6 +237,13 @@ h3 {
   gap: 10px;
 }
 
+.cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
 .hero-meta span,
 .status-chip {
   padding: 10px 14px;
@@ -250,6 +257,32 @@ h3 {
   background: rgba(15, 118, 110, 0.12);
   border-color: rgba(15, 118, 110, 0.22);
   color: #0d5f59;
+}
+
+.action-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px solid rgba(15, 118, 110, 0.22);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(15, 118, 110, 0.18), rgba(15, 118, 110, 0.1));
+  color: #0f4d49;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.action-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(15, 118, 110, 0.12);
+}
+
+.ghost-link {
+  border-color: rgba(22, 24, 31, 0.16);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink);
 }
 
 .metrics-ribbon {
@@ -289,8 +322,26 @@ h3 {
   padding: 28px;
 }
 
+.delivery-panel {
+  margin-bottom: 24px;
+}
+
 .section-heading {
   margin-bottom: 18px;
+}
+
+.deliverable-grid,
+.verdict-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.deliverable-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.verdict-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .story-list {
@@ -301,6 +352,8 @@ h3 {
 
 .story-card,
 .story-point,
+.deliverable-card,
+.verdict-card,
 .model-card,
 .console-card,
 .log-entry,
@@ -313,6 +366,25 @@ h3 {
 
 .story-card {
   padding: 18px;
+}
+
+.deliverable-card,
+.verdict-card {
+  padding: 18px;
+}
+
+.deliverable-card h3,
+.verdict-card h3 {
+  margin-bottom: 10px;
+}
+
+.deliverable-label {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.74rem;
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .story-points {
@@ -464,6 +536,10 @@ tbody tr:hover {
   align-items: start;
 }
 
+.verdict-zone {
+  align-items: start;
+}
+
 .vault-meta-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -571,6 +647,8 @@ tbody tr:hover {
   }
 
   .metrics-ribbon,
+  .deliverable-grid,
+  .verdict-grid,
   .chart-gallery,
   .model-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -597,6 +675,8 @@ tbody tr:hover {
 
   .metrics-ribbon,
   .story-list,
+  .deliverable-grid,
+  .verdict-grid,
   .research-grid,
   .chart-gallery,
   .model-strip,

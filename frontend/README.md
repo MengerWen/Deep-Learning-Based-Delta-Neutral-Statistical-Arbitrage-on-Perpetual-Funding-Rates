@@ -7,6 +7,8 @@ The frontend is intentionally lightweight:
 - `Vite + TypeScript`
 - no backend required
 - reads one exported local snapshot plus copied chart assets
+- includes a generated final report under `public/report/`
+- builds into a static site that can be published with GitHub Pages
 
 ## What the dashboard shows
 
@@ -46,12 +48,28 @@ npm run dev
 http://127.0.0.1:5173
 ```
 
+## Production / static build
+
+To build the showcase as a static site:
+
+```bash
+cd frontend
+npm install
+npm run build
+```
+
+The built output lands in `frontend/dist/`.
+Because the dashboard now uses relative asset paths plus `import.meta.env.BASE_URL`, the same build works locally and on GitHub Pages-style subpaths.
+
+The repository also includes `.github/workflows/deploy-showcase.yml` for GitHub Pages deployment.
+
 ## Re-export after new results
 
 If you rerun upstream pipeline stages and want the dashboard to reflect new artifacts, rerun:
 
 ```powershell
 & 'd:\MG\anaconda3\python.exe' scripts/demo/export_demo_snapshot.py --config configs/demo/default.yaml
+& 'd:\MG\anaconda3\python.exe' scripts/reports/generate_final_report.py --config configs/reports/final_report.yaml
 ```
 
 ## Caveats

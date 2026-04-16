@@ -163,6 +163,12 @@ if (!appNode) {
 }
 
 const app = appNode;
+const BASE_URL = import.meta.env.BASE_URL;
+const DEMO_SNAPSHOT_URL = `${BASE_URL}demo/demo_snapshot.json`;
+const FINAL_REPORT_URL = `${BASE_URL}report/`;
+const FINAL_REPORT_MARKDOWN_URL = `${BASE_URL}report/final_report.md`;
+const REPOSITORY_URL =
+  "https://github.com/MengerWen/Deep-Learning-Based-Delta-Neutral-Statistical-Arbitrage-on-Perpetual-Funding-Rates";
 
 const DEFAULT_DEPOSIT_ASSETS = 2_500 * 10 ** 6;
 const DEFAULT_WITHDRAW_ASSETS = 1_000 * 10 ** 6;
@@ -298,7 +304,7 @@ function renderError(errorMessage: string): void {
     <main class="loading-shell">
       <div class="loading-panel error-panel">
         <p class="eyebrow">Snapshot Missing</p>
-        <h1>The frontend could not load <code>/demo/demo_snapshot.json</code>.</h1>
+        <h1>The frontend could not load <code>${DEMO_SNAPSHOT_URL}</code>.</h1>
         <p>${errorMessage}</p>
         <pre class="command-block">& 'd:\\MG\\anaconda3\\python.exe' -m src.main run-demo --config configs/demo/workflow.yaml</pre>
         <pre class="command-block"># or only refresh the frontend snapshot
@@ -321,6 +327,23 @@ function metricCard(label: string, value: string, note: string): string {
   `;
 }
 
+function deliverableCard(
+  label: string,
+  title: string,
+  body: string,
+  href: string,
+  cta: string,
+): string {
+  return `
+    <article class="deliverable-card">
+      <p class="deliverable-label">${label}</p>
+      <h3>${title}</h3>
+      <p>${body}</p>
+      <a class="action-link" href="${href}" target="_blank" rel="noreferrer">${cta}</a>
+    </article>
+  `;
+}
+
 function renderDashboard(snapshot: DemoSnapshot, state: SimulationState): void {
   const baselineBest = snapshot.models.baseline_best;
   const dlBest = snapshot.models.deep_learning_best;
@@ -329,6 +352,20 @@ function renderDashboard(snapshot: DemoSnapshot, state: SimulationState): void {
   const assetDecimals = snapshot.simulation.asset_decimals;
   const visibleEvents = state.activityLog.slice(0, 8);
   const amountInputValue = (state.amountInputAssets / 10 ** assetDecimals).toFixed(2);
+  const baselineCorr = (baselineBest["pearson_corr"] as number | null | undefined) ?? null;
+  const dlMetric =
+    ((dlBest["ranking_metric_value"] as number | null | undefined) ??
+      (dlBest["pearson_corr"] as number | null | undefined)) ??
+    null;
+  const bestPnl = snapshot.backtest.best_strategy.total_net_pnl_usd;
+  const verdictTitle =
+    bestPnl > 0
+      ? "Current artifact set preserves positive post-cost alpha."
+      : "Predictive structure exists, but the current post-cost strategy set is still unprofitable.";
+  const verdictBody =
+    bestPnl > 0
+      ? "That makes the showcase a clean demonstration of both research quality and strategy viability under the configured assumptions."
+      : "That is still a strong course-project outcome because the repository makes the negative result explicit instead of hiding it behind pre-cost metrics.";
 
   app.innerHTML = `
     <div class="page-shell">
@@ -344,14 +381,22 @@ function renderDashboard(snapshot: DemoSnapshot, state: SimulationState): void {
             <span>${snapshot.meta.frequency} research frequency</span>
             <span>${snapshot.meta.chain_name}</span>
           </div>
+          <div class="cta-row">
+            <a class="action-link" href="${FINAL_REPORT_URL}" target="_blank" rel="noreferrer">Open final report</a>
+            <a class="action-link ghost-link" href="${FINAL_REPORT_MARKDOWN_URL}" target="_blank" rel="noreferrer">Markdown version</a>
+            <a class="action-link ghost-link" href="${DEMO_SNAPSHOT_URL}" target="_blank" rel="noreferrer">Snapshot JSON</a>
+            <a class="action-link ghost-link" href="${REPOSITORY_URL}" target="_blank" rel="noreferrer">GitHub repo</a>
+          </div>
         </div>
         <aside class="masthead-panel">
-          <p class="panel-label">Project Goal</p>
-          <p class="panel-text">${snapshot.overview.goal}</p>
+          <p class="panel-label">Showcase Verdict</p>
+          <p class="panel-text"><strong>${verdictTitle}</strong></p>
+          <p class="panel-text">${verdictBody}</p>
           <div class="status-chip-row">
             <span class="status-chip">Research pipeline ready</span>
             <span class="status-chip">Backtest artifacts loaded</span>
             <span class="status-chip">Vault prototype synced locally</span>
+            <span class="status-chip">Static-pages ready</span>
           </div>
         </aside>
       </header>
@@ -369,19 +414,82 @@ function renderDashboard(snapshot: DemoSnapshot, state: SimulationState): void {
         )}
         ${metricCard(
           "Baseline Benchmark",
-          formatNumber((baselineBest["pearson_corr"] as number | null | undefined) ?? null, 3),
+          formatNumber(baselineCorr, 3),
           `${String(baselineBest["model_name"] ?? "baseline")} test-set correlation.`,
         )}
         ${metricCard(
           "DL Zoo Leader",
-          formatNumber(
-            ((dlBest["ranking_metric_value"] as number | null | undefined) ??
-              (dlBest["pearson_corr"] as number | null | undefined)) ??
-              null,
-            3,
-          ),
+          formatNumber(dlMetric, 3),
           `${String(dlBest["model_name"] ?? dlBest["run_label"] ?? "deep learning")} under the configured comparison metric.`,
         )}
+      </section>
+
+      <section class="section-block delivery-panel">
+        <div class="section-heading">
+          <p class="section-kicker">Submission Kit</p>
+          <h2>Two deliverables now sit on top of the same artifact pipeline</h2>
+        </div>
+        <div class="deliverable-grid">
+          ${deliverableCard(
+            "Final Report",
+            "Technical write-up with figures and conclusions",
+            "A static HTML report plus markdown version summarize the dataset, models, backtest assumptions, robustness interpretation, and vault architecture.",
+            FINAL_REPORT_URL,
+            "Read the report",
+          )}
+          ${deliverableCard(
+            "Showcase Website",
+            "This dashboard can be built as a static site",
+            "The frontend now uses relative asset paths and build-time base URLs, so the same page works locally and under GitHub Pages-style subpaths.",
+            REPOSITORY_URL,
+            "View repository",
+          )}
+          ${deliverableCard(
+            "Artifact Snapshot",
+            "Inspectable JSON for reproducible demos",
+            "The exported snapshot keeps the presentation layer honest by sourcing metrics, charts, and vault state directly from generated research artifacts.",
+            DEMO_SNAPSHOT_URL,
+            "Inspect snapshot",
+          )}
+        </div>
+      </section>
+
+      <section class="section-grid verdict-zone">
+        <section class="story-panel">
+          <div class="section-heading">
+            <p class="section-kicker">Project Takeaways</p>
+            <h2>Three things the showcase makes clear</h2>
+          </div>
+          <div class="verdict-grid">
+            <article class="verdict-card">
+              <p class="story-index">Signals</p>
+              <h3>${formatNumber(baselineCorr, 3)} vs ${formatNumber(dlMetric, 3)}</h3>
+              <p>Both simple and sequence models learn some structure in the 24-hour post-cost target, which is why the modeling layer remains meaningful even when trading outcomes stay weak.</p>
+            </article>
+            <article class="verdict-card">
+              <p class="story-index">Execution</p>
+              <h3>${formatUsd(bestPnl)}</h3>
+              <p>The current best test-period strategy is still negative after fees, slippage, gas, and next-bar execution, so the repository is explicit about the true cost of monetizing funding dislocations.</p>
+            </article>
+            <article class="verdict-card">
+              <p class="story-index">Architecture</p>
+              <h3>Research -> Vault</h3>
+              <p>The project already demonstrates an end-to-end hybrid design: off-chain modeling, transparent backtests, dry-run operator sync, and on-chain share-accounting logic in one coherent story.</p>
+            </article>
+          </div>
+        </section>
+
+        <aside class="research-panel">
+          <div class="section-heading">
+            <p class="section-kicker">Public Demo</p>
+            <h2>Why this is a showcase page, not only a local frontend</h2>
+          </div>
+          <div class="story-points">
+            <div class="story-point">The dashboard is now buildable into a static bundle with no backend dependency.</div>
+            <div class="story-point">A generated HTML final report is copied into the public site so reviewers can open a formal write-up from the same deployment.</div>
+            <div class="story-point">Relative asset paths keep the site compatible with GitHub Pages and similar subpath hosting.</div>
+          </div>
+        </aside>
       </section>
 
       <section class="section-grid">
@@ -830,7 +938,7 @@ function renderDashboard(snapshot: DemoSnapshot, state: SimulationState): void {
 async function loadDashboard(): Promise<void> {
   renderLoading();
   try {
-    const response = await fetch("/demo/demo_snapshot.json", { cache: "no-store" });
+    const response = await fetch(DEMO_SNAPSHOT_URL, { cache: "no-store" });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
