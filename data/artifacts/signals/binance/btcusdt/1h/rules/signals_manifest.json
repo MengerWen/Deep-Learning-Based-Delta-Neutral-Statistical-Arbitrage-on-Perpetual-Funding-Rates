@@ -1,0 +1,94 @@
+{
+  "input": {
+    "baseline_predictions_path": "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_predictions.parquet",
+    "baseline_manifest_path": "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_manifest.json",
+    "dl_predictions_path": "data/artifacts/models/dl/binance/btcusdt/1h/lstm_regression_24h_default/dl_predictions.parquet",
+    "dl_manifest_path": "data/artifacts/models/dl/binance/btcusdt/1h/lstm_regression_24h_default/dl_manifest.json",
+    "provider": "binance",
+    "symbol": "BTCUSDT",
+    "venue": "binance",
+    "frequency": "1h"
+  },
+  "source": {
+    "name": "rules",
+    "baseline_mode": "all",
+    "model_names": []
+  },
+  "output": {
+    "output_dir": "data/artifacts/signals",
+    "artifact_name": "signals.parquet",
+    "manifest_name": "signals_manifest.json",
+    "write_csv": true
+  },
+  "summary": {
+    "row_count": 136470,
+    "active_signal_count": 1699,
+    "active_signal_rate": 0.01244962262768374,
+    "strategies": [
+      "combined_funding_spread",
+      "funding_threshold_2bps",
+      "spread_zscore_1p5"
+    ],
+    "source_subtypes": [
+      "rule_based"
+    ],
+    "prediction_modes": [
+      "static"
+    ],
+    "calibration_methods": [
+      "none"
+    ],
+    "feature_importance_methods": [
+      "not_applicable"
+    ],
+    "threshold_objectives": [
+      "avg_signal_return_bps"
+    ],
+    "splits": {
+      "train": 90270,
+      "test": 26472,
+      "validation": 19728
+    },
+    "directions": {
+      "flat": 134771,
+      "short_perp_long_spot": 1699
+    },
+    "strategy_summary": [
+      {
+        "strategy_name": "combined_funding_spread",
+        "source_subtype": "rule_based",
+        "model_family": "rule_based",
+        "task": "classification",
+        "signal_threshold": 0.0,
+        "threshold_objective": "avg_signal_return_bps",
+        "prediction_mode": "static",
+        "calibration_method": "none",
+        "feature_importance_method": "not_applicable"
+      },
+      {
+        "strategy_name": "funding_threshold_2bps",
+        "source_subtype": "rule_based",
+        "model_family": "rule_based",
+        "task": "classification",
+        "signal_threshold": 3.0,
+        "threshold_objective": "avg_signal_return_bps",
+        "prediction_mode": "static",
+        "calibration_method": "none",
+        "feature_importance_method": "not_applicable"
+      },
+      {
+        "strategy_name": "spread_zscore_1p5",
+        "source_subtype": "rule_based",
+        "model_family": "rule_based",
+        "task": "classification",
+        "signal_threshold": 2.0,
+        "threshold_objective": "avg_signal_return_bps",
+        "prediction_mode": "static",
+        "calibration_method": "none",
+        "feature_importance_method": "not_applicable"
+      }
+    ]
+  },
+  "signals_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\binance\\btcusdt\\1h\\rules\\signals.parquet",
+  "signals_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\binance\\btcusdt\\1h\\rules\\signals.csv"
+}

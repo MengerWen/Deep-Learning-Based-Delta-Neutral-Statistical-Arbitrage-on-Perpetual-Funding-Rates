@@ -1,0 +1,48 @@
+{
+  "experiment_name": "recurrent_regression_only",
+  "description": "Compare only the recurrent families on the shared 24-hour post-cost regression target.",
+  "run_count": 2,
+  "validation_metric": "pearson_corr",
+  "test_metric": "pearson_corr",
+  "strategy_metric": "top_quantile_avg_return_bps",
+  "strategy_split": "test",
+  "best_model_note": "Current default best model under the configured test ranking metric (`pearson_corr`) is `lstm` with score `0.6385845204255011`.",
+  "comparison_summary_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\recurrent_regression_only\\comparison_summary.parquet",
+  "comparison_summary_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\recurrent_regression_only\\comparison_summary.csv",
+  "validation_leaderboard_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\recurrent_regression_only\\validation_leaderboard.parquet",
+  "validation_leaderboard_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\recurrent_regression_only\\validation_leaderboard.csv",
+  "test_leaderboard_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\recurrent_regression_only\\test_leaderboard.parquet",
+  "test_leaderboard_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\recurrent_regression_only\\test_leaderboard.csv",
+  "strategy_leaderboard_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\recurrent_regression_only\\strategy_leaderboard.parquet",
+  "strategy_leaderboard_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\recurrent_regression_only\\strategy_leaderboard.csv",
+  "report_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\recurrent_regression_only\\comparison_report.md",
+  "figure_paths": [
+    "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\recurrent_regression_only\\figures\\validation_metric_comparison.png",
+    "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\recurrent_regression_only\\figures\\test_metric_comparison.png",
+    "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\recurrent_regression_only\\figures\\strategy_metric_comparison.png"
+  ],
+  "runs": [
+    {
+      "run_label": "lstm",
+      "model_name": "lstm",
+      "model_group": "recurrent",
+      "run_name": "lstm_regression_24h_default",
+      "config_path": "configs/models/lstm.yaml",
+      "resolved_config_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\configs\\models\\lstm.yaml",
+      "artifact_reused": true,
+      "manifest_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\lstm_regression_24h_default\\dl_manifest.json",
+      "report_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\lstm_regression_24h_default\\training_report.md"
+    },
+    {
+      "run_label": "gru",
+      "model_name": "gru",
+      "model_group": "recurrent",
+      "run_name": "gru_regression_24h_default",
+      "config_path": "configs/models/gru.yaml",
+      "resolved_config_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\configs\\models\\gru.yaml",
+      "artifact_reused": true,
+      "manifest_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\gru_regression_24h_default\\dl_manifest.json",
+      "report_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\gru_regression_24h_default\\training_report.md"
+    }
+  ]
+}

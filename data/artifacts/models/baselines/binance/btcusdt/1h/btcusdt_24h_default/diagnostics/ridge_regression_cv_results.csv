@@ -1,0 +1,6 @@
+params_json,mean_cv_score,std_cv_score,fold_count
+"{""alpha"": 0.1, ""estimator"": ""ridge"", ""l1_ratio"": 0.5, ""random_state"": 42}",-3.9680364063781157,1.4471651138508268,4
+"{""alpha"": 0.5, ""estimator"": ""ridge"", ""l1_ratio"": 0.5, ""random_state"": 42}",-3.960229591269802,1.4315883914137937,4
+"{""alpha"": 1.0, ""estimator"": ""ridge"", ""l1_ratio"": 0.5, ""random_state"": 42}",-3.956295419066479,1.4237216825754089,4
+"{""alpha"": 5.0, ""estimator"": ""ridge"", ""l1_ratio"": 0.5, ""random_state"": 42}",-3.9449435316376014,1.4082355336678565,4
+"{""alpha"": 10.0, ""estimator"": ""ridge"", ""l1_ratio"": 0.5, ""random_state"": 42}",-3.9388043849407905,1.3992124894360891,4

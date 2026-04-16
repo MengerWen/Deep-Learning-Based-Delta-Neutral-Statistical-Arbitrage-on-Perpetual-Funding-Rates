@@ -1,0 +1,17 @@
+candidate_name,params_json,objective_value,selected
+combined_funding_spread,"{""funding_threshold_bps"": 1.5, ""spread_threshold"": 1.5}",-20.852416175044237,True
+combined_funding_spread,"{""funding_threshold_bps"": 1.5, ""spread_threshold"": 1.75}",-20.852416175044237,False
+combined_funding_spread,"{""funding_threshold_bps"": 2.0, ""spread_threshold"": 1.5}",-20.852416175044237,False
+combined_funding_spread,"{""funding_threshold_bps"": 2.0, ""spread_threshold"": 1.75}",-20.852416175044237,False
+combined_funding_spread,"{""funding_threshold_bps"": 2.0, ""spread_threshold"": 1.25}",-22.031553343977173,False
+combined_funding_spread,"{""funding_threshold_bps"": 1.5, ""spread_threshold"": 1.25}",-24.301443552485818,False
+combined_funding_spread,"{""funding_threshold_bps"": 2.0, ""spread_threshold"": 1.0}",-24.603033351426486,False
+combined_funding_spread,"{""funding_threshold_bps"": 1.5, ""spread_threshold"": 1.0}",-25.51134351111677,False
+combined_funding_spread,"{""funding_threshold_bps"": 1.0, ""spread_threshold"": 1.75}",-29.01628738031529,False
+combined_funding_spread,"{""funding_threshold_bps"": 1.0, ""spread_threshold"": 1.5}",-29.129774829839103,False
+combined_funding_spread,"{""funding_threshold_bps"": 1.0, ""spread_threshold"": 1.25}",-29.2106691251584,False
+combined_funding_spread,"{""funding_threshold_bps"": 1.0, ""spread_threshold"": 1.0}",-29.534199711162653,False
+combined_funding_spread,"{""funding_threshold_bps"": 0.5, ""spread_threshold"": 1.75}",-29.60223674554789,False
+combined_funding_spread,"{""funding_threshold_bps"": 0.5, ""spread_threshold"": 1.5}",-29.700828541174342,False
+combined_funding_spread,"{""funding_threshold_bps"": 0.5, ""spread_threshold"": 1.25}",-29.832066921612725,False
+combined_funding_spread,"{""funding_threshold_bps"": 0.5, ""spread_threshold"": 1.0}",-30.08220047087354,False

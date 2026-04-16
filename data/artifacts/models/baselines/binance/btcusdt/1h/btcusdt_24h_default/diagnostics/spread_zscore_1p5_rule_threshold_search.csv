@@ -1,0 +1,7 @@
+candidate_name,params_json,objective_value,selected
+spread_zscore_1p5,"{""funding_threshold_bps"": 0.0, ""spread_threshold"": 2.0}",-29.3300237594414,True
+spread_zscore_1p5,"{""funding_threshold_bps"": 0.0, ""spread_threshold"": 1.75}",-29.60845714284267,False
+spread_zscore_1p5,"{""funding_threshold_bps"": 0.0, ""spread_threshold"": 1.5}",-30.051636981645903,False
+spread_zscore_1p5,"{""funding_threshold_bps"": 0.0, ""spread_threshold"": 1.25}",-30.370962804782646,False
+spread_zscore_1p5,"{""funding_threshold_bps"": 0.0, ""spread_threshold"": 1.0}",-30.60018002470943,False
+spread_zscore_1p5,"{""funding_threshold_bps"": 0.0, ""spread_threshold"": 0.75}",-30.863492947165344,False

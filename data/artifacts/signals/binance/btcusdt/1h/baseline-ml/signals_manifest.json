@@ -1,0 +1,119 @@
+{
+  "input": {
+    "baseline_predictions_path": "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_predictions.parquet",
+    "baseline_manifest_path": "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_manifest.json",
+    "dl_predictions_path": "data/artifacts/models/dl/binance/btcusdt/1h/lstm_regression_24h_default/dl_predictions.parquet",
+    "dl_manifest_path": "data/artifacts/models/dl/binance/btcusdt/1h/lstm_regression_24h_default/dl_manifest.json",
+    "provider": "binance",
+    "symbol": "BTCUSDT",
+    "venue": "binance",
+    "frequency": "1h"
+  },
+  "source": {
+    "name": "baseline-ml",
+    "baseline_mode": "all",
+    "model_names": []
+  },
+  "output": {
+    "output_dir": "data/artifacts/signals",
+    "artifact_name": "signals.parquet",
+    "manifest_name": "signals_manifest.json",
+    "write_csv": true
+  },
+  "summary": {
+    "row_count": 227440,
+    "active_signal_count": 69,
+    "active_signal_rate": 0.00030337671473795285,
+    "strategies": [
+      "elastic_net_regression",
+      "logistic_elastic_net",
+      "logistic_l1",
+      "logistic_regression",
+      "ridge_regression"
+    ],
+    "source_subtypes": [
+      "baseline_linear"
+    ],
+    "prediction_modes": [
+      "static"
+    ],
+    "calibration_methods": [
+      "none",
+      "sigmoid"
+    ],
+    "feature_importance_methods": [
+      "permutation_validation"
+    ],
+    "threshold_objectives": [
+      "avg_signal_return_bps"
+    ],
+    "splits": {
+      "train": 150450,
+      "test": 44110,
+      "validation": 32880
+    },
+    "directions": {
+      "flat": 227371,
+      "short_perp_long_spot": 69
+    },
+    "strategy_summary": [
+      {
+        "strategy_name": "elastic_net_regression",
+        "source_subtype": "baseline_linear",
+        "model_family": "linear",
+        "task": "regression",
+        "signal_threshold": 0.0,
+        "threshold_objective": "avg_signal_return_bps",
+        "prediction_mode": "static",
+        "calibration_method": "none",
+        "feature_importance_method": "permutation_validation"
+      },
+      {
+        "strategy_name": "logistic_elastic_net",
+        "source_subtype": "baseline_linear",
+        "model_family": "linear",
+        "task": "classification",
+        "signal_threshold": 0.5,
+        "threshold_objective": "avg_signal_return_bps",
+        "prediction_mode": "static",
+        "calibration_method": "sigmoid",
+        "feature_importance_method": "permutation_validation"
+      },
+      {
+        "strategy_name": "logistic_l1",
+        "source_subtype": "baseline_linear",
+        "model_family": "linear",
+        "task": "classification",
+        "signal_threshold": 0.5,
+        "threshold_objective": "avg_signal_return_bps",
+        "prediction_mode": "static",
+        "calibration_method": "sigmoid",
+        "feature_importance_method": "permutation_validation"
+      },
+      {
+        "strategy_name": "logistic_regression",
+        "source_subtype": "baseline_linear",
+        "model_family": "linear",
+        "task": "classification",
+        "signal_threshold": 0.5,
+        "threshold_objective": "avg_signal_return_bps",
+        "prediction_mode": "static",
+        "calibration_method": "sigmoid",
+        "feature_importance_method": "permutation_validation"
+      },
+      {
+        "strategy_name": "ridge_regression",
+        "source_subtype": "baseline_linear",
+        "model_family": "linear",
+        "task": "regression",
+        "signal_threshold": -5.0,
+        "threshold_objective": "avg_signal_return_bps",
+        "prediction_mode": "static",
+        "calibration_method": "none",
+        "feature_importance_method": "permutation_validation"
+      }
+    ]
+  },
+  "signals_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\binance\\btcusdt\\1h\\baseline-ml\\signals.parquet",
+  "signals_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\binance\\btcusdt\\1h\\baseline-ml\\signals.csv"
+}

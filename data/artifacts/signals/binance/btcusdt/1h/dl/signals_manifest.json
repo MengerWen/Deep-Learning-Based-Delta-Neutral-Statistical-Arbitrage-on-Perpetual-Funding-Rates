@@ -1,0 +1,93 @@
+{
+  "input": {
+    "baseline_predictions_path": "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_predictions.parquet",
+    "baseline_manifest_path": "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_manifest.json",
+    "dl_predictions_path": "data/artifacts/models/dl/binance/btcusdt/1h/transformer_regression_24h_default/dl_predictions.parquet",
+    "dl_manifest_path": "data/artifacts/models/dl/binance/btcusdt/1h/transformer_regression_24h_default/dl_manifest.json",
+    "provider": "binance",
+    "symbol": "BTCUSDT",
+    "venue": "binance",
+    "frequency": "1h"
+  },
+  "source": {
+    "name": "dl",
+    "baseline_mode": "all",
+    "model_names": []
+  },
+  "output": {
+    "output_dir": "data/artifacts/signals",
+    "artifact_name": "signals.parquet",
+    "manifest_name": "signals_manifest.json",
+    "write_csv": true
+  },
+  "summary": {
+    "row_count": 45488,
+    "active_signal_count": 1,
+    "active_signal_rate": 2.198381990854731e-05,
+    "strategies": [
+      "transformer_encoder"
+    ],
+    "source_subtypes": [
+      "deep_learning"
+    ],
+    "prediction_modes": [
+      "static"
+    ],
+    "calibration_methods": [
+      "none"
+    ],
+    "feature_importance_methods": [
+      "ablation_validation"
+    ],
+    "threshold_objectives": [
+      "avg_signal_return_bps"
+    ],
+    "checkpoint_selection_metrics": [
+      "validation_avg_signal_return_bps"
+    ],
+    "checkpoint_selection_effective_metrics": [
+      "validation_loss"
+    ],
+    "selected_losses": [
+      "huber"
+    ],
+    "regression_losses": [
+      "huber"
+    ],
+    "preprocessing_scalers": [
+      "robust"
+    ],
+    "checkpoint_selection_fallback_count": 45488,
+    "splits": {
+      "train": 30090,
+      "test": 8822,
+      "validation": 6576
+    },
+    "directions": {
+      "flat": 45487,
+      "short_perp_long_spot": 1
+    },
+    "strategy_summary": [
+      {
+        "strategy_name": "transformer_encoder",
+        "source_subtype": "deep_learning",
+        "model_family": "deep_learning",
+        "task": "regression",
+        "signal_threshold": 0.0,
+        "threshold_objective": "avg_signal_return_bps",
+        "selected_threshold_objective_value": NaN,
+        "prediction_mode": "static",
+        "calibration_method": "none",
+        "feature_importance_method": "ablation_validation",
+        "checkpoint_selection_metric": "validation_avg_signal_return_bps",
+        "checkpoint_selection_effective_metric": "validation_loss",
+        "checkpoint_selection_fallback_used": true,
+        "selected_loss": "huber",
+        "regression_loss": "huber",
+        "preprocessing_scaler": "robust"
+      }
+    ]
+  },
+  "signals_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\binance\\btcusdt\\1h\\dl\\signals.parquet",
+  "signals_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\binance\\btcusdt\\1h\\dl\\signals.csv"
+}

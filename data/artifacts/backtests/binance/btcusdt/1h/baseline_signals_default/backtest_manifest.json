@@ -1,0 +1,349 @@
+{
+  "input": {
+    "signal_path": "data/artifacts/signals/binance/btcusdt/1h/baseline/signals.parquet",
+    "signal_manifest_path": "data/artifacts/signals/binance/btcusdt/1h/baseline/signals_manifest.json",
+    "market_dataset_path": "data/processed/binance/btcusdt/1h/hourly_market_data.parquet",
+    "market_manifest_path": "data/processed/binance/btcusdt/1h/manifest.json",
+    "provider": "binance",
+    "symbol": "BTCUSDT",
+    "venue": "binance",
+    "frequency": "1h"
+  },
+  "selection": {
+    "strategy_names": [],
+    "split_filter": [
+      "train",
+      "validation",
+      "test"
+    ],
+    "direction": "short_perp_long_spot",
+    "require_should_trade": true,
+    "min_signal_score": null,
+    "min_confidence": null,
+    "min_expected_return_bps": null
+  },
+  "portfolio": {
+    "initial_capital": 100000.0,
+    "position_notional": 10000.0,
+    "max_open_positions": 1,
+    "max_gross_leverage": 2.0,
+    "leverage_check_mode": "warn"
+  },
+  "costs": {
+    "taker_fee_bps": 5.0,
+    "maker_fee_bps": 2.0,
+    "slippage_bps": 3.0,
+    "gas_cost_usd": 2.0,
+    "other_friction_bps": 0.0
+  },
+  "execution": {
+    "entry_delay_bars": 1,
+    "execution_price_field": "open",
+    "holding_window_hours": 24,
+    "maximum_holding_hours": 48,
+    "funding_interval_hours": 8,
+    "funding_mode": "prototype_bar_sum",
+    "funding_notional_mode": "initial_notional",
+    "hedge_mode": "equal_notional_hedge",
+    "rebalance_frequency": "1h",
+    "exit_on_signal_off": true,
+    "stop_loss_bps": null,
+    "take_profit_bps": null,
+    "stop_observation_mode": "bar_close_observed",
+    "stop_execution_mode": "next_bar_executed",
+    "allow_partial_exit": false
+  },
+  "reporting": {
+    "output_dir": "data/artifacts/backtests",
+    "run_name": "baseline_signals_default",
+    "write_csv": true,
+    "write_markdown_report": true,
+    "figure_format": "png",
+    "dpi": 180,
+    "top_n_strategies_for_plots": 5,
+    "primary_split": "test",
+    "include_combined_summary": true
+  },
+  "summary": {
+    "strategy_count": 8,
+    "trade_count": 1357,
+    "primary_trade_log_rows": 200,
+    "primary_trade_count": 200,
+    "combined_trade_count": 1357,
+    "primary_split": "test",
+    "best_strategy": "spread_zscore_1p5",
+    "best_sharpe_ratio": -14.07210740647856,
+    "best_cumulative_return": -0.06474853785395251,
+    "best_mark_to_market_max_drawdown": -0.06474853785395185,
+    "best_realized_max_drawdown": -0.06474853785395185,
+    "prediction_modes": [
+      "static"
+    ],
+    "calibration_methods": [
+      "none",
+      "sigmoid"
+    ],
+    "checkpoint_selection_metrics": [],
+    "checkpoint_selection_effective_metrics": [],
+    "selected_losses": [],
+    "preprocessing_scalers": [],
+    "source_subtypes": [
+      "baseline_linear",
+      "rule_based"
+    ]
+  },
+  "diagnostics": {
+    "leverage": {
+      "hedge_mode": "equal_notional_hedge",
+      "gross_notional_usd": 20000.0,
+      "position_notional_usd": 10000.0,
+      "initial_capital_usd": 100000.0,
+      "implied_gross_leverage": 0.2,
+      "max_gross_leverage": 2.0,
+      "leverage_check_mode": "warn",
+      "leverage_check_passed": true
+    },
+    "funding": {
+      "funding_mode": "prototype_bar_sum",
+      "funding_notional_mode": "initial_notional",
+      "funding_event_source": "all_aligned_rows",
+      "funding_rows_used": 46081,
+      "funding_nonzero_rows_used": 3089,
+      "funding_total_rows": 46081
+    }
+  },
+  "signal_manifest": {
+    "input": {
+      "baseline_predictions_path": "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_predictions.parquet",
+      "baseline_manifest_path": "data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/baseline_manifest.json",
+      "dl_predictions_path": "data/artifacts/models/dl/binance/btcusdt/1h/lstm_regression_24h_default/dl_predictions.parquet",
+      "dl_manifest_path": "data/artifacts/models/dl/binance/btcusdt/1h/lstm_regression_24h_default/dl_manifest.json",
+      "provider": "binance",
+      "symbol": "BTCUSDT",
+      "venue": "binance",
+      "frequency": "1h"
+    },
+    "source": {
+      "name": "baseline",
+      "baseline_mode": "all",
+      "model_names": []
+    },
+    "output": {
+      "output_dir": "data/artifacts/signals",
+      "artifact_name": "signals.parquet",
+      "manifest_name": "signals_manifest.json",
+      "write_csv": true
+    },
+    "summary": {
+      "row_count": 363910,
+      "active_signal_count": 1768,
+      "active_signal_rate": 0.004858344096067709,
+      "strategies": [
+        "combined_funding_spread",
+        "elastic_net_regression",
+        "funding_threshold_2bps",
+        "logistic_elastic_net",
+        "logistic_l1",
+        "logistic_regression",
+        "ridge_regression",
+        "spread_zscore_1p5"
+      ],
+      "source_subtypes": [
+        "baseline_linear",
+        "rule_based"
+      ],
+      "prediction_modes": [
+        "static"
+      ],
+      "calibration_methods": [
+        "none",
+        "sigmoid"
+      ],
+      "feature_importance_methods": [
+        "not_applicable",
+        "permutation_validation"
+      ],
+      "threshold_objectives": [
+        "avg_signal_return_bps"
+      ],
+      "splits": {
+        "train": 240720,
+        "test": 70582,
+        "validation": 52608
+      },
+      "directions": {
+        "flat": 362142,
+        "short_perp_long_spot": 1768
+      },
+      "strategy_summary": [
+        {
+          "strategy_name": "combined_funding_spread",
+          "source_subtype": "rule_based",
+          "model_family": "rule_based",
+          "task": "classification",
+          "signal_threshold": 0.0,
+          "threshold_objective": "avg_signal_return_bps",
+          "prediction_mode": "static",
+          "calibration_method": "none",
+          "feature_importance_method": "not_applicable"
+        },
+        {
+          "strategy_name": "elastic_net_regression",
+          "source_subtype": "baseline_linear",
+          "model_family": "linear",
+          "task": "regression",
+          "signal_threshold": 0.0,
+          "threshold_objective": "avg_signal_return_bps",
+          "prediction_mode": "static",
+          "calibration_method": "none",
+          "feature_importance_method": "permutation_validation"
+        },
+        {
+          "strategy_name": "funding_threshold_2bps",
+          "source_subtype": "rule_based",
+          "model_family": "rule_based",
+          "task": "classification",
+          "signal_threshold": 3.0,
+          "threshold_objective": "avg_signal_return_bps",
+          "prediction_mode": "static",
+          "calibration_method": "none",
+          "feature_importance_method": "not_applicable"
+        },
+        {
+          "strategy_name": "logistic_elastic_net",
+          "source_subtype": "baseline_linear",
+          "model_family": "linear",
+          "task": "classification",
+          "signal_threshold": 0.5,
+          "threshold_objective": "avg_signal_return_bps",
+          "prediction_mode": "static",
+          "calibration_method": "sigmoid",
+          "feature_importance_method": "permutation_validation"
+        },
+        {
+          "strategy_name": "logistic_l1",
+          "source_subtype": "baseline_linear",
+          "model_family": "linear",
+          "task": "classification",
+          "signal_threshold": 0.5,
+          "threshold_objective": "avg_signal_return_bps",
+          "prediction_mode": "static",
+          "calibration_method": "sigmoid",
+          "feature_importance_method": "permutation_validation"
+        },
+        {
+          "strategy_name": "logistic_regression",
+          "source_subtype": "baseline_linear",
+          "model_family": "linear",
+          "task": "classification",
+          "signal_threshold": 0.5,
+          "threshold_objective": "avg_signal_return_bps",
+          "prediction_mode": "static",
+          "calibration_method": "sigmoid",
+          "feature_importance_method": "permutation_validation"
+        },
+        {
+          "strategy_name": "ridge_regression",
+          "source_subtype": "baseline_linear",
+          "model_family": "linear",
+          "task": "regression",
+          "signal_threshold": -5.0,
+          "threshold_objective": "avg_signal_return_bps",
+          "prediction_mode": "static",
+          "calibration_method": "none",
+          "feature_importance_method": "permutation_validation"
+        },
+        {
+          "strategy_name": "spread_zscore_1p5",
+          "source_subtype": "rule_based",
+          "model_family": "rule_based",
+          "task": "classification",
+          "signal_threshold": 2.0,
+          "threshold_objective": "avg_signal_return_bps",
+          "prediction_mode": "static",
+          "calibration_method": "none",
+          "feature_importance_method": "not_applicable"
+        }
+      ]
+    },
+    "signals_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\binance\\btcusdt\\1h\\baseline\\signals.parquet",
+    "signals_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\binance\\btcusdt\\1h\\baseline\\signals.csv"
+  },
+  "market_manifest": {
+    "provider": "binance",
+    "dataset": {
+      "symbol": "BTCUSDT",
+      "venue": "binance",
+      "reference_source": "spot",
+      "frequency": "1h",
+      "start": "2021-01-01",
+      "end": "2026-04-07",
+      "perpetual_symbol": "BTCUSDT",
+      "spot_symbol": "BTCUSDT"
+    },
+    "time_range": {
+      "start": "2021-01-01T00:00:00+00:00",
+      "end_exclusive": "2026-04-08T00:00:00+00:00"
+    },
+    "row_counts": {
+      "perpetual_bars": 46152,
+      "spot_bars": 46138,
+      "funding_rates": 5769
+    },
+    "cleaned_row_counts": {
+      "perpetual_bars": 46152,
+      "spot_bars": 46138,
+      "funding_rates": 5769
+    },
+    "canonical_row_count": 46152,
+    "raw_files": [
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\raw\\binance\\btcusdt\\1h\\perpetual_bars.parquet",
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\raw\\binance\\btcusdt\\1h\\spot_bars.parquet",
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\raw\\binance\\btcusdt\\1h\\funding_rates.parquet"
+    ],
+    "interim_files": [
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\interim\\binance\\btcusdt\\1h\\perpetual_bars_clean.parquet",
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\interim\\binance\\btcusdt\\1h\\spot_bars_clean.parquet",
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\interim\\binance\\btcusdt\\1h\\funding_rates_clean.parquet"
+    ],
+    "processed_files": [
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\processed\\binance\\btcusdt\\1h\\hourly_market_data.parquet",
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\processed\\binance\\btcusdt\\1h\\hourly_market_data.csv"
+    ],
+    "assumptions": {
+      "assumption": "The primary historical dataset uses Binance public REST endpoints for BTCUSDT hourly perpetual, spot, and funding data over 2021-01-01 to 2026-04-07 UTC.",
+      "range_rationale": "This default window is long enough to cover multiple market regimes while keeping hourly ingestion and cleaning practical for a course-project prototype.",
+      "gap_handling_note": "The default fill window is 6 hours because Binance spot history over the primary sample contains a few rare multi-hour gaps, and the canonical dataset keeps missingness flags for auditability.",
+      "open_interest_note": "Binance open interest history is supported by the interface but disabled by default because the public history endpoint is limited and venue-specific.",
+      "end_date_note": "Date-only end values are treated as inclusive UTC dates and expanded to the next day internally for hourly extraction."
+    }
+  },
+  "artifacts": {
+    "trade_log_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\binance\\btcusdt\\1h\\baseline_signals_default\\trade_log.parquet",
+    "primary_trade_log_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\binance\\btcusdt\\1h\\baseline_signals_default\\primary_trade_log.parquet",
+    "equity_curve_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\binance\\btcusdt\\1h\\baseline_signals_default\\equity_curve.parquet",
+    "strategy_metrics_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\binance\\btcusdt\\1h\\baseline_signals_default\\strategy_metrics.parquet",
+    "combined_strategy_metrics_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\binance\\btcusdt\\1h\\baseline_signals_default\\combined_strategy_metrics.parquet",
+    "combined_strategy_metrics_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\binance\\btcusdt\\1h\\baseline_signals_default\\combined_strategy_metrics.csv",
+    "split_summary_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\binance\\btcusdt\\1h\\baseline_signals_default\\split_summary.parquet",
+    "leaderboard_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\binance\\btcusdt\\1h\\baseline_signals_default\\leaderboard.parquet",
+    "report_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\binance\\btcusdt\\1h\\baseline_signals_default\\backtest_report.md",
+    "figure_paths": [
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\binance\\btcusdt\\1h\\baseline_signals_default\\figures\\cumulative_returns.png",
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\binance\\btcusdt\\1h\\baseline_signals_default\\figures\\drawdowns.png",
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\binance\\btcusdt\\1h\\baseline_signals_default\\figures\\trade_return_boxplot.png"
+    ]
+  },
+  "assumptions": [
+    "Single-asset, delta-neutral prototype with at most one open position per strategy.",
+    "Signals at timestamp t are executed after entry_delay_bars using the configured execution price field.",
+    "Primary leaderboard and strategy metrics use the configured reporting.primary_split, which defaults to test.",
+    "Primary equity, drawdown, and Sharpe metrics use mark-to-market equity; realized-only columns are retained for audit.",
+    "Funding PnL uses funding_mode=prototype_bar_sum and funding_notional_mode=initial_notional.",
+    "Hedge mode is equal_notional_hedge; current implementation uses equal USD notional on the perp and spot legs.",
+    "Trading fees use taker_fee_bps on all four round-trip leg transactions.",
+    "Slippage is modeled by adverse execution prices; embedded_slippage_cost_usd is the preferred diagnostic and is not deducted twice.",
+    "Stop logic is bar_close_observed and next_bar_executed.",
+    "Simple annualized Sharpe uses square-root scaling and should be interpreted cautiously for sparse or serially correlated returns."
+  ]
+}

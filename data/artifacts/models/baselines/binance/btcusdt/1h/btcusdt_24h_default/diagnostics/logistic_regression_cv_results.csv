@@ -1,0 +1,4 @@
+params_json,mean_cv_score,std_cv_score,fold_count
+"{""c"": 0.5, ""class_weight"": ""balanced"", ""estimator"": ""logistic_regression"", ""l1_ratio"": null, ""max_iter"": 2000, ""penalty"": ""l2"", ""random_state"": 42, ""solver"": ""lbfgs""}",0.1915623665642279,0.26958781186159303,3
+"{""c"": 1.0, ""class_weight"": ""balanced"", ""estimator"": ""logistic_regression"", ""l1_ratio"": null, ""max_iter"": 2000, ""penalty"": ""l2"", ""random_state"": 42, ""solver"": ""lbfgs""}",0.18205724770507495,0.25616377433925847,3
+"{""c"": 2.0, ""class_weight"": ""balanced"", ""estimator"": ""logistic_regression"", ""l1_ratio"": null, ""max_iter"": 2000, ""penalty"": ""l2"", ""random_state"": 42, ""solver"": ""lbfgs""}",0.17019076539797026,0.23946533331008307,3

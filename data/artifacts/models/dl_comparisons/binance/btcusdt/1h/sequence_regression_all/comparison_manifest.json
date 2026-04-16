@@ -1,0 +1,70 @@
+{
+  "experiment_name": "sequence_regression_all",
+  "description": "Compare all Phase 1 sequence-model families on the shared 24-hour post-cost net-return regression target.",
+  "run_count": 4,
+  "validation_metric": "pearson_corr",
+  "test_metric": "pearson_corr",
+  "strategy_metric": "top_quantile_avg_return_bps",
+  "strategy_split": "test",
+  "best_model_note": "Current default best model under the configured test ranking metric (`pearson_corr`) is `transformer_encoder` with score `0.6460854810538473`.",
+  "comparison_summary_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\sequence_regression_all\\comparison_summary.parquet",
+  "comparison_summary_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\sequence_regression_all\\comparison_summary.csv",
+  "validation_leaderboard_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\sequence_regression_all\\validation_leaderboard.parquet",
+  "validation_leaderboard_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\sequence_regression_all\\validation_leaderboard.csv",
+  "test_leaderboard_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\sequence_regression_all\\test_leaderboard.parquet",
+  "test_leaderboard_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\sequence_regression_all\\test_leaderboard.csv",
+  "strategy_leaderboard_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\sequence_regression_all\\strategy_leaderboard.parquet",
+  "strategy_leaderboard_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\sequence_regression_all\\strategy_leaderboard.csv",
+  "report_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\sequence_regression_all\\comparison_report.md",
+  "figure_paths": [
+    "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\sequence_regression_all\\figures\\validation_metric_comparison.png",
+    "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\sequence_regression_all\\figures\\test_metric_comparison.png",
+    "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl_comparisons\\binance\\btcusdt\\1h\\sequence_regression_all\\figures\\strategy_metric_comparison.png"
+  ],
+  "runs": [
+    {
+      "run_label": "lstm",
+      "model_name": "lstm",
+      "model_group": "recurrent",
+      "run_name": "lstm_regression_24h_default",
+      "config_path": "configs/models/lstm.yaml",
+      "resolved_config_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\configs\\models\\lstm.yaml",
+      "artifact_reused": true,
+      "manifest_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\lstm_regression_24h_default\\dl_manifest.json",
+      "report_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\lstm_regression_24h_default\\training_report.md"
+    },
+    {
+      "run_label": "gru",
+      "model_name": "gru",
+      "model_group": "recurrent",
+      "run_name": "gru_regression_24h_default",
+      "config_path": "configs/models/gru.yaml",
+      "resolved_config_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\configs\\models\\gru.yaml",
+      "artifact_reused": true,
+      "manifest_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\gru_regression_24h_default\\dl_manifest.json",
+      "report_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\gru_regression_24h_default\\training_report.md"
+    },
+    {
+      "run_label": "tcn",
+      "model_name": "tcn",
+      "model_group": "convolutional",
+      "run_name": "tcn_regression_24h_default",
+      "config_path": "configs/models/tcn.yaml",
+      "resolved_config_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\configs\\models\\tcn.yaml",
+      "artifact_reused": true,
+      "manifest_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\tcn_regression_24h_default\\dl_manifest.json",
+      "report_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\tcn_regression_24h_default\\training_report.md"
+    },
+    {
+      "run_label": "transformer_encoder",
+      "model_name": "transformer_encoder",
+      "model_group": "attention",
+      "run_name": "transformer_regression_24h_default",
+      "config_path": "configs/models/transformer.yaml",
+      "resolved_config_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\configs\\models\\transformer.yaml",
+      "artifact_reused": true,
+      "manifest_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\transformer_regression_24h_default\\dl_manifest.json",
+      "report_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\models\\dl\\binance\\btcusdt\\1h\\transformer_regression_24h_default\\training_report.md"
+    }
+  ]
+}
