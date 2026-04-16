@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -350,12 +351,18 @@ def test_backtest_pipeline_uses_test_split_for_primary_leaderboard() -> None:
     artifacts = run_backtest_pipeline(settings)
     leaderboard = pd.read_parquet(artifacts.leaderboard_path)
     trade_log = pd.read_parquet(artifacts.trade_log_path)
+    primary_trade_log = pd.read_parquet(artifacts.primary_trade_log_path)
     equity_curve = pd.read_parquet(artifacts.equity_curve_path)
+    manifest = json.loads(Path(artifacts.manifest_path).read_text(encoding="utf-8"))
 
     assert len(trade_log) == 2
+    assert len(primary_trade_log) == 1
     assert leaderboard.loc[0, "evaluation_split"] == "test"
     assert leaderboard.loc[0, "trade_count"] == 1
     assert set(equity_curve["curve_scope"]) == {"test"}
+    assert artifacts.combined_strategy_metrics_path is not None
+    assert manifest["summary"]["primary_trade_log_rows"] == 1
+    assert manifest["artifacts"]["primary_trade_log_path"] == artifacts.primary_trade_log_path
 
 
 def test_trade_return_boxplot_handles_empty_trade_log() -> None:

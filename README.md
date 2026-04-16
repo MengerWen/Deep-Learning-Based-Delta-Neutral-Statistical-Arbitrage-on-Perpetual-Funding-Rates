@@ -276,6 +276,7 @@ npm run build
   - `data/artifacts/signals/binance/btcusdt/1h/`
 - Backtest outputs:
   - `data/artifacts/backtests/binance/btcusdt/1h/baseline_signals_default/`
+  - includes `primary_trade_log`, mark-to-market equity, test-primary leaderboard, and combined metrics as secondary diagnostics
 - Robustness report:
   - `reports/robustness/binance/btcusdt/1h/`
 - Integration artifacts:

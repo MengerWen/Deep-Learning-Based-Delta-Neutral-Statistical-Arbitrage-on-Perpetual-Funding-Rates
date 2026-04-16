@@ -495,6 +495,7 @@ The backtest must be explicit enough that results are interpretable and reproduc
 The backtest layer should write at least:
 
 - `data/artifacts/backtests/.../trade_log.parquet`
+- `data/artifacts/backtests/.../primary_trade_log.parquet`
 - `data/artifacts/backtests/.../equity_curve.parquet`
 - `data/artifacts/backtests/.../strategy_metrics.parquet`
 - `data/artifacts/backtests/.../combined_strategy_metrics.parquet`

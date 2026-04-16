@@ -183,6 +183,7 @@ npm run dev
 - Backtest artifacts:
   - `data/artifacts/backtests/binance/btcusdt/1h/baseline_signals_default/`
   - primary leaderboard metrics are test-split and mark-to-market by default
+  - `primary_trade_log` is the test-split trade log used for primary plots and summaries
   - combined metrics are kept separately as secondary diagnostics
 - Vault integration artifacts:
   - `data/artifacts/integration/binance/btcusdt/1h/mock_operator_default/`

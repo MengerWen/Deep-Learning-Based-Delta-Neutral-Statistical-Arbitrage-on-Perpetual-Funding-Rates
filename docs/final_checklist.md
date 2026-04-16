@@ -35,7 +35,7 @@ Main Python entrypoint:
 - [x] The backtest consumes standardized signals.
 - [x] Entry/exit logic is explicit and documented.
 - [x] Fees, slippage, and funding are modeled explicitly.
-- [x] Trade logs, summary metrics, and figures are saved.
+- [x] Full and primary-split trade logs, summary metrics, and figures are saved.
 - [x] Backtest assumptions are documented in [backtest.md](backtest.md).
 
 ## Solidity Vault Prototype

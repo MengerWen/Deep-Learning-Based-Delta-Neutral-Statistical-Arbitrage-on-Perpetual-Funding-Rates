@@ -68,10 +68,14 @@ class BacktestArtifacts:
     output_dir: str
     trade_log_path: str
     trade_log_csv_path: str | None
+    primary_trade_log_path: str
+    primary_trade_log_csv_path: str | None
     equity_curve_path: str
     equity_curve_csv_path: str | None
     strategy_metrics_path: str
     strategy_metrics_csv_path: str | None
+    combined_strategy_metrics_path: str | None
+    combined_strategy_metrics_csv_path: str | None
     split_summary_path: str
     split_summary_csv_path: str | None
     leaderboard_path: str
@@ -1352,7 +1356,15 @@ def _plot_drawdowns(equity_curve: pd.DataFrame, leaderboard: pd.DataFrame, outpu
     return str(output_path)
 
 
-def _plot_trade_return_boxplot(trade_log: pd.DataFrame, leaderboard: pd.DataFrame, output_path: Path, *, top_n: int, dpi: int) -> str:
+def _plot_trade_return_boxplot(
+    trade_log: pd.DataFrame,
+    leaderboard: pd.DataFrame,
+    output_path: Path,
+    *,
+    top_n: int,
+    dpi: int,
+    title: str = "Trade Return Distribution",
+) -> str:
     _apply_plot_style()
     fig, ax = plt.subplots(figsize=(12, 6))
     top_names = leaderboard.head(max(top_n, 1))["strategy_name"].tolist()
@@ -1371,7 +1383,7 @@ def _plot_trade_return_boxplot(trade_log: pd.DataFrame, leaderboard: pd.DataFram
         ordered_groups = [filtered.loc[filtered["strategy_name"] == name, "net_return_bps"].astype(float).to_numpy() for name in top_names]
         ax.boxplot(ordered_groups, tick_labels=top_names, patch_artist=True)
         ax.set_ylabel("Net trade return (bps)")
-        ax.set_title("Trade Return Distribution")
+        ax.set_title(title)
         ax.tick_params(axis="x", rotation=20)
     fig.tight_layout()
     fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
@@ -1408,7 +1420,7 @@ def _build_markdown_report(
         f"Funding mode is `{settings.execution.funding_mode}` with `{settings.execution.funding_notional_mode}` funding notional.",
         "PnL includes explicit perp-leg, spot-leg, and funding components.",
         f"Trading fees use taker fee `{settings.costs.taker_fee_bps}` bps on all four round-trip transactions.",
-        f"Slippage is modeled through adverse execution prices using `{settings.costs.slippage_bps}` bps. Reported slippage cost is embedded, not deducted a second time.",
+        f"Slippage is modeled through adverse execution prices using `{settings.costs.slippage_bps}` bps. `embedded_slippage_cost_usd` is a diagnostic, not a second deduction.",
         f"Gas cost is `{settings.costs.gas_cost_usd}` USD per closed trade.",
         f"Stop logic is `{settings.execution.stop_observation_mode}` and `{settings.execution.stop_execution_mode}`, not intrabar execution.",
         "Simple annualized Sharpe uses square-root scaling and may be distorted by sparse, serially correlated trading returns.",
@@ -1501,7 +1513,7 @@ def _build_markdown_report(
 
 - `mark_to_market_equity_usd` marks open positions on every bar and is the source for primary drawdown and Sharpe metrics.
 - `realized_equity_usd` only changes when trades close. It is useful for audit trails, but can understate intratrade risk.
-- `estimated_slippage_cost_usd` is a diagnostic implied by adverse execution prices; it is not subtracted again from net PnL.
+- `embedded_slippage_cost_usd` is the preferred diagnostic implied by adverse execution prices; legacy `estimated_slippage_cost_usd` is retained only as an alias.
 {primary_warning}
 
 ## Strategy Summary
@@ -1544,6 +1556,7 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
     funding_diagnostics = _funding_mode_diagnostics(selected_market, settings)
 
     trade_logs: list[pd.DataFrame] = []
+    primary_trade_logs: list[pd.DataFrame] = []
     equity_curves: list[pd.DataFrame] = []
     metric_rows: list[dict[str, Any]] = []
     combined_metric_rows: list[dict[str, Any]] = []
@@ -1560,6 +1573,7 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
         strategy_subtype = str(strategy_frame["source_subtype"].iloc[0])
         strategy_task = str(strategy_frame["task"].iloc[0])
         primary_trade_log = _filter_trades_for_split(trade_log, settings.reporting.primary_split)
+        primary_trade_logs.append(primary_trade_log)
         primary_start = _primary_split_start(strategy_frame, settings.reporting.primary_split)
         equity_curve = build_mark_to_market_equity_curve(
             selected_market,
@@ -1616,6 +1630,15 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
             trade_log_frame = pd.concat(non_empty_trade_logs, ignore_index=True)
     else:
         trade_log_frame = pd.DataFrame()
+    non_empty_primary_trade_logs = [frame for frame in primary_trade_logs if not frame.empty]
+    if non_empty_primary_trade_logs:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", FutureWarning)
+            primary_trade_log_frame = pd.concat(non_empty_primary_trade_logs, ignore_index=True)
+    elif not trade_log_frame.empty:
+        primary_trade_log_frame = trade_log_frame.iloc[0:0].copy()
+    else:
+        primary_trade_log_frame = pd.DataFrame()
     equity_curve_frame = pd.concat(equity_curves, ignore_index=True) if equity_curves else pd.DataFrame()
     strategy_metrics = (
         _sort_strategy_metrics(pd.DataFrame(metric_rows))
@@ -1695,6 +1718,7 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
     figures_dir = ensure_directory(output_dir / "figures")
 
     trade_log_path = _write_frame(trade_log_frame, output_dir / "trade_log.parquet")
+    primary_trade_log_path = _write_frame(primary_trade_log_frame, output_dir / "primary_trade_log.parquet")
     equity_curve_path = _write_frame(equity_curve_frame, output_dir / "equity_curve.parquet")
     strategy_metrics_path = _write_frame(strategy_metrics, output_dir / "strategy_metrics.parquet")
     split_summary_path = _write_frame(split_summary, output_dir / "split_summary.parquet")
@@ -1706,6 +1730,11 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
     )
 
     trade_log_csv_path = _write_frame(trade_log_frame, output_dir / "trade_log.csv") if settings.reporting.write_csv else None
+    primary_trade_log_csv_path = (
+        _write_frame(primary_trade_log_frame, output_dir / "primary_trade_log.csv")
+        if settings.reporting.write_csv
+        else None
+    )
     equity_curve_csv_path = _write_frame(equity_curve_frame, output_dir / "equity_curve.csv") if settings.reporting.write_csv else None
     strategy_metrics_csv_path = _write_frame(strategy_metrics, output_dir / "strategy_metrics.csv") if settings.reporting.write_csv else None
     split_summary_csv_path = _write_frame(split_summary, output_dir / "split_summary.csv") if settings.reporting.write_csv else None
@@ -1738,11 +1767,12 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
         )
     figure_paths.append(
         _plot_trade_return_boxplot(
-            trade_log_frame,
+            primary_trade_log_frame,
             leaderboard,
             figures_dir / f"trade_return_boxplot.{settings.reporting.figure_format}",
             top_n=settings.reporting.top_n_strategies_for_plots,
             dpi=settings.reporting.dpi,
+            title=f"{settings.reporting.primary_split.title()}-Split Trade Return Distribution",
         )
     )
 
@@ -1774,6 +1804,7 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
         "summary": {
             "strategy_count": int(strategy_metrics["strategy_name"].nunique()) if not strategy_metrics.empty else 0,
             "trade_count": int(len(trade_log_frame)),
+            "primary_trade_log_rows": int(len(primary_trade_log_frame)),
             "primary_trade_count": int(strategy_metrics["trade_count"].sum()) if not strategy_metrics.empty else 0,
             "combined_trade_count": int(combined_strategy_metrics["trade_count"].sum()) if not combined_strategy_metrics.empty else int(len(trade_log_frame)),
             "primary_split": settings.reporting.primary_split,
@@ -1814,6 +1845,7 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
         "market_manifest": market_manifest,
         "artifacts": {
             "trade_log_path": trade_log_path,
+            "primary_trade_log_path": primary_trade_log_path,
             "equity_curve_path": equity_curve_path,
             "strategy_metrics_path": strategy_metrics_path,
             "combined_strategy_metrics_path": combined_strategy_metrics_path,
@@ -1831,7 +1863,7 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
             f"Funding PnL uses funding_mode={settings.execution.funding_mode} and funding_notional_mode={settings.execution.funding_notional_mode}.",
             f"Hedge mode is {settings.execution.hedge_mode}; current implementation uses equal USD notional on the perp and spot legs.",
             "Trading fees use taker_fee_bps on all four round-trip leg transactions.",
-            "Slippage is modeled by adverse execution prices; estimated_slippage_cost_usd is embedded and not deducted twice.",
+            "Slippage is modeled by adverse execution prices; embedded_slippage_cost_usd is the preferred diagnostic and is not deducted twice.",
             f"Stop logic is {settings.execution.stop_observation_mode} and {settings.execution.stop_execution_mode}.",
             "Simple annualized Sharpe uses square-root scaling and should be interpreted cautiously for sparse or serially correlated returns.",
         ],
@@ -1843,10 +1875,14 @@ def run_backtest_pipeline(settings: BacktestSettings) -> BacktestArtifacts:
         output_dir=str(output_dir),
         trade_log_path=trade_log_path,
         trade_log_csv_path=trade_log_csv_path,
+        primary_trade_log_path=primary_trade_log_path,
+        primary_trade_log_csv_path=primary_trade_log_csv_path,
         equity_curve_path=equity_curve_path,
         equity_curve_csv_path=equity_curve_csv_path,
         strategy_metrics_path=strategy_metrics_path,
         strategy_metrics_csv_path=strategy_metrics_csv_path,
+        combined_strategy_metrics_path=combined_strategy_metrics_path,
+        combined_strategy_metrics_csv_path=combined_strategy_metrics_csv_path,
         split_summary_path=split_summary_path,
         split_summary_csv_path=split_summary_csv_path,
         leaderboard_path=leaderboard_path,

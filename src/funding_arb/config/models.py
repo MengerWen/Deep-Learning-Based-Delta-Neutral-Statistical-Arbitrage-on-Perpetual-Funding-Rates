@@ -885,6 +885,17 @@ class BacktestSelectionSettings(SettingsBase):
     min_confidence: float | None = None
     min_expected_return_bps: float | None = None
 
+    @model_validator(mode="after")
+    def validate_selection(self) -> "BacktestSelectionSettings":
+        valid_splits = {"train", "validation", "test"}
+        unknown = sorted(set(self.split_filter) - valid_splits)
+        if unknown:
+            raise ValueError(
+                "Backtest selection.split_filter can only contain "
+                f"{sorted(valid_splits)}, got {unknown}."
+            )
+        return self
+
 
 class PortfolioSettings(SettingsBase):
     initial_capital: float
@@ -1012,6 +1023,19 @@ class BacktestSettings(SettingsBase):
     execution: ExecutionSettings
     reporting: ReportingSettings = Field(default_factory=ReportingSettings)
     notes: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_backtest_splits(self) -> "BacktestSettings":
+        if (
+            self.reporting.primary_split != "combined"
+            and self.selection.split_filter
+            and self.reporting.primary_split not in set(self.selection.split_filter)
+        ):
+            raise ValueError(
+                "Backtest reporting.primary_split must be included in "
+                "selection.split_filter unless reporting.primary_split is 'combined'."
+            )
+        return self
 
 
 class DataQualityReportInputSettings(SettingsBase):

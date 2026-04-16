@@ -120,7 +120,7 @@ Trade PnL is decomposed into:
 - other friction
 - embedded slippage diagnostic
 
-Slippage is applied through adverse effective execution prices. The output column `estimated_slippage_cost_usd` is a diagnostic approximation of the embedded price impact and is not deducted a second time.
+Slippage is applied through adverse effective execution prices. The preferred output column is `embedded_slippage_cost_usd`, which is a diagnostic approximation of the embedded price impact and is not deducted a second time. The older `estimated_slippage_cost_usd` column is retained as a compatibility alias.
 
 ## Funding Assumptions
 
@@ -161,10 +161,12 @@ reporting:
 This means:
 
 - `strategy_metrics.parquet` and `leaderboard.parquet` are test-split primary outputs.
+- `primary_trade_log.parquet` contains only trades from the configured primary split.
 - `split_summary.parquet` keeps train, validation, and test trade summaries separate.
 - `combined_strategy_metrics.parquet` is written as a secondary diagnostic when enabled.
 
 This prevents the main leaderboard from silently mixing in-sample and out-of-sample trades.
+The config model also validates that `reporting.primary_split` is present in `selection.split_filter` unless the primary split is explicitly set to `combined`.
 
 ## Capital And Leverage Checks
 
@@ -223,6 +225,7 @@ The main Sharpe is a simple square-root-scaled annualized Sharpe from the mark-t
 The backtester writes:
 
 - `trade_log.parquet` / `trade_log.csv`
+- `primary_trade_log.parquet` / `primary_trade_log.csv`
 - `equity_curve.parquet` / `equity_curve.csv`
 - `strategy_metrics.parquet` / `strategy_metrics.csv`
 - `combined_strategy_metrics.parquet` / `combined_strategy_metrics.csv`
@@ -236,7 +239,7 @@ Plots:
 
 - mark-to-market cumulative return by strategy
 - mark-to-market drawdown by strategy
-- trade-return distribution boxplot
+- primary-split trade-return distribution boxplot
 
 ## Command
 

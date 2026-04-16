@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from funding_arb.config.loader import get_command_settings, load_command_settings, load_settings
 from funding_arb.config.models import (
     BacktestSettings,
@@ -131,6 +133,26 @@ def test_backtest_default_config_loads_typed_model() -> None:
     assert config.input.market_dataset_path.endswith("hourly_market_data.parquet")
     assert config.execution.holding_window_hours == 24
     assert config.reporting.run_name == "baseline_signals_default"
+
+
+def test_backtest_primary_split_must_be_selected() -> None:
+    config = load_command_settings("backtest").model_dump()
+    config["selection"]["split_filter"] = ["train", "validation"]
+    config["reporting"]["primary_split"] = "test"
+
+    with pytest.raises(ValueError, match="primary_split"):
+        BacktestSettings.model_validate(config)
+
+
+def test_backtest_empty_split_filter_means_all_splits() -> None:
+    config = load_command_settings("backtest").model_dump()
+    config["selection"]["split_filter"] = []
+    config["reporting"]["primary_split"] = "test"
+
+    settings = BacktestSettings.model_validate(config)
+
+    assert settings.selection.split_filter == []
+    assert settings.reporting.primary_split == "test"
 
 
 def test_robustness_report_default_config_loads_typed_model() -> None:

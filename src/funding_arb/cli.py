@@ -232,12 +232,19 @@ def _run_backtest(config: Any, config_path: Path) -> int:
     LOGGER.info("Trade log: %s", artifacts.trade_log_path)
     if artifacts.trade_log_csv_path is not None:
         LOGGER.info("Trade log CSV: %s", artifacts.trade_log_csv_path)
+    LOGGER.info("Primary-split trade log: %s", artifacts.primary_trade_log_path)
+    if artifacts.primary_trade_log_csv_path is not None:
+        LOGGER.info("Primary-split trade log CSV: %s", artifacts.primary_trade_log_csv_path)
     LOGGER.info("Equity curve: %s", artifacts.equity_curve_path)
     if artifacts.equity_curve_csv_path is not None:
         LOGGER.info("Equity curve CSV: %s", artifacts.equity_curve_csv_path)
     LOGGER.info("Strategy metrics: %s", artifacts.strategy_metrics_path)
     if artifacts.strategy_metrics_csv_path is not None:
         LOGGER.info("Strategy metrics CSV: %s", artifacts.strategy_metrics_csv_path)
+    if artifacts.combined_strategy_metrics_path is not None:
+        LOGGER.info("Combined strategy metrics: %s", artifacts.combined_strategy_metrics_path)
+    if artifacts.combined_strategy_metrics_csv_path is not None:
+        LOGGER.info("Combined strategy metrics CSV: %s", artifacts.combined_strategy_metrics_csv_path)
     LOGGER.info("Split summary: %s", artifacts.split_summary_path)
     if artifacts.split_summary_csv_path is not None:
         LOGGER.info("Split summary CSV: %s", artifacts.split_summary_csv_path)

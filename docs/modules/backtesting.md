@@ -18,6 +18,7 @@ Primary documentation:
 - simulates one delta-neutral position at a time per strategy
 - applies explicit fee, slippage, gas, and funding logic
 - writes trade logs, mark-to-market equity curves, realized-only audit columns, metrics, plots, and a markdown report
+- writes a separate `primary_trade_log` so plots and primary metrics stay aligned with the configured evaluation split
 - ranks strategies on the configured primary split, which defaults to `test`
 - records funding mode, hedge mode, leverage diagnostics, and stop-logic assumptions in the manifest
 
@@ -41,6 +42,7 @@ Default output root:
 Key outputs:
 
 - `trade_log.parquet`
+- `primary_trade_log.parquet`
 - `equity_curve.parquet`
 - `strategy_metrics.parquet`
 - `combined_strategy_metrics.parquet`

@@ -2,7 +2,7 @@
   "meta": {
     "title": "Funding-Rate Arbitrage Prototype Dashboard",
     "subtitle": "Research to signals, backtest to vault, all in one lightweight demo.",
-    "generated_at": "2026-04-15T23:55:00.372375+00:00",
+    "generated_at": "2026-04-16T00:50:53.983920+00:00",
     "symbol": "BTCUSDT",
     "venue": "binance",
     "frequency": "1h",
@@ -219,6 +219,7 @@
     "summary": {
       "strategy_count": 8,
       "trade_count": 1357,
+      "primary_trade_log_rows": 200,
       "primary_trade_count": 200,
       "combined_trade_count": 1357,
       "primary_split": "test",
@@ -617,7 +618,7 @@
       "Funding PnL uses funding_mode=prototype_bar_sum and funding_notional_mode=initial_notional.",
       "Hedge mode is equal_notional_hedge; current implementation uses equal USD notional on the perp and spot legs.",
       "Trading fees use taker_fee_bps on all four round-trip leg transactions.",
-      "Slippage is modeled by adverse execution prices; estimated_slippage_cost_usd is embedded and not deducted twice.",
+      "Slippage is modeled by adverse execution prices; embedded_slippage_cost_usd is the preferred diagnostic and is not deducted twice.",
       "Stop logic is bar_close_observed and next_bar_executed.",
       "Simple annualized Sharpe uses square-root scaling and should be interpreted cautiously for sparse or serially correlated returns."
     ]
@@ -711,7 +712,7 @@
       "detail": "Dry-run call data prepared for 2 vault update calls."
     },
     {
-      "timestamp": "2026-04-15T23:55:00.374375+00:00",
+      "timestamp": "2026-04-16T00:50:53.985929+00:00",
       "kind": "demo",
       "title": "Frontend snapshot exported",
       "detail": "Charts, metrics, and mock vault state were packaged for the local dashboard."
