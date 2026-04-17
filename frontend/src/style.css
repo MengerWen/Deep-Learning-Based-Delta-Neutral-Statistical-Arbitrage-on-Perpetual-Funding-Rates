@@ -229,6 +229,43 @@ h3 {
   line-height: 1.7;
 }
 
+.exploratory-panel {
+  margin-top: 24px;
+}
+
+.exploratory-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.exploratory-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 20px;
+}
+
+.compact-panel {
+  min-height: 0;
+}
+
+.compact-table-shell {
+  margin-top: 0;
+}
+
+.mini-table th,
+.mini-table td,
+.showcase-table th,
+.showcase-table td {
+  white-space: nowrap;
+}
+
+.exploratory-gallery {
+  margin-top: 20px;
+}
+
 .hero-meta,
 .status-chip-row,
 .console-status-row {
@@ -650,7 +687,9 @@ tbody tr:hover {
   .deliverable-grid,
   .verdict-grid,
   .chart-gallery,
-  .model-strip {
+  .model-strip,
+  .exploratory-metrics,
+  .exploratory-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -680,6 +719,8 @@ tbody tr:hover {
   .research-grid,
   .chart-gallery,
   .model-strip,
+  .exploratory-metrics,
+  .exploratory-grid,
   .vault-status-grid,
   .vault-meta-grid,
   .console-grid,

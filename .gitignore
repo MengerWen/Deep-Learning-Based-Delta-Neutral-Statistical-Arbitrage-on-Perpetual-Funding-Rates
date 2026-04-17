@@ -59,3 +59,5 @@ data/artifacts/signals/**/*.parquet
 
 # Local test scratch space for Windows-safe temporary files.
 tests/.tmp/
+
+data/artifacts/backtests/exploratory_dl/binance/btcusdt/1h/exploratory_dl_showcase/trade_log.csv

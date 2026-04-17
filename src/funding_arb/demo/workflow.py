@@ -55,13 +55,19 @@ STAGE_SEQUENCE: tuple[tuple[str, str], ...] = (
     ("report_data_quality", "Generate data-quality report"),
     ("build_features", "Build feature table"),
     ("build_labels", "Build supervised dataset"),
+    ("build_exploratory_dataset", "Build exploratory DL dataset"),
     ("train_baseline", "Train baseline models"),
     ("train_deep_learning", "Train deep-learning model"),
     ("compare_deep_learning", "Compare deep-learning model zoo"),
+    ("compare_exploratory_deep_learning", "Compare exploratory deep-learning showcase bundle"),
+    ("compare_exploratory_direction", "Compare exploratory direction-classification bundle"),
     ("generate_baseline_signals", "Generate baseline signals"),
     ("generate_deep_learning_signals", "Generate deep-learning signals"),
+    ("generate_exploratory_signals", "Generate exploratory deep-learning signals"),
     ("backtest", "Run backtest"),
+    ("backtest_exploratory", "Run exploratory deep-learning backtest"),
     ("sync_vault", "Prepare or submit vault update"),
+    ("report_exploratory", "Generate exploratory deep-learning report"),
     ("export_demo_snapshot", "Export frontend demo snapshot"),
 )
 
@@ -121,6 +127,11 @@ def build_stage_plan(config: DemoWorkflowSettings) -> list[DemoWorkflowStagePlan
         "build_labels": _cli_command(
             "build-labels", command_paths.labels_config_path, log_level
         ),
+        "build_exploratory_dataset": _cli_command(
+            "build-exploratory-dl-dataset",
+            command_paths.exploratory_dataset_config_path,
+            log_level,
+        ),
         "train_baseline": _cli_command(
             "train-baseline", command_paths.baseline_config_path, log_level
         ),
@@ -130,6 +141,16 @@ def build_stage_plan(config: DemoWorkflowSettings) -> list[DemoWorkflowStagePlan
         "compare_deep_learning": _cli_command(
             "compare-dl",
             command_paths.deep_learning_comparison_config_path,
+            log_level,
+        ),
+        "compare_exploratory_deep_learning": _cli_command(
+            "compare-dl",
+            command_paths.exploratory_deep_learning_comparison_config_path,
+            log_level,
+        ),
+        "compare_exploratory_direction": _cli_command(
+            "compare-dl",
+            command_paths.exploratory_direction_comparison_config_path,
             log_level,
         ),
         "generate_baseline_signals": _cli_command(
@@ -144,11 +165,24 @@ def build_stage_plan(config: DemoWorkflowSettings) -> list[DemoWorkflowStagePlan
             log_level,
             source_override="dl",
         ),
+        "generate_exploratory_signals": _cli_command(
+            "generate-exploratory-dl-signals",
+            command_paths.exploratory_signals_config_path,
+            log_level,
+        ),
         "backtest": _cli_command(
             "backtest", command_paths.backtest_config_path, log_level
         ),
+        "backtest_exploratory": _cli_command(
+            "backtest", command_paths.exploratory_backtest_config_path, log_level
+        ),
         "sync_vault": _cli_command(
             "sync-vault", command_paths.integration_config_path, log_level
+        ),
+        "report_exploratory": _cli_command(
+            "generate-exploratory-dl-report",
+            command_paths.exploratory_report_config_path,
+            log_level,
         ),
         "export_demo_snapshot": _script_command(
             str(repo_path("scripts", "demo", "export_demo_snapshot.py")),
@@ -219,6 +253,17 @@ def _stage_existing_artifact_paths(
             _resolve_path(config.commands.baseline_config_path)
         )
         return [_resolve_path(baseline_config["input"]["dataset_path"])]
+    if stage_key == "build_exploratory_dataset":
+        exploratory_config = load_config(
+            _resolve_path(config.commands.exploratory_dataset_config_path)
+        )
+        return [
+            _resolve_path(exploratory_config["output"]["output_dir"])
+            / exploratory_config["input"]["provider"]
+            / exploratory_config["input"]["symbol"].lower()
+            / exploratory_config["input"]["frequency"]
+            / exploratory_config["output"]["artifact_name"]
+        ]
     if stage_key == "train_baseline":
         signal_config = load_config(_resolve_path(config.commands.signals_config_path))
         return [_resolve_path(signal_config["input"]["baseline_predictions_path"])]
@@ -228,6 +273,34 @@ def _stage_existing_artifact_paths(
     if stage_key == "compare_deep_learning":
         comparison_config = load_config(
             _resolve_path(config.commands.deep_learning_comparison_config_path)
+        )
+        first_run_config = load_config(_resolve_path(comparison_config["runs"][0]["config_path"]))
+        output_dir = _resolve_path(comparison_config["output"]["output_dir"])
+        return [
+            output_dir
+            / first_run_config["input"]["provider"]
+            / first_run_config["input"]["symbol"].lower()
+            / first_run_config["input"]["frequency"]
+            / comparison_config["output"]["run_name"]
+            / "comparison_summary.parquet",
+        ]
+    if stage_key == "compare_exploratory_deep_learning":
+        comparison_config = load_config(
+            _resolve_path(config.commands.exploratory_deep_learning_comparison_config_path)
+        )
+        first_run_config = load_config(_resolve_path(comparison_config["runs"][0]["config_path"]))
+        output_dir = _resolve_path(comparison_config["output"]["output_dir"])
+        return [
+            output_dir
+            / first_run_config["input"]["provider"]
+            / first_run_config["input"]["symbol"].lower()
+            / first_run_config["input"]["frequency"]
+            / comparison_config["output"]["run_name"]
+            / "comparison_summary.parquet",
+        ]
+    if stage_key == "compare_exploratory_direction":
+        comparison_config = load_config(
+            _resolve_path(config.commands.exploratory_direction_comparison_config_path)
         )
         first_run_config = load_config(_resolve_path(comparison_config["runs"][0]["config_path"]))
         output_dir = _resolve_path(comparison_config["output"]["output_dir"])
@@ -254,6 +327,18 @@ def _stage_existing_artifact_paths(
             / "dl"
             / signal_output["artifact_name"]
         ]
+    if stage_key == "generate_exploratory_signals":
+        signal_config = load_config(_resolve_path(config.commands.exploratory_signals_config_path))
+        signal_output = signal_config["output"]
+        signal_input = signal_config["input"]
+        return [
+            _resolve_path(signal_output["output_dir"])
+            / signal_input["provider"]
+            / signal_input["symbol"].lower()
+            / signal_input["frequency"]
+            / "exploratory"
+            / signal_output["artifact_name"]
+        ]
     if stage_key == "backtest":
         demo_snapshot_config = load_config(
             _resolve_path(config.commands.demo_snapshot_config_path)
@@ -261,6 +346,19 @@ def _stage_existing_artifact_paths(
         return [
             _resolve_path(demo_snapshot_config["inputs"]["backtest_manifest_path"]),
             _resolve_path(demo_snapshot_config["inputs"]["backtest_leaderboard_path"]),
+        ]
+    if stage_key == "backtest_exploratory":
+        exploratory_config = load_config(
+            _resolve_path(config.commands.exploratory_backtest_config_path)
+        )
+        output_dir = _resolve_path(exploratory_config["reporting"]["output_dir"])
+        return [
+            output_dir
+            / exploratory_config["input"]["provider"]
+            / exploratory_config["input"]["symbol"].lower()
+            / exploratory_config["input"]["frequency"]
+            / exploratory_config["reporting"]["run_name"]
+            / "leaderboard.parquet"
         ]
     if stage_key == "sync_vault":
         demo_snapshot_config = load_config(
@@ -271,6 +369,17 @@ def _stage_existing_artifact_paths(
             _resolve_path(
                 demo_snapshot_config["inputs"]["integration_call_summary_path"]
             ),
+        ]
+    if stage_key == "report_exploratory":
+        report_config = load_config(
+            _resolve_path(config.commands.exploratory_report_config_path)
+        )
+        return [
+            _resolve_path(report_config["output"]["output_dir"])
+            / "binance"
+            / "btcusdt"
+            / "1h"
+            / "exploratory_dl_summary.json"
         ]
     if stage_key == "export_demo_snapshot":
         artifact_snapshot_path, frontend_snapshot_path = _load_snapshot_locations(config)

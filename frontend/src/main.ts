@@ -143,6 +143,35 @@ interface DemoSnapshot {
   };
 }
 
+interface ExploratoryFigureAsset {
+  label: string;
+  image: string;
+  file_name: string;
+}
+
+interface ExploratorySummaryPayload {
+  strict_summary?: Record<string, unknown>;
+  strict_final_summary?: Record<string, unknown>;
+  exploratory_summary?: {
+    strategy_count?: number;
+    nonzero_trade_strategy_count?: number;
+    best_showcase_row?: Record<string, unknown>;
+    full_leaderboard_path?: string;
+    showcase_leaderboard_path?: string;
+    prediction_distribution_path?: string;
+    quantile_analysis_path?: string;
+    figure_assets?: ExploratoryFigureAsset[];
+  };
+  disclaimer?: string;
+}
+
+interface ExploratoryArtifacts {
+  summary: ExploratorySummaryPayload | null;
+  leaderboard: Array<Record<string, unknown>>;
+  predictionDistribution: Array<Record<string, unknown>>;
+  quantileAnalysis: Array<Record<string, unknown>>;
+}
+
 interface SimulationState {
   walletCashAssets: number;
   vaultCashAssets: number;
@@ -165,6 +194,10 @@ if (!appNode) {
 const app = appNode;
 const BASE_URL = import.meta.env.BASE_URL;
 const DEMO_SNAPSHOT_URL = `${BASE_URL}demo/demo_snapshot.json`;
+const EXPLORATORY_SUMMARY_URL = `${BASE_URL}demo/exploratory_dl_summary.json`;
+const EXPLORATORY_LEADERBOARD_URL = `${BASE_URL}demo/exploratory_dl_leaderboard.json`;
+const EXPLORATORY_PREDICTION_DISTRIBUTION_URL = `${BASE_URL}demo/exploratory_prediction_distribution.json`;
+const EXPLORATORY_QUANTILE_ANALYSIS_URL = `${BASE_URL}demo/exploratory_quantile_analysis.json`;
 const FINAL_REPORT_URL = `${BASE_URL}report/`;
 const FINAL_REPORT_MARKDOWN_URL = `${BASE_URL}report/final_report.md`;
 const REPOSITORY_URL =
@@ -175,6 +208,7 @@ const DEFAULT_WITHDRAW_ASSETS = 1_000 * 10 ** 6;
 
 let snapshotState: DemoSnapshot | null = null;
 let simulationState: SimulationState | null = null;
+let exploratoryArtifactsState: ExploratoryArtifacts | null = null;
 
 function formatDate(dateText: string): string {
   return new Intl.DateTimeFormat("en-US", {
@@ -341,6 +375,182 @@ function deliverableCard(
       <p>${body}</p>
       <a class="action-link" href="${href}" target="_blank" rel="noreferrer">${cta}</a>
     </article>
+  `;
+}
+
+function renderExploratoryShowcase(): string {
+  if (!exploratoryArtifactsState?.summary?.exploratory_summary) {
+    return "";
+  }
+
+  const summary = exploratoryArtifactsState.summary.exploratory_summary;
+  const disclaimer =
+    exploratoryArtifactsState.summary.disclaimer ??
+    "Exploratory results are supplementary showcase artifacts.";
+  const bestRow = summary.best_showcase_row ?? {};
+  const figures = summary.figure_assets ?? [];
+  const distributionPreview = exploratoryArtifactsState.predictionDistribution.slice(0, 4);
+  const quantilePreview = exploratoryArtifactsState.quantileAnalysis.slice(0, 8);
+  const leaderboardPreview = exploratoryArtifactsState.leaderboard.slice(0, 6);
+
+  return `
+    <section class="section-block exploratory-panel">
+      <div class="section-heading">
+        <p class="section-kicker">Exploratory DL Showcase</p>
+        <h2>Supplementary DL results that stay separate from the strict conclusion</h2>
+        <p class="panel-text">${disclaimer}</p>
+      </div>
+      <div class="exploratory-metrics">
+        ${metricCard(
+          "Showcase Strategies",
+          formatNumber(summary.strategy_count ?? null, 0),
+          "Independent exploratory DL strategy variants generated from ranking-based and support-aware signal rules.",
+        )}
+        ${metricCard(
+          "Nonzero Trade Runs",
+          formatNumber(summary.nonzero_trade_strategy_count ?? null, 0),
+          "Only the exploratory track is counted here; strict primary outputs remain unchanged.",
+        )}
+        ${metricCard(
+          "Best Showcase PnL",
+          formatUsd((bestRow["total_net_pnl_usd"] as number | null | undefined) ?? null),
+          `${String(bestRow["strategy_name"] ?? "n/a")} on ${String(bestRow["evaluation_split"] ?? "n/a")} split.`,
+        )}
+        ${metricCard(
+          "Best Showcase Trades",
+          formatNumber((bestRow["trade_count"] as number | null | undefined) ?? null, 0),
+          `${String(bestRow["model_name"] ?? "n/a")} with ${String(bestRow["target_type"] ?? "n/a")} and ${String(bestRow["signal_rule"] ?? "n/a")}.`,
+        )}
+      </div>
+      <div class="table-shell">
+        <table class="showcase-table">
+          <thead>
+            <tr>
+              <th>Strategy</th>
+              <th>Model</th>
+              <th>Target</th>
+              <th>Signal Rule</th>
+              <th>Split</th>
+              <th>Trades</th>
+              <th>Cum Return</th>
+              <th>Net PnL</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${leaderboardPreview
+              .map(
+                (row) => `
+                  <tr>
+                    <td>${String(row["strategy_name"] ?? "n/a")}</td>
+                    <td>${String(row["model_name"] ?? "n/a")}</td>
+                    <td>${String(row["target_type"] ?? "n/a")}</td>
+                    <td>${String(row["signal_rule"] ?? "n/a")}</td>
+                    <td>${String(row["evaluation_split"] ?? "n/a")}</td>
+                    <td>${formatNumber(row["trade_count"] as number | null | undefined, 0)}</td>
+                    <td>${formatPercent(row["cumulative_return"] as number | null | undefined)}</td>
+                    <td>${formatUsd(row["total_net_pnl_usd"] as number | null | undefined)}</td>
+                    <td>${String(row["status"] ?? "n/a")}</td>
+                  </tr>
+                `,
+              )
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+      ${
+        figures.length > 0
+          ? `
+            <div class="chart-gallery exploratory-gallery">
+              ${figures
+                .map(
+                  (figure) => `
+                    <figure class="chart-card">
+                      <div class="chart-header">
+                        <p class="chart-section">exploratory</p>
+                        <h3>${figure.label.replaceAll("_", " ")}</h3>
+                        <p>Generated from the best exploratory showcase run and copied into the frontend-ready demo bundle.</p>
+                      </div>
+                      <img src="${BASE_URL}${figure.image}" alt="${figure.label}" loading="lazy" />
+                    </figure>
+                  `,
+                )
+                .join("")}
+            </div>
+          `
+          : ""
+      }
+      <div class="exploratory-grid">
+        <article class="story-panel compact-panel">
+          <div class="section-heading">
+            <p class="section-kicker">Prediction Distribution</p>
+            <h2>How the exploratory scores spread across splits</h2>
+          </div>
+          <div class="table-shell compact-table-shell">
+            <table class="mini-table">
+              <thead>
+                <tr>
+                  <th>Run</th>
+                  <th>Split</th>
+                  <th>Mean Score</th>
+                  <th>Std</th>
+                  <th>Pred Short Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${distributionPreview
+                  .map(
+                    (row) => `
+                      <tr>
+                        <td>${String(row["run_name"] ?? "n/a")}</td>
+                        <td>${String(row["split"] ?? "n/a")}</td>
+                        <td>${formatNumber(row["signed_score_mean"] as number | null | undefined, 3)}</td>
+                        <td>${formatNumber(row["signed_score_std"] as number | null | undefined, 3)}</td>
+                        <td>${formatPercent(row["predicted_short_rate"] as number | null | undefined)}</td>
+                      </tr>
+                    `,
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          </div>
+        </article>
+        <article class="story-panel compact-panel">
+          <div class="section-heading">
+            <p class="section-kicker">Quantile Lens</p>
+            <h2>Do higher-score buckets carry better directional returns?</h2>
+          </div>
+          <div class="table-shell compact-table-shell">
+            <table class="mini-table">
+              <thead>
+                <tr>
+                  <th>Run</th>
+                  <th>Bucket</th>
+                  <th>Rows</th>
+                  <th>Avg Return</th>
+                  <th>Cum Return</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${quantilePreview
+                  .map(
+                    (row) => `
+                      <tr>
+                        <td>${String(row["run_name"] ?? "n/a")}</td>
+                        <td>${String(row["absolute_score_quantile"] ?? "n/a")}</td>
+                        <td>${formatNumber(row["row_count"] as number | null | undefined, 0)}</td>
+                        <td>${formatBps(row["avg_directional_return_bps"] as number | null | undefined)}</td>
+                        <td>${formatBps(row["cumulative_directional_return_bps"] as number | null | undefined)}</td>
+                      </tr>
+                    `,
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+    </section>
   `;
 }
 
@@ -683,6 +893,8 @@ function renderDashboard(snapshot: DemoSnapshot, state: SimulationState): void {
         </aside>
       </section>
 
+      ${renderExploratoryShowcase()}
+
       <section class="section-grid vault-zone">
         <section class="vault-panel">
           <div class="section-heading">
@@ -935,6 +1147,18 @@ function renderDashboard(snapshot: DemoSnapshot, state: SimulationState): void {
   });
 }
 
+async function loadOptionalJson<T>(url: string): Promise<T | null> {
+  try {
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) {
+      return null;
+    }
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
 async function loadDashboard(): Promise<void> {
   renderLoading();
   try {
@@ -943,6 +1167,19 @@ async function loadDashboard(): Promise<void> {
       throw new Error(`HTTP ${response.status}`);
     }
     snapshotState = (await response.json()) as DemoSnapshot;
+    const [exploratorySummary, exploratoryLeaderboard, exploratoryPredictionDistribution, exploratoryQuantileAnalysis] =
+      await Promise.all([
+        loadOptionalJson<ExploratorySummaryPayload>(EXPLORATORY_SUMMARY_URL),
+        loadOptionalJson<Array<Record<string, unknown>>>(EXPLORATORY_LEADERBOARD_URL),
+        loadOptionalJson<Array<Record<string, unknown>>>(EXPLORATORY_PREDICTION_DISTRIBUTION_URL),
+        loadOptionalJson<Array<Record<string, unknown>>>(EXPLORATORY_QUANTILE_ANALYSIS_URL),
+      ]);
+    exploratoryArtifactsState = {
+      summary: exploratorySummary,
+      leaderboard: exploratoryLeaderboard ?? [],
+      predictionDistribution: exploratoryPredictionDistribution ?? [],
+      quantileAnalysis: exploratoryQuantileAnalysis ?? [],
+    };
     simulationState = createInitialSimulationState(snapshotState);
     renderDashboard(snapshotState, simulationState);
   } catch (error) {

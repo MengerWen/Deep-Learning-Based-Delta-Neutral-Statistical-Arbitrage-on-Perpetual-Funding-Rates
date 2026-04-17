@@ -13,6 +13,9 @@ from funding_arb.config.models import (
     DemoWorkflowSettings,
     DeepLearningComparisonSettings,
     DeepLearningSettings,
+    ExploratoryDLDatasetSettings,
+    ExploratoryDLReportSettings,
+    ExploratoryDLSignalSettings,
     FeatureSettings,
     IntegrationSettings,
     LabelPipelineSettings,
@@ -203,3 +206,56 @@ def test_compare_dl_default_config_loads_typed_model() -> None:
     assert config.experiment_name == "sequence_regression_all"
     assert len(config.runs) == 4
     assert config.runs[0].config_path.endswith("configs/models/lstm.yaml")
+
+
+def test_exploratory_showcase_configs_load_typed_models() -> None:
+    dataset = load_settings(
+        Path("configs/models/exploratory_dl/dataset.yaml"),
+        ExploratoryDLDatasetSettings,
+    )
+    gross = load_settings(
+        Path("configs/experiments/dl/exploratory_gross_regression.yaml"),
+        DeepLearningComparisonSettings,
+    )
+    direction = load_settings(
+        Path("configs/experiments/dl/exploratory_direction_classification.yaml"),
+        DeepLearningComparisonSettings,
+    )
+    signals = load_settings(
+        Path("configs/signals/exploratory_dl/default.yaml"),
+        ExploratoryDLSignalSettings,
+    )
+    report = load_settings(
+        Path("configs/reports/exploratory_dl/showcase.yaml"),
+        ExploratoryDLReportSettings,
+    )
+    workflow = load_command_settings("run-exploratory-dl-demo")
+
+    assert dataset.output.output_dir == "data/processed/exploratory_dl"
+    assert gross.experiment_name == "exploratory_gross_regression"
+    assert len(gross.runs) == 4
+    assert direction.experiment_name == "exploratory_direction_classification"
+    assert direction.ranking.test_metric == "f1"
+    assert len(signals.input.runs) == 8
+    assert report.output.output_dir == "reports/exploratory_dl"
+    assert isinstance(workflow, DemoWorkflowSettings)
+    assert workflow.commands.exploratory_direction_comparison_config_path.endswith(
+        "configs/experiments/dl/exploratory_direction_classification.yaml"
+    )
+
+
+def test_exploratory_outputs_are_separate_from_strict_defaults() -> None:
+    strict_backtest = load_command_settings("backtest")
+    exploratory_backtest = load_settings(
+        Path("configs/backtests/exploratory_dl/default.yaml"),
+        BacktestSettings,
+    )
+    strict_signals = load_command_settings("generate-signals")
+    exploratory_signals = load_settings(
+        Path("configs/signals/exploratory_dl/default.yaml"),
+        ExploratoryDLSignalSettings,
+    )
+
+    assert exploratory_backtest.reporting.output_dir != strict_backtest.reporting.output_dir
+    assert exploratory_backtest.input.signal_path != strict_backtest.input.signal_path
+    assert exploratory_signals.output.output_dir != strict_signals.output.output_dir

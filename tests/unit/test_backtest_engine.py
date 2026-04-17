@@ -423,6 +423,64 @@ def test_backtest_pipeline_marks_no_tradable_signals_in_leaderboard() -> None:
     assert pd.isna(leaderboard.loc[0, "sharpe_ratio"])
 
 
+def test_backtest_pipeline_supports_any_direction_for_exploratory_signals() -> None:
+    scratch_dir = Path("tests/.tmp/backtest_any_direction")
+    scratch_dir.mkdir(parents=True, exist_ok=True)
+    market_path = scratch_dir / "market.csv"
+    signals_path = scratch_dir / "signals.csv"
+    timestamps = pd.date_range("2024-01-01", periods=4, freq="h", tz="UTC")
+    pd.DataFrame(
+        {
+            "timestamp": timestamps,
+            "symbol": ["BTCUSDT"] * 4,
+            "venue": ["binance"] * 4,
+            "frequency": ["1h"] * 4,
+            "perp_open": [100.0, 101.0, 100.0, 100.0],
+            "perp_close": [100.0, 101.0, 100.0, 100.0],
+            "spot_open": [100.0, 99.0, 100.0, 100.0],
+            "spot_close": [100.0, 99.0, 100.0, 100.0],
+            "funding_rate": [0.0] * 4,
+        }
+    ).to_csv(market_path, index=False)
+    pd.DataFrame(
+        {
+            "timestamp": [timestamps[0]],
+            "asset": ["BTCUSDT"],
+            "source": ["exploratory_dl"],
+            "source_subtype": ["deep_learning_showcase"],
+            "strategy_name": ["transformer_direction__rolling_top_decile_abs"],
+            "task": ["classification"],
+            "signal_score": [0.9],
+            "predicted_class": [0],
+            "expected_return_bps": [4.0],
+            "suggested_direction": ["long_perp_short_spot"],
+            "confidence": [0.9],
+            "should_trade": [1],
+            "split": ["test"],
+            "metadata_json": ["{}"],
+        }
+    ).to_csv(signals_path, index=False)
+    settings = _settings(
+        input={
+            "signal_path": str(signals_path),
+            "market_dataset_path": str(market_path),
+        },
+        selection={"direction": "any"},
+        reporting={
+            "output_dir": str(scratch_dir / "artifacts"),
+            "run_name": "any_direction_case",
+            "primary_split": "test",
+        },
+    )
+
+    artifacts = run_backtest_pipeline(settings)
+    leaderboard = pd.read_parquet(artifacts.leaderboard_path)
+
+    assert leaderboard.loc[0, "source"] == "exploratory_dl"
+    assert leaderboard.loc[0, "trade_count"] == 1
+    assert leaderboard.loc[0, "status"] == "completed"
+
+
 def test_trade_return_boxplot_handles_empty_trade_log() -> None:
     leaderboard = pd.DataFrame({"strategy_name": ["ridge_regression"]})
     scratch_dir = Path("tests/.tmp/backtest")

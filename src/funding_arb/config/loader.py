@@ -14,6 +14,9 @@ from funding_arb.config.models import (
     DataQualityReportSettings,
     DataSettings,
     DemoWorkflowSettings,
+    ExploratoryDLDatasetSettings,
+    ExploratoryDLReportSettings,
+    ExploratoryDLSignalSettings,
     DeepLearningComparisonSettings,
     DeepLearningSettings,
     FeatureSettings,
@@ -59,6 +62,11 @@ COMMAND_SETTINGS: dict[str, CommandSettings] = {
         default_config_path=repo_path("configs", "labels", "default.yaml"),
         config_model=LabelPipelineSettings,
     ),
+    "build-exploratory-dl-dataset": CommandSettings(
+        command_name="build-exploratory-dl-dataset",
+        default_config_path=repo_path("configs", "models", "exploratory_dl", "dataset.yaml"),
+        config_model=ExploratoryDLDatasetSettings,
+    ),
     "train-baseline": CommandSettings(
         command_name="train-baseline",
         default_config_path=repo_path("configs", "models", "baseline.yaml"),
@@ -86,6 +94,11 @@ COMMAND_SETTINGS: dict[str, CommandSettings] = {
         default_config_path=repo_path("configs", "signals", "default.yaml"),
         config_model=SignalSettings,
     ),
+    "generate-exploratory-dl-signals": CommandSettings(
+        command_name="generate-exploratory-dl-signals",
+        default_config_path=repo_path("configs", "signals", "exploratory_dl", "default.yaml"),
+        config_model=ExploratoryDLSignalSettings,
+    ),
     "backtest": CommandSettings(
         command_name="backtest",
         default_config_path=repo_path("configs", "backtests", "default.yaml"),
@@ -101,6 +114,11 @@ COMMAND_SETTINGS: dict[str, CommandSettings] = {
         default_config_path=repo_path("configs", "reports", "final_report.yaml"),
         config_model=FinalReportSettings,
     ),
+    "generate-exploratory-dl-report": CommandSettings(
+        command_name="generate-exploratory-dl-report",
+        default_config_path=repo_path("configs", "reports", "exploratory_dl", "showcase.yaml"),
+        config_model=ExploratoryDLReportSettings,
+    ),
     "sync-vault": CommandSettings(
         command_name="sync-vault",
         default_config_path=repo_path("configs", "integration", "default.yaml"),
@@ -109,6 +127,11 @@ COMMAND_SETTINGS: dict[str, CommandSettings] = {
     "run-demo": CommandSettings(
         command_name="run-demo",
         default_config_path=repo_path("configs", "demo", "workflow.yaml"),
+        config_model=DemoWorkflowSettings,
+    ),
+    "run-exploratory-dl-demo": CommandSettings(
+        command_name="run-exploratory-dl-demo",
+        default_config_path=repo_path("configs", "demo", "exploratory_workflow.yaml"),
         config_model=DemoWorkflowSettings,
     ),
 }

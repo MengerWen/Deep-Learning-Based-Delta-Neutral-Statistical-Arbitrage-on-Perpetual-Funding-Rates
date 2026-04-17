@@ -38,3 +38,19 @@ def test_describe_demo_workflow_mentions_run_name_and_stage_count() -> None:
     description = describe_demo_workflow_job(config)
     assert "full_demo_default" in description
     assert "12 stages" in description
+
+
+def test_exploratory_demo_workflow_focuses_on_showcase_stages() -> None:
+    config = load_command_settings("run-exploratory-dl-demo")
+    stage_plan = build_stage_plan(config)
+    stage_keys = [stage.key for stage in stage_plan]
+
+    assert stage_keys == [
+        "build_exploratory_dataset",
+        "compare_exploratory_deep_learning",
+        "compare_exploratory_direction",
+        "generate_exploratory_signals",
+        "backtest_exploratory",
+        "report_exploratory",
+        "export_demo_snapshot",
+    ]

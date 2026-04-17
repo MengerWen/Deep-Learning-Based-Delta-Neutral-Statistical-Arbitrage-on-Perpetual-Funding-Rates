@@ -60,6 +60,12 @@ def _load_optional_table(path_text: str | None) -> pd.DataFrame | None:
         return pd.read_parquet(path)
     if path.suffix.lower() == ".csv":
         return pd.read_csv(path)
+    if path.suffix.lower() == ".json":
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(payload, list):
+            return pd.DataFrame(payload)
+        if isinstance(payload, dict):
+            return pd.DataFrame([payload])
     raise ValueError(f"Unsupported table format for demo input: {path.suffix}")
 
 
@@ -220,6 +226,16 @@ def export_demo_snapshot(config: dict[str, Any]) -> DemoArtifacts:
     integration_selection = _load_optional_json(input_config.get("integration_selection_path"))
     integration_plan = _load_optional_json(input_config.get("integration_plan_path"))
     integration_calls = _load_optional_json(input_config.get("integration_call_summary_path"))
+    exploratory_summary = _load_optional_json(input_config.get("exploratory_summary_path"))
+    exploratory_leaderboard = _load_optional_table(
+        input_config.get("exploratory_leaderboard_path")
+    )
+    exploratory_prediction_distribution = _load_optional_json(
+        input_config.get("exploratory_prediction_distribution_path")
+    )
+    exploratory_quantile_analysis = _load_optional_json(
+        input_config.get("exploratory_quantile_analysis_path")
+    )
 
     charts = _copy_chart_assets(input_config["charts"], public_assets_dir)
     dl_comparison_available = (
@@ -351,6 +367,30 @@ def export_demo_snapshot(config: dict[str, Any]) -> DemoArtifacts:
                 ),
             },
         },
+        "exploratory_dl": (
+            {
+                "available": True,
+                "summary": exploratory_summary,
+                "leaderboard_preview": (
+                    [
+                        {key: _json_ready(value) for key, value in row.items()}
+                        for row in exploratory_leaderboard.head(8).to_dict("records")
+                    ]
+                    if exploratory_leaderboard is not None and not exploratory_leaderboard.empty
+                    else []
+                ),
+                "prediction_distribution": exploratory_prediction_distribution,
+                "quantile_analysis": exploratory_quantile_analysis,
+                "disclaimer": (
+                    exploratory_summary or {}
+                ).get(
+                    "disclaimer",
+                    "Exploratory DL results are supplementary showcase results and do not replace the strict post-cost conclusion.",
+                ),
+            }
+            if exploratory_summary is not None
+            else None
+        ),
         "backtest": {
             "summary": backtest_manifest["summary"],
             "diagnostics": backtest_manifest.get("diagnostics", {}),

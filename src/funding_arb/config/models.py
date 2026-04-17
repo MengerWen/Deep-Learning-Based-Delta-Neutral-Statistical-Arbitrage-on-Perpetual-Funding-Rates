@@ -168,6 +168,60 @@ class LabelPipelineSettings(SettingsBase):
     notes: dict[str, Any] = Field(default_factory=dict)
 
 
+class ExploratoryDLDatasetInputSettings(SettingsBase):
+    source_dataset_path: str = (
+        "data/processed/supervised/binance/btcusdt/1h/btcusdt_supervised_dataset.parquet"
+    )
+    source_manifest_path: str | None = (
+        "data/processed/supervised/binance/btcusdt/1h/btcusdt_supervised_manifest.json"
+    )
+    provider: str = "binance"
+    symbol: str = "BTCUSDT"
+    venue: str = "binance"
+    frequency: str = "1h"
+
+
+class ExploratoryDLDatasetTargetSettings(SettingsBase):
+    horizon_hours: int = 24
+    gross_return_column: str = "target_future_gross_return_bps_24h"
+    split_column: str = "split"
+    ready_column: str = "supervised_ready"
+    short_direction_label: str = "short_perp_long_spot"
+    long_direction_label: str = "long_perp_short_spot"
+    short_direction_gross_column: str = (
+        "target_future_short_perp_long_spot_gross_return_bps_24h"
+    )
+    long_direction_gross_column: str = (
+        "target_future_long_perp_short_spot_gross_return_bps_24h"
+    )
+    signed_opportunity_column: str = "target_future_signed_opportunity_bps_24h"
+    absolute_opportunity_column: str = "target_future_absolute_opportunity_bps_24h"
+    direction_classification_column: str = (
+        "target_best_direction_is_short_perp_long_spot_24h"
+    )
+    direction_label_column: str = "target_best_direction_label_24h"
+
+
+class ExploratoryDLDatasetOutputSettings(SettingsBase):
+    output_dir: str = "data/processed/exploratory_dl"
+    artifact_name: str = "exploratory_dataset.parquet"
+    manifest_name: str = "exploratory_manifest.json"
+    write_csv: bool = True
+
+
+class ExploratoryDLDatasetSettings(SettingsBase):
+    input: ExploratoryDLDatasetInputSettings = Field(
+        default_factory=ExploratoryDLDatasetInputSettings
+    )
+    target: ExploratoryDLDatasetTargetSettings = Field(
+        default_factory=ExploratoryDLDatasetTargetSettings
+    )
+    output: ExploratoryDLDatasetOutputSettings = Field(
+        default_factory=ExploratoryDLDatasetOutputSettings
+    )
+    notes: dict[str, Any] = Field(default_factory=dict)
+
+
 class BaselineInputSettings(SettingsBase):
     dataset_path: str = (
         "data/processed/supervised/binance/btcusdt/1h/btcusdt_supervised_dataset.parquet"
@@ -860,6 +914,108 @@ class SignalSettings(SettingsBase):
     notes: dict[str, Any] = Field(default_factory=dict)
 
 
+class ExploratoryDLSignalRunSettings(SettingsBase):
+    name: str
+    prediction_path: str
+    manifest_path: str | None = None
+    target_type: str
+    task: str | None = None
+    enabled: bool = True
+
+
+class ExploratoryDLRankingRuleSettings(SettingsBase):
+    enabled: bool = True
+    name: str = "rolling_top_quantile_abs"
+    percentile_threshold: float = 0.9
+    window_size: int = 336
+    min_history: int = 168
+
+    @model_validator(mode="after")
+    def validate_ranking_rule(self) -> "ExploratoryDLRankingRuleSettings":
+        if not 0.5 <= self.percentile_threshold < 1.0:
+            raise ValueError(
+                "Exploratory ranking percentile_threshold must be in [0.5, 1.0)."
+            )
+        if self.window_size <= 1:
+            raise ValueError("Exploratory ranking window_size must be greater than 1.")
+        if self.min_history <= 0:
+            raise ValueError("Exploratory ranking min_history must be positive.")
+        return self
+
+
+class ExploratoryDLThresholdRuleSettings(SettingsBase):
+    enabled: bool = True
+    name: str = "validation_tuned_abs_threshold"
+    objective: str = "balanced_avg_return_support"
+    candidate_quantiles: list[float] = Field(
+        default_factory=lambda: [0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95]
+    )
+    min_signal_count: int = 12
+    min_signal_rate: float = 0.01
+    support_weight: float = 0.5
+
+    @model_validator(mode="after")
+    def validate_threshold_rule(self) -> "ExploratoryDLThresholdRuleSettings":
+        if any(not 0.0 < value < 1.0 for value in self.candidate_quantiles):
+            raise ValueError(
+                "Exploratory threshold_rule candidate_quantiles must all be in (0, 1)."
+            )
+        if self.min_signal_count <= 0:
+            raise ValueError(
+                "Exploratory threshold_rule min_signal_count must be positive."
+            )
+        if not 0.0 < self.min_signal_rate < 1.0:
+            raise ValueError(
+                "Exploratory threshold_rule min_signal_rate must be in (0, 1)."
+            )
+        if self.support_weight <= 0.0:
+            raise ValueError(
+                "Exploratory threshold_rule support_weight must be positive."
+            )
+        return self
+
+
+class ExploratoryDLSignalInputSettings(SettingsBase):
+    provider: str = "binance"
+    symbol: str = "BTCUSDT"
+    venue: str = "binance"
+    frequency: str = "1h"
+    runs: list[ExploratoryDLSignalRunSettings] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_runs(self) -> "ExploratoryDLSignalInputSettings":
+        if not [run for run in self.runs if run.enabled]:
+            raise ValueError(
+                "Exploratory signal generation requires at least one enabled run."
+            )
+        return self
+
+
+class ExploratoryDLSignalOutputSettings(SettingsBase):
+    output_dir: str = "data/artifacts/signals/exploratory_dl"
+    artifact_name: str = "signals.parquet"
+    manifest_name: str = "signals_manifest.json"
+    strategy_catalog_name: str = "strategy_catalog.csv"
+    diagnostics_dir_name: str = "diagnostics"
+    write_csv: bool = True
+
+
+class ExploratoryDLSignalSettings(SettingsBase):
+    input: ExploratoryDLSignalInputSettings = Field(
+        default_factory=ExploratoryDLSignalInputSettings
+    )
+    ranking_rule: ExploratoryDLRankingRuleSettings = Field(
+        default_factory=ExploratoryDLRankingRuleSettings
+    )
+    threshold_rule: ExploratoryDLThresholdRuleSettings = Field(
+        default_factory=ExploratoryDLThresholdRuleSettings
+    )
+    output: ExploratoryDLSignalOutputSettings = Field(
+        default_factory=ExploratoryDLSignalOutputSettings
+    )
+    notes: dict[str, Any] = Field(default_factory=dict)
+
+
 class BacktestInputSettings(SettingsBase):
     signal_path: str = (
         "data/artifacts/signals/binance/btcusdt/1h/baseline/signals.parquet"
@@ -891,11 +1047,22 @@ class BacktestSelectionSettings(SettingsBase):
     @model_validator(mode="after")
     def validate_selection(self) -> "BacktestSelectionSettings":
         valid_splits = {"train", "validation", "test"}
+        valid_directions = {
+            "short_perp_long_spot",
+            "long_perp_short_spot",
+            "any",
+            "both",
+        }
         unknown = sorted(set(self.split_filter) - valid_splits)
         if unknown:
             raise ValueError(
                 "Backtest selection.split_filter can only contain "
                 f"{sorted(valid_splits)}, got {unknown}."
+            )
+        if self.direction not in valid_directions:
+            raise ValueError(
+                "Backtest selection.direction must be one of "
+                f"{sorted(valid_directions)}, got '{self.direction}'."
             )
         return self
 
@@ -1091,6 +1258,7 @@ class FinalReportMetadataSettings(SettingsBase):
 class FinalReportInputSettings(SettingsBase):
     demo_snapshot_path: str = "data/artifacts/demo/demo_snapshot.json"
     robustness_summary_path: str | None = "reports/robustness/binance/btcusdt/1h/summary.json"
+    exploratory_summary_path: str | None = None
 
 
 class FinalReportSectionSettings(SettingsBase):
@@ -1119,6 +1287,61 @@ class FinalReportSettings(SettingsBase):
     )
     output: FinalReportOutputSettings = Field(
         default_factory=FinalReportOutputSettings
+    )
+    notes: dict[str, Any] = Field(default_factory=dict)
+
+
+class ExploratoryDLReportInputSettings(SettingsBase):
+    strict_demo_snapshot_path: str = "data/artifacts/demo/demo_snapshot.json"
+    strict_final_report_summary_path: str | None = "reports/final/binance/btcusdt/1h/summary.json"
+    strict_comparison_summary_path: str | None = (
+        "data/artifacts/models/dl_comparisons/binance/btcusdt/1h/sequence_regression_all/comparison_summary.parquet"
+    )
+    exploratory_dataset_manifest_path: str = (
+        "data/processed/exploratory_dl/binance/btcusdt/1h/btcusdt_exploratory_manifest.json"
+    )
+    exploratory_comparison_manifest_path: str = (
+        "data/artifacts/models/exploratory_dl_comparisons/binance/btcusdt/1h/exploratory_showcase/comparison_manifest.json"
+    )
+    exploratory_comparison_summary_path: str = (
+        "data/artifacts/models/exploratory_dl_comparisons/binance/btcusdt/1h/exploratory_showcase/comparison_summary.parquet"
+    )
+    exploratory_extra_comparison_summary_paths: list[str] = Field(
+        default_factory=list
+    )
+    exploratory_signals_path: str = (
+        "data/artifacts/signals/exploratory_dl/binance/btcusdt/1h/exploratory/signals.parquet"
+    )
+    exploratory_signals_manifest_path: str = (
+        "data/artifacts/signals/exploratory_dl/binance/btcusdt/1h/exploratory/signals_manifest.json"
+    )
+    exploratory_backtest_manifest_path: str = (
+        "data/artifacts/backtests/exploratory_dl/binance/btcusdt/1h/exploratory_dl_showcase/backtest_manifest.json"
+    )
+    exploratory_backtest_leaderboard_path: str = (
+        "data/artifacts/backtests/exploratory_dl/binance/btcusdt/1h/exploratory_dl_showcase/leaderboard.parquet"
+    )
+    exploratory_trade_log_path: str | None = (
+        "data/artifacts/backtests/exploratory_dl/binance/btcusdt/1h/exploratory_dl_showcase/trade_log.parquet"
+    )
+
+
+class ExploratoryDLReportOutputSettings(SettingsBase):
+    output_dir: str = "reports/exploratory_dl"
+    frontend_public_dir: str = "frontend/public/demo"
+    write_csv: bool = True
+    write_markdown: bool = True
+    write_json_summary: bool = True
+    write_plots: bool = True
+    copy_to_frontend_public: bool = True
+
+
+class ExploratoryDLReportSettings(SettingsBase):
+    input: ExploratoryDLReportInputSettings = Field(
+        default_factory=ExploratoryDLReportInputSettings
+    )
+    output: ExploratoryDLReportOutputSettings = Field(
+        default_factory=ExploratoryDLReportOutputSettings
     )
     notes: dict[str, Any] = Field(default_factory=dict)
 
@@ -1356,15 +1579,26 @@ class DemoWorkflowCommandsSettings(SettingsBase):
     report_data_quality_config_path: str = "configs/reports/data_quality.yaml"
     features_config_path: str = "configs/features/default.yaml"
     labels_config_path: str = "configs/labels/default.yaml"
+    exploratory_dataset_config_path: str = "configs/models/exploratory_dl/dataset.yaml"
     baseline_config_path: str = "configs/models/baseline.yaml"
     deep_learning_config_path: str = "configs/models/lstm.yaml"
     deep_learning_comparison_config_path: str = (
         "configs/experiments/dl/regression_all.yaml"
     )
     signals_config_path: str = "configs/signals/default.yaml"
+    exploratory_signals_config_path: str = "configs/signals/exploratory_dl/default.yaml"
     backtest_config_path: str = "configs/backtests/default.yaml"
+    exploratory_backtest_config_path: str = "configs/backtests/exploratory_dl/default.yaml"
     integration_config_path: str = "configs/integration/default.yaml"
+    exploratory_report_config_path: str = "configs/reports/exploratory_dl/showcase.yaml"
     demo_snapshot_config_path: str = "configs/demo/default.yaml"
+    exploratory_demo_snapshot_config_path: str = "configs/demo/exploratory_snapshot.yaml"
+    exploratory_deep_learning_comparison_config_path: str = (
+        "configs/experiments/dl/exploratory_gross_regression.yaml"
+    )
+    exploratory_direction_comparison_config_path: str = (
+        "configs/experiments/dl/exploratory_direction_classification.yaml"
+    )
 
 
 class DemoWorkflowStages(SettingsBase):
@@ -1380,6 +1614,9 @@ class DemoWorkflowStages(SettingsBase):
     build_labels: DemoWorkflowStageSettings = Field(
         default_factory=DemoWorkflowStageSettings
     )
+    build_exploratory_dataset: DemoWorkflowStageSettings = Field(
+        default_factory=lambda: DemoWorkflowStageSettings(enabled=False, optional=True)
+    )
     train_baseline: DemoWorkflowStageSettings = Field(
         default_factory=DemoWorkflowStageSettings
     )
@@ -1389,17 +1626,32 @@ class DemoWorkflowStages(SettingsBase):
     compare_deep_learning: DemoWorkflowStageSettings = Field(
         default_factory=lambda: DemoWorkflowStageSettings(optional=True)
     )
+    compare_exploratory_deep_learning: DemoWorkflowStageSettings = Field(
+        default_factory=lambda: DemoWorkflowStageSettings(enabled=False, optional=True)
+    )
+    compare_exploratory_direction: DemoWorkflowStageSettings = Field(
+        default_factory=lambda: DemoWorkflowStageSettings(enabled=False, optional=True)
+    )
     generate_baseline_signals: DemoWorkflowStageSettings = Field(
         default_factory=DemoWorkflowStageSettings
     )
     generate_deep_learning_signals: DemoWorkflowStageSettings = Field(
         default_factory=lambda: DemoWorkflowStageSettings(optional=True)
     )
+    generate_exploratory_signals: DemoWorkflowStageSettings = Field(
+        default_factory=lambda: DemoWorkflowStageSettings(enabled=False, optional=True)
+    )
     backtest: DemoWorkflowStageSettings = Field(
         default_factory=DemoWorkflowStageSettings
     )
+    backtest_exploratory: DemoWorkflowStageSettings = Field(
+        default_factory=lambda: DemoWorkflowStageSettings(enabled=False, optional=True)
+    )
     sync_vault: DemoWorkflowStageSettings = Field(
         default_factory=DemoWorkflowStageSettings
+    )
+    report_exploratory: DemoWorkflowStageSettings = Field(
+        default_factory=lambda: DemoWorkflowStageSettings(enabled=False, optional=True)
     )
     export_demo_snapshot: DemoWorkflowStageSettings = Field(
         default_factory=DemoWorkflowStageSettings

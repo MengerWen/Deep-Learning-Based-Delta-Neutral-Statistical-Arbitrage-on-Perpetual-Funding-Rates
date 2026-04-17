@@ -1,0 +1,786 @@
+{
+  "input": {
+    "signal_path": "data/artifacts/signals/exploratory_dl/binance/btcusdt/1h/exploratory/signals.parquet",
+    "signal_manifest_path": "data/artifacts/signals/exploratory_dl/binance/btcusdt/1h/exploratory/signals_manifest.json",
+    "market_dataset_path": "data/processed/binance/btcusdt/1h/hourly_market_data.parquet",
+    "market_manifest_path": "data/processed/binance/btcusdt/1h/manifest.json",
+    "provider": "binance",
+    "symbol": "BTCUSDT",
+    "venue": "binance",
+    "frequency": "1h"
+  },
+  "selection": {
+    "strategy_names": [],
+    "split_filter": [
+      "train",
+      "validation",
+      "test"
+    ],
+    "direction": "any",
+    "require_should_trade": true,
+    "min_signal_score": null,
+    "min_confidence": null,
+    "min_expected_return_bps": null
+  },
+  "portfolio": {
+    "initial_capital": 100000.0,
+    "position_notional": 10000.0,
+    "max_open_positions": 1,
+    "max_gross_leverage": 2.0,
+    "leverage_check_mode": "warn"
+  },
+  "costs": {
+    "taker_fee_bps": 5.0,
+    "maker_fee_bps": 2.0,
+    "slippage_bps": 3.0,
+    "gas_cost_usd": 2.0,
+    "other_friction_bps": 0.0
+  },
+  "execution": {
+    "entry_delay_bars": 1,
+    "execution_price_field": "open",
+    "holding_window_hours": 24,
+    "maximum_holding_hours": 48,
+    "funding_interval_hours": 8,
+    "funding_mode": "prototype_bar_sum",
+    "funding_notional_mode": "initial_notional",
+    "hedge_mode": "equal_notional_hedge",
+    "rebalance_frequency": "1h",
+    "exit_on_signal_off": true,
+    "stop_loss_bps": null,
+    "take_profit_bps": null,
+    "stop_observation_mode": "bar_close_observed",
+    "stop_execution_mode": "next_bar_executed",
+    "allow_partial_exit": false
+  },
+  "reporting": {
+    "output_dir": "data/artifacts/backtests/exploratory_dl",
+    "run_name": "exploratory_dl_showcase",
+    "write_csv": true,
+    "write_markdown_report": true,
+    "figure_format": "png",
+    "dpi": 180,
+    "top_n_strategies_for_plots": 8,
+    "primary_split": "test",
+    "include_combined_summary": true
+  },
+  "summary": {
+    "strategy_count": 16,
+    "trade_count": 89954,
+    "primary_trade_log_rows": 18202,
+    "primary_trade_count": 18202,
+    "combined_trade_count": 89954,
+    "primary_split": "test",
+    "best_strategy": "lstm_gross__rolling_top_decile_abs",
+    "best_strategy_status": "completed",
+    "best_sharpe_ratio": -24.17959682640456,
+    "best_cumulative_return": -0.1879133203800174,
+    "best_mark_to_market_max_drawdown": -0.18791332038001873,
+    "best_realized_max_drawdown": -0.18791332038001873,
+    "status_counts": {
+      "completed": 16
+    },
+    "prediction_modes": [
+      "static"
+    ],
+    "calibration_methods": [
+      "none"
+    ],
+    "checkpoint_selection_metrics": [
+      "validation_avg_signal_return_bps"
+    ],
+    "checkpoint_selection_effective_metrics": [
+      "validation_avg_signal_return_bps"
+    ],
+    "selected_losses": [
+      "bce_with_logits",
+      "huber"
+    ],
+    "preprocessing_scalers": [
+      "robust"
+    ],
+    "source_subtypes": [
+      "deep_learning_showcase"
+    ]
+  },
+  "diagnostics": {
+    "leverage": {
+      "hedge_mode": "equal_notional_hedge",
+      "gross_notional_usd": 20000.0,
+      "position_notional_usd": 10000.0,
+      "initial_capital_usd": 100000.0,
+      "implied_gross_leverage": 0.2,
+      "max_gross_leverage": 2.0,
+      "leverage_check_mode": "warn",
+      "leverage_check_passed": true
+    },
+    "funding": {
+      "funding_mode": "prototype_bar_sum",
+      "funding_notional_mode": "initial_notional",
+      "funding_event_source": "all_aligned_rows",
+      "funding_rows_used": 46081,
+      "funding_nonzero_rows_used": 3089,
+      "funding_total_rows": 46081
+    }
+  },
+  "signal_manifest": {
+    "input": {
+      "provider": "binance",
+      "symbol": "BTCUSDT",
+      "venue": "binance",
+      "frequency": "1h",
+      "runs": [
+        {
+          "name": "lstm_gross",
+          "prediction_path": "data/artifacts/models/exploratory_dl/binance/btcusdt/1h/lstm_gross_regression_24h_exploratory/dl_predictions.parquet",
+          "manifest_path": "data/artifacts/models/exploratory_dl/binance/btcusdt/1h/lstm_gross_regression_24h_exploratory/dl_manifest.json",
+          "target_type": "gross_opportunity_regression",
+          "task": "regression",
+          "enabled": true
+        },
+        {
+          "name": "gru_gross",
+          "prediction_path": "data/artifacts/models/exploratory_dl/binance/btcusdt/1h/gru_gross_regression_24h_exploratory/dl_predictions.parquet",
+          "manifest_path": "data/artifacts/models/exploratory_dl/binance/btcusdt/1h/gru_gross_regression_24h_exploratory/dl_manifest.json",
+          "target_type": "gross_opportunity_regression",
+          "task": "regression",
+          "enabled": true
+        },
+        {
+          "name": "tcn_gross",
+          "prediction_path": "data/artifacts/models/exploratory_dl/binance/btcusdt/1h/tcn_gross_regression_24h_exploratory/dl_predictions.parquet",
+          "manifest_path": "data/artifacts/models/exploratory_dl/binance/btcusdt/1h/tcn_gross_regression_24h_exploratory/dl_manifest.json",
+          "target_type": "gross_opportunity_regression",
+          "task": "regression",
+          "enabled": true
+        },
+        {
+          "name": "transformer_gross",
+          "prediction_path": "data/artifacts/models/exploratory_dl/binance/btcusdt/1h/transformer_gross_regression_24h_exploratory/dl_predictions.parquet",
+          "manifest_path": "data/artifacts/models/exploratory_dl/binance/btcusdt/1h/transformer_gross_regression_24h_exploratory/dl_manifest.json",
+          "target_type": "gross_opportunity_regression",
+          "task": "regression",
+          "enabled": true
+        },
+        {
+          "name": "lstm_direction",
+          "prediction_path": "data/artifacts/models/exploratory_dl/binance/btcusdt/1h/lstm_direction_classification_24h_exploratory/dl_predictions.parquet",
+          "manifest_path": "data/artifacts/models/exploratory_dl/binance/btcusdt/1h/lstm_direction_classification_24h_exploratory/dl_manifest.json",
+          "target_type": "direction_classification",
+          "task": "classification",
+          "enabled": true
+        },
+        {
+          "name": "gru_direction",
+          "prediction_path": "data/artifacts/models/exploratory_dl/binance/btcusdt/1h/gru_direction_classification_24h_exploratory/dl_predictions.parquet",
+          "manifest_path": "data/artifacts/models/exploratory_dl/binance/btcusdt/1h/gru_direction_classification_24h_exploratory/dl_manifest.json",
+          "target_type": "direction_classification",
+          "task": "classification",
+          "enabled": true
+        },
+        {
+          "name": "tcn_direction",
+          "prediction_path": "data/artifacts/models/exploratory_dl/binance/btcusdt/1h/tcn_direction_classification_24h_exploratory/dl_predictions.parquet",
+          "manifest_path": "data/artifacts/models/exploratory_dl/binance/btcusdt/1h/tcn_direction_classification_24h_exploratory/dl_manifest.json",
+          "target_type": "direction_classification",
+          "task": "classification",
+          "enabled": true
+        },
+        {
+          "name": "transformer_direction",
+          "prediction_path": "data/artifacts/models/exploratory_dl/binance/btcusdt/1h/transformer_direction_classification_24h_exploratory/dl_predictions.parquet",
+          "manifest_path": "data/artifacts/models/exploratory_dl/binance/btcusdt/1h/transformer_direction_classification_24h_exploratory/dl_manifest.json",
+          "target_type": "direction_classification",
+          "task": "classification",
+          "enabled": true
+        }
+      ]
+    },
+    "ranking_rule": {
+      "enabled": true,
+      "name": "rolling_top_decile_abs",
+      "percentile_threshold": 0.9,
+      "window_size": 336,
+      "min_history": 168
+    },
+    "threshold_rule": {
+      "enabled": true,
+      "name": "validation_tuned_balanced_support",
+      "objective": "balanced_avg_return_support",
+      "candidate_quantiles": [
+        0.5,
+        0.6,
+        0.7,
+        0.8,
+        0.85,
+        0.9,
+        0.95
+      ],
+      "min_signal_count": 24,
+      "min_signal_rate": 0.01,
+      "support_weight": 0.5
+    },
+    "output": {
+      "output_dir": "data/artifacts/signals/exploratory_dl",
+      "artifact_name": "signals.parquet",
+      "manifest_name": "signals_manifest.json",
+      "strategy_catalog_name": "strategy_catalog.csv",
+      "diagnostics_dir_name": "diagnostics",
+      "write_csv": true
+    },
+    "summary": {
+      "row_count": 727808,
+      "strategy_count": 16,
+      "active_signal_count": 227147,
+      "signal_count_by_split": {
+        "test": 34404,
+        "train": 160820,
+        "validation": 31923
+      },
+      "direction_count": {
+        "short_perp_long_spot": 158993,
+        "long_perp_short_spot": 68154
+      },
+      "nonzero_strategy_count": 16,
+      "strategy_summary": [
+        {
+          "strategy_name": "lstm_gross__rolling_top_decile_abs",
+          "model_name": "lstm",
+          "run_name": "lstm_gross",
+          "target_type": "gross_opportunity_regression",
+          "task": "regression",
+          "signal_rule": "rolling_top_decile_abs",
+          "signal_rule_type": "ranking_based",
+          "selection_reason": "rolling_abs_percentile >= 0.90 with window 336 and min_history 168",
+          "status": "ok",
+          "reason": null,
+          "signal_count_by_split": {
+            "test": 937,
+            "train": 3526,
+            "validation": 712
+          },
+          "direction_count": {
+            "short_perp_long_spot": 4598,
+            "long_perp_short_spot": 577
+          },
+          "selected_threshold": null,
+          "threshold_search_summary": null
+        },
+        {
+          "strategy_name": "lstm_gross__validation_tuned_balanced_support",
+          "model_name": "lstm",
+          "run_name": "lstm_gross",
+          "target_type": "gross_opportunity_regression",
+          "task": "regression",
+          "signal_rule": "validation_tuned_balanced_support",
+          "signal_rule_type": "threshold_based",
+          "selection_reason": "selected validation absolute-score threshold at quantile 0.5 using avg_signal_return_bps weighted by signal support",
+          "status": "ok",
+          "reason": null,
+          "signal_count_by_split": {
+            "test": 2683,
+            "train": 17571,
+            "validation": 3288
+          },
+          "direction_count": {
+            "short_perp_long_spot": 19732,
+            "long_perp_short_spot": 3810
+          },
+          "selected_threshold": 1.3026254177093506,
+          "threshold_search_summary": {
+            "status": "ok",
+            "reason": null,
+            "selected_quantile": 0.5,
+            "selected_threshold": 1.3026254177093506,
+            "selected_objective_value": 166.38945684237515,
+            "selected_avg_signal_return_bps": 2.9017493752616006,
+            "selected_signal_count": 3288,
+            "valid_candidate_count": 7
+          }
+        },
+        {
+          "strategy_name": "gru_gross__rolling_top_decile_abs",
+          "model_name": "gru",
+          "run_name": "gru_gross",
+          "target_type": "gross_opportunity_regression",
+          "task": "regression",
+          "signal_rule": "rolling_top_decile_abs",
+          "signal_rule_type": "ranking_based",
+          "selection_reason": "rolling_abs_percentile >= 0.90 with window 336 and min_history 168",
+          "status": "ok",
+          "reason": null,
+          "signal_count_by_split": {
+            "test": 930,
+            "train": 3523,
+            "validation": 701
+          },
+          "direction_count": {
+            "short_perp_long_spot": 4494,
+            "long_perp_short_spot": 660
+          },
+          "selected_threshold": null,
+          "threshold_search_summary": null
+        },
+        {
+          "strategy_name": "gru_gross__validation_tuned_balanced_support",
+          "model_name": "gru",
+          "run_name": "gru_gross",
+          "target_type": "gross_opportunity_regression",
+          "task": "regression",
+          "signal_rule": "validation_tuned_balanced_support",
+          "signal_rule_type": "threshold_based",
+          "selection_reason": "selected validation absolute-score threshold at quantile 0.5 using avg_signal_return_bps weighted by signal support",
+          "status": "ok",
+          "reason": null,
+          "signal_count_by_split": {
+            "test": 2708,
+            "train": 16725,
+            "validation": 3288
+          },
+          "direction_count": {
+            "short_perp_long_spot": 19249,
+            "long_perp_short_spot": 3472
+          },
+          "selected_threshold": 1.2808223962783813,
+          "threshold_search_summary": {
+            "status": "ok",
+            "reason": null,
+            "selected_quantile": 0.5,
+            "selected_threshold": 1.2808223962783813,
+            "selected_objective_value": 167.97493896895543,
+            "selected_avg_signal_return_bps": 2.929399395026081,
+            "selected_signal_count": 3288,
+            "valid_candidate_count": 7
+          }
+        },
+        {
+          "strategy_name": "tcn_gross__rolling_top_decile_abs",
+          "model_name": "tcn",
+          "run_name": "tcn_gross",
+          "target_type": "gross_opportunity_regression",
+          "task": "regression",
+          "signal_rule": "rolling_top_decile_abs",
+          "signal_rule_type": "ranking_based",
+          "selection_reason": "rolling_abs_percentile >= 0.90 with window 336 and min_history 168",
+          "status": "ok",
+          "reason": null,
+          "signal_count_by_split": {
+            "test": 959,
+            "train": 3308,
+            "validation": 700
+          },
+          "direction_count": {
+            "short_perp_long_spot": 4339,
+            "long_perp_short_spot": 628
+          },
+          "selected_threshold": null,
+          "threshold_search_summary": null
+        },
+        {
+          "strategy_name": "tcn_gross__validation_tuned_balanced_support",
+          "model_name": "tcn",
+          "run_name": "tcn_gross",
+          "target_type": "gross_opportunity_regression",
+          "task": "regression",
+          "signal_rule": "validation_tuned_balanced_support",
+          "signal_rule_type": "threshold_based",
+          "selection_reason": "selected validation absolute-score threshold at quantile 0.5 using avg_signal_return_bps weighted by signal support",
+          "status": "ok",
+          "reason": null,
+          "signal_count_by_split": {
+            "test": 2559,
+            "train": 15105,
+            "validation": 3288
+          },
+          "direction_count": {
+            "short_perp_long_spot": 18357,
+            "long_perp_short_spot": 2595
+          },
+          "selected_threshold": 1.4850677251815796,
+          "threshold_search_summary": {
+            "status": "ok",
+            "reason": null,
+            "selected_quantile": 0.5,
+            "selected_threshold": 1.4850677251815796,
+            "selected_objective_value": 168.21424384986403,
+            "selected_avg_signal_return_bps": 2.933572753133328,
+            "selected_signal_count": 3288,
+            "valid_candidate_count": 7
+          }
+        },
+        {
+          "strategy_name": "transformer_gross__rolling_top_decile_abs",
+          "model_name": "transformer_encoder",
+          "run_name": "transformer_gross",
+          "target_type": "gross_opportunity_regression",
+          "task": "regression",
+          "signal_rule": "rolling_top_decile_abs",
+          "signal_rule_type": "ranking_based",
+          "selection_reason": "rolling_abs_percentile >= 0.90 with window 336 and min_history 168",
+          "status": "ok",
+          "reason": null,
+          "signal_count_by_split": {
+            "test": 915,
+            "train": 3346,
+            "validation": 679
+          },
+          "direction_count": {
+            "short_perp_long_spot": 4075,
+            "long_perp_short_spot": 865
+          },
+          "selected_threshold": null,
+          "threshold_search_summary": null
+        },
+        {
+          "strategy_name": "transformer_gross__validation_tuned_balanced_support",
+          "model_name": "transformer_encoder",
+          "run_name": "transformer_gross",
+          "target_type": "gross_opportunity_regression",
+          "task": "regression",
+          "signal_rule": "validation_tuned_balanced_support",
+          "signal_rule_type": "threshold_based",
+          "selection_reason": "selected validation absolute-score threshold at quantile 0.5 using avg_signal_return_bps weighted by signal support",
+          "status": "ok",
+          "reason": null,
+          "signal_count_by_split": {
+            "test": 2911,
+            "train": 17322,
+            "validation": 3288
+          },
+          "direction_count": {
+            "short_perp_long_spot": 19616,
+            "long_perp_short_spot": 3905
+          },
+          "selected_threshold": 1.2033634185791016,
+          "threshold_search_summary": {
+            "status": "ok",
+            "reason": null,
+            "selected_quantile": 0.5,
+            "selected_threshold": 1.2033634185791016,
+            "selected_objective_value": 165.91498036957884,
+            "selected_avg_signal_return_bps": 2.8934747415519824,
+            "selected_signal_count": 3288,
+            "valid_candidate_count": 7
+          }
+        },
+        {
+          "strategy_name": "lstm_direction__rolling_top_decile_abs",
+          "model_name": "lstm",
+          "run_name": "lstm_direction",
+          "target_type": "direction_classification",
+          "task": "classification",
+          "signal_rule": "rolling_top_decile_abs",
+          "signal_rule_type": "ranking_based",
+          "selection_reason": "rolling_abs_percentile >= 0.90 with window 336 and min_history 168",
+          "status": "ok",
+          "reason": null,
+          "signal_count_by_split": {
+            "test": 921,
+            "train": 3316,
+            "validation": 736
+          },
+          "direction_count": {
+            "long_perp_short_spot": 3045,
+            "short_perp_long_spot": 1928
+          },
+          "selected_threshold": null,
+          "threshold_search_summary": null
+        },
+        {
+          "strategy_name": "lstm_direction__validation_tuned_balanced_support",
+          "model_name": "lstm",
+          "run_name": "lstm_direction",
+          "target_type": "direction_classification",
+          "task": "classification",
+          "signal_rule": "validation_tuned_balanced_support",
+          "signal_rule_type": "threshold_based",
+          "selection_reason": "selected validation absolute-score threshold at quantile 0.5 using avg_signal_return_bps weighted by signal support",
+          "status": "ok",
+          "reason": null,
+          "signal_count_by_split": {
+            "test": 4045,
+            "train": 17023,
+            "validation": 3288
+          },
+          "direction_count": {
+            "short_perp_long_spot": 12871,
+            "long_perp_short_spot": 11485
+          },
+          "selected_threshold": 0.4333220381942863,
+          "threshold_search_summary": {
+            "status": "ok",
+            "reason": null,
+            "selected_quantile": 0.5,
+            "selected_threshold": 0.4333220381942863,
+            "selected_objective_value": 146.27090479188698,
+            "selected_avg_signal_return_bps": 2.550891833254141,
+            "selected_signal_count": 3288,
+            "valid_candidate_count": 7
+          }
+        },
+        {
+          "strategy_name": "gru_direction__rolling_top_decile_abs",
+          "model_name": "gru",
+          "run_name": "gru_direction",
+          "target_type": "direction_classification",
+          "task": "classification",
+          "signal_rule": "rolling_top_decile_abs",
+          "signal_rule_type": "ranking_based",
+          "selection_reason": "rolling_abs_percentile >= 0.90 with window 336 and min_history 168",
+          "status": "ok",
+          "reason": null,
+          "signal_count_by_split": {
+            "test": 938,
+            "train": 3305,
+            "validation": 694
+          },
+          "direction_count": {
+            "short_perp_long_spot": 2618,
+            "long_perp_short_spot": 2319
+          },
+          "selected_threshold": null,
+          "threshold_search_summary": null
+        },
+        {
+          "strategy_name": "gru_direction__validation_tuned_balanced_support",
+          "model_name": "gru",
+          "run_name": "gru_direction",
+          "target_type": "direction_classification",
+          "task": "classification",
+          "signal_rule": "validation_tuned_balanced_support",
+          "signal_rule_type": "threshold_based",
+          "selection_reason": "selected validation absolute-score threshold at quantile 0.5 using avg_signal_return_bps weighted by signal support",
+          "status": "ok",
+          "reason": null,
+          "signal_count_by_split": {
+            "test": 3580,
+            "train": 16611,
+            "validation": 3288
+          },
+          "direction_count": {
+            "short_perp_long_spot": 13789,
+            "long_perp_short_spot": 9690
+          },
+          "selected_threshold": 0.44774987670821775,
+          "threshold_search_summary": {
+            "status": "ok",
+            "reason": null,
+            "selected_quantile": 0.5,
+            "selected_threshold": 0.44774987670821775,
+            "selected_objective_value": 155.5581805242516,
+            "selected_avg_signal_return_bps": 2.7128573030963863,
+            "selected_signal_count": 3288,
+            "valid_candidate_count": 7
+          }
+        },
+        {
+          "strategy_name": "tcn_direction__rolling_top_decile_abs",
+          "model_name": "tcn",
+          "run_name": "tcn_direction",
+          "target_type": "direction_classification",
+          "task": "classification",
+          "signal_rule": "rolling_top_decile_abs",
+          "signal_rule_type": "ranking_based",
+          "selection_reason": "rolling_abs_percentile >= 0.90 with window 336 and min_history 168",
+          "status": "ok",
+          "reason": null,
+          "signal_count_by_split": {
+            "test": 902,
+            "train": 3298,
+            "validation": 703
+          },
+          "direction_count": {
+            "short_perp_long_spot": 2805,
+            "long_perp_short_spot": 2098
+          },
+          "selected_threshold": null,
+          "threshold_search_summary": null
+        },
+        {
+          "strategy_name": "tcn_direction__validation_tuned_balanced_support",
+          "model_name": "tcn",
+          "run_name": "tcn_direction",
+          "target_type": "direction_classification",
+          "task": "classification",
+          "signal_rule": "validation_tuned_balanced_support",
+          "signal_rule_type": "threshold_based",
+          "selection_reason": "selected validation absolute-score threshold at quantile 0.5 using avg_signal_return_bps weighted by signal support",
+          "status": "ok",
+          "reason": null,
+          "signal_count_by_split": {
+            "test": 4271,
+            "train": 17087,
+            "validation": 3288
+          },
+          "direction_count": {
+            "short_perp_long_spot": 14231,
+            "long_perp_short_spot": 10415
+          },
+          "selected_threshold": 0.48749817618550945,
+          "threshold_search_summary": {
+            "status": "ok",
+            "reason": null,
+            "selected_quantile": 0.5,
+            "selected_threshold": 0.48749817618550945,
+            "selected_objective_value": 128.10118806421002,
+            "selected_avg_signal_return_bps": 2.2340210100434876,
+            "selected_signal_count": 3288,
+            "valid_candidate_count": 7
+          }
+        },
+        {
+          "strategy_name": "transformer_direction__rolling_top_decile_abs",
+          "model_name": "transformer_encoder",
+          "run_name": "transformer_direction",
+          "target_type": "direction_classification",
+          "task": "classification",
+          "signal_rule": "rolling_top_decile_abs",
+          "signal_rule_type": "ranking_based",
+          "selection_reason": "rolling_abs_percentile >= 0.90 with window 336 and min_history 168",
+          "status": "ok",
+          "reason": null,
+          "signal_count_by_split": {
+            "test": 928,
+            "train": 3307,
+            "validation": 694
+          },
+          "direction_count": {
+            "short_perp_long_spot": 2641,
+            "long_perp_short_spot": 2288
+          },
+          "selected_threshold": null,
+          "threshold_search_summary": null
+        },
+        {
+          "strategy_name": "transformer_direction__validation_tuned_balanced_support",
+          "model_name": "transformer_encoder",
+          "run_name": "transformer_direction",
+          "target_type": "direction_classification",
+          "task": "classification",
+          "signal_rule": "validation_tuned_balanced_support",
+          "signal_rule_type": "threshold_based",
+          "selection_reason": "selected validation absolute-score threshold at quantile 0.5 using avg_signal_return_bps weighted by signal support",
+          "status": "ok",
+          "reason": null,
+          "signal_count_by_split": {
+            "test": 4217,
+            "train": 16447,
+            "validation": 3288
+          },
+          "direction_count": {
+            "short_perp_long_spot": 13650,
+            "long_perp_short_spot": 10302
+          },
+          "selected_threshold": 0.518077799573661,
+          "threshold_search_summary": {
+            "status": "ok",
+            "reason": null,
+            "selected_quantile": 0.5,
+            "selected_threshold": 0.518077799573661,
+            "selected_objective_value": 146.5390405134393,
+            "selected_avg_signal_return_bps": 2.5555679868834953,
+            "selected_signal_count": 3288,
+            "valid_candidate_count": 7
+          }
+        }
+      ]
+    },
+    "status": "ok",
+    "reason": null,
+    "signals_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory\\signals.parquet",
+    "signals_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory\\signals.csv",
+    "strategy_catalog_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory\\strategy_catalog.csv",
+    "diagnostic_paths": {
+      "lstm_gross__validation_tuned_balanced_support_threshold_search": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory\\diagnostics\\lstm_gross__validation_tuned_balanced_support_threshold_search.csv",
+      "gru_gross__validation_tuned_balanced_support_threshold_search": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory\\diagnostics\\gru_gross__validation_tuned_balanced_support_threshold_search.csv",
+      "tcn_gross__validation_tuned_balanced_support_threshold_search": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory\\diagnostics\\tcn_gross__validation_tuned_balanced_support_threshold_search.csv",
+      "transformer_gross__validation_tuned_balanced_support_threshold_search": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory\\diagnostics\\transformer_gross__validation_tuned_balanced_support_threshold_search.csv",
+      "lstm_direction__validation_tuned_balanced_support_threshold_search": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory\\diagnostics\\lstm_direction__validation_tuned_balanced_support_threshold_search.csv",
+      "gru_direction__validation_tuned_balanced_support_threshold_search": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory\\diagnostics\\gru_direction__validation_tuned_balanced_support_threshold_search.csv",
+      "tcn_direction__validation_tuned_balanced_support_threshold_search": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory\\diagnostics\\tcn_direction__validation_tuned_balanced_support_threshold_search.csv",
+      "transformer_direction__validation_tuned_balanced_support_threshold_search": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory\\diagnostics\\transformer_direction__validation_tuned_balanced_support_threshold_search.csv"
+    },
+    "disclaimer": "Exploratory DL signals are showcase-oriented translations of independent exploratory model runs. They use ranking and support-aware threshold rules to demonstrate learned opportunity structure, and they do not replace the strict post-cost primary signal layer.",
+    "notes": {
+      "disclaimer": "These signal rules are showcase-only translations of exploratory model scores. They do not replace the strict signal layer used for the primary conclusion."
+    }
+  },
+  "market_manifest": {
+    "provider": "binance",
+    "dataset": {
+      "symbol": "BTCUSDT",
+      "venue": "binance",
+      "reference_source": "spot",
+      "frequency": "1h",
+      "start": "2021-01-01",
+      "end": "2026-04-07",
+      "perpetual_symbol": "BTCUSDT",
+      "spot_symbol": "BTCUSDT"
+    },
+    "time_range": {
+      "start": "2021-01-01T00:00:00+00:00",
+      "end_exclusive": "2026-04-08T00:00:00+00:00"
+    },
+    "row_counts": {
+      "perpetual_bars": 46152,
+      "spot_bars": 46138,
+      "funding_rates": 5769
+    },
+    "cleaned_row_counts": {
+      "perpetual_bars": 46152,
+      "spot_bars": 46138,
+      "funding_rates": 5769
+    },
+    "canonical_row_count": 46152,
+    "raw_files": [
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\raw\\binance\\btcusdt\\1h\\perpetual_bars.parquet",
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\raw\\binance\\btcusdt\\1h\\spot_bars.parquet",
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\raw\\binance\\btcusdt\\1h\\funding_rates.parquet"
+    ],
+    "interim_files": [
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\interim\\binance\\btcusdt\\1h\\perpetual_bars_clean.parquet",
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\interim\\binance\\btcusdt\\1h\\spot_bars_clean.parquet",
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\interim\\binance\\btcusdt\\1h\\funding_rates_clean.parquet"
+    ],
+    "processed_files": [
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\processed\\binance\\btcusdt\\1h\\hourly_market_data.parquet",
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\processed\\binance\\btcusdt\\1h\\hourly_market_data.csv"
+    ],
+    "assumptions": {
+      "assumption": "The primary historical dataset uses Binance public REST endpoints for BTCUSDT hourly perpetual, spot, and funding data over 2021-01-01 to 2026-04-07 UTC.",
+      "range_rationale": "This default window is long enough to cover multiple market regimes while keeping hourly ingestion and cleaning practical for a course-project prototype.",
+      "gap_handling_note": "The default fill window is 6 hours because Binance spot history over the primary sample contains a few rare multi-hour gaps, and the canonical dataset keeps missingness flags for auditability.",
+      "open_interest_note": "Binance open interest history is supported by the interface but disabled by default because the public history endpoint is limited and venue-specific.",
+      "end_date_note": "Date-only end values are treated as inclusive UTC dates and expanded to the next day internally for hourly extraction."
+    }
+  },
+  "artifacts": {
+    "trade_log_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory_dl_showcase\\trade_log.parquet",
+    "primary_trade_log_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory_dl_showcase\\primary_trade_log.parquet",
+    "equity_curve_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory_dl_showcase\\equity_curve.parquet",
+    "strategy_metrics_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory_dl_showcase\\strategy_metrics.parquet",
+    "combined_strategy_metrics_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory_dl_showcase\\combined_strategy_metrics.parquet",
+    "combined_strategy_metrics_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory_dl_showcase\\combined_strategy_metrics.csv",
+    "split_summary_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory_dl_showcase\\split_summary.parquet",
+    "leaderboard_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory_dl_showcase\\leaderboard.parquet",
+    "report_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory_dl_showcase\\backtest_report.md",
+    "figure_paths": [
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory_dl_showcase\\figures\\cumulative_returns.png",
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory_dl_showcase\\figures\\drawdowns.png",
+      "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\backtests\\exploratory_dl\\binance\\btcusdt\\1h\\exploratory_dl_showcase\\figures\\trade_return_boxplot.png"
+    ]
+  },
+  "assumptions": [
+    "Single-asset, delta-neutral prototype with at most one open position per strategy.",
+    "Signals at timestamp t are executed after entry_delay_bars using the configured execution price field.",
+    "Primary leaderboard and strategy metrics use the configured reporting.primary_split, which defaults to test.",
+    "Primary equity, drawdown, and Sharpe metrics use mark-to-market equity; realized-only columns are retained for audit.",
+    "Funding PnL uses funding_mode=prototype_bar_sum and funding_notional_mode=initial_notional.",
+    "Hedge mode is equal_notional_hedge; current implementation uses equal USD notional on the perp and spot legs.",
+    "Trading fees use taker_fee_bps on all four round-trip leg transactions.",
+    "Slippage is modeled by adverse execution prices; embedded_slippage_cost_usd is the preferred diagnostic and is not deducted twice.",
+    "Stop logic is bar_close_observed and next_bar_executed.",
+    "Simple annualized Sharpe uses square-root scaling and should be interpreted cautiously for sparse or serially correlated returns.",
+    "Strategies with no executable trades keep cumulative return at zero but report Sharpe and drawdown as NaN because those risk metrics are not meaningful without positions."
+  ]
+}

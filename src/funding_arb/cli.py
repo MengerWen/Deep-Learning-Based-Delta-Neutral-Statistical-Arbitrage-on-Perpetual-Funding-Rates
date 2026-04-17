@@ -12,6 +12,14 @@ from funding_arb.backtest.engine import describe_backtest_job, run_backtest_pipe
 from funding_arb.config.loader import COMMAND_SETTINGS, load_command_settings
 from funding_arb.data.pipeline import describe_ingestion_job, run_data_pipeline
 from funding_arb.demo.workflow import describe_demo_workflow_job, run_demo_workflow
+from funding_arb.exploratory_dl import (
+    describe_exploratory_dataset_job,
+    describe_exploratory_report_job,
+    describe_exploratory_signal_job,
+    run_exploratory_dataset_pipeline,
+    run_exploratory_dl_report,
+    run_exploratory_signal_generation,
+)
 from funding_arb.features.pipeline import describe_feature_job, run_feature_pipeline
 from funding_arb.integration.pipeline import (
     describe_integration_job,
@@ -112,6 +120,17 @@ def _run_build_labels(config: Any, config_path: Path) -> int:
             ", ".join(f"{name}={path}" for name, path in artifacts.split_paths.items()),
         )
     LOGGER.info("Supervised manifest: %s", artifacts.manifest_path)
+    return 0
+
+
+def _run_build_exploratory_dataset(config: Any, config_path: Path) -> int:
+    _log_config_summary("build-exploratory-dl-dataset", config_path, config)
+    LOGGER.info(describe_exploratory_dataset_job(config))
+    artifacts = run_exploratory_dataset_pipeline(config)
+    LOGGER.info("Exploratory dataset: %s", artifacts.dataset_path)
+    if artifacts.dataset_csv_path is not None:
+        LOGGER.info("Exploratory dataset CSV: %s", artifacts.dataset_csv_path)
+    LOGGER.info("Exploratory manifest: %s", artifacts.manifest_path)
     return 0
 
 
@@ -229,6 +248,23 @@ def _run_generate_signals(config: Any, config_path: Path) -> int:
     return 0
 
 
+def _run_generate_exploratory_signals(config: Any, config_path: Path) -> int:
+    _log_config_summary("generate-exploratory-dl-signals", config_path, config)
+    LOGGER.info(describe_exploratory_signal_job(config))
+    artifacts = run_exploratory_signal_generation(config)
+    LOGGER.info("Signals: %s", artifacts.signals_path)
+    if artifacts.signals_csv_path is not None:
+        LOGGER.info("Signals CSV: %s", artifacts.signals_csv_path)
+    LOGGER.info("Strategy catalog: %s", artifacts.strategy_catalog_path)
+    LOGGER.info("Signal manifest: %s", artifacts.manifest_path)
+    if artifacts.diagnostic_paths:
+        LOGGER.info(
+            "Diagnostics: %s",
+            ", ".join(f"{name}={path}" for name, path in artifacts.diagnostic_paths.items()),
+        )
+    return 0
+
+
 def _run_backtest(config: Any, config_path: Path) -> int:
     _log_config_summary("backtest", config_path, config)
     LOGGER.info(describe_backtest_job(config))
@@ -292,6 +328,24 @@ def _run_generate_final_report(config: Any, config_path: Path) -> int:
     return 0
 
 
+def _run_generate_exploratory_report(config: Any, config_path: Path) -> int:
+    _log_config_summary("generate-exploratory-dl-report", config_path, config)
+    LOGGER.info(describe_exploratory_report_job(config))
+    artifacts = run_exploratory_dl_report(config)
+    LOGGER.info("Artifact output dir: %s", artifacts.output_dir)
+    LOGGER.info("Full leaderboard: %s", artifacts.full_leaderboard_path)
+    LOGGER.info("Showcase leaderboard: %s", artifacts.showcase_leaderboard_path)
+    if artifacts.markdown_report_path is not None:
+        LOGGER.info("Markdown report: %s", artifacts.markdown_report_path)
+    if artifacts.summary_json_path is not None:
+        LOGGER.info("Summary JSON: %s", artifacts.summary_json_path)
+    if artifacts.frontend_public_dir is not None:
+        LOGGER.info("Frontend public dir: %s", artifacts.frontend_public_dir)
+    if artifacts.figure_paths:
+        LOGGER.info("Figures: %s", ", ".join(artifacts.figure_paths))
+    return 0
+
+
 def _run_sync_vault(config: Any, config_path: Path) -> int:
     _log_config_summary("sync-vault", config_path, config)
     LOGGER.info(describe_integration_job(config))
@@ -330,16 +384,20 @@ COMMAND_HANDLERS: dict[str, Callable[[Any, Path], int]] = {
     "report-data-quality": _run_report_data_quality,
     "build-features": _run_build_features,
     "build-labels": _run_build_labels,
+    "build-exploratory-dl-dataset": _run_build_exploratory_dataset,
     "train-baseline": _run_train_baseline,
     "evaluate-baseline": _run_evaluate_baseline,
     "train-dl": _run_train_dl,
     "compare-dl": _run_compare_dl,
     "generate-signals": _run_generate_signals,
+    "generate-exploratory-dl-signals": _run_generate_exploratory_signals,
     "backtest": _run_backtest,
     "robustness-report": _run_robustness_report,
     "generate-final-report": _run_generate_final_report,
+    "generate-exploratory-dl-report": _run_generate_exploratory_report,
     "sync-vault": _run_sync_vault,
     "run-demo": _run_demo,
+    "run-exploratory-dl-demo": _run_demo,
 }
 
 

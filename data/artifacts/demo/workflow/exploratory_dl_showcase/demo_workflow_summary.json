@@ -1,0 +1,143 @@
+{
+  "run_name": "exploratory_dl_showcase",
+  "overall_status": "completed_with_warnings",
+  "failed_stage": null,
+  "generated_at_epoch_seconds": 1776409003.9844403,
+  "completed_stage_count": 7,
+  "stage_results": [
+    {
+      "key": "build_exploratory_dataset",
+      "label": "Build exploratory DL dataset",
+      "optional": false,
+      "status": "completed",
+      "return_code": 0,
+      "duration_seconds": 10.060909899999388,
+      "command": [
+        "D:\\MG\\anaconda3\\python.exe",
+        "-m",
+        "src.main",
+        "build-exploratory-dl-dataset",
+        "--config",
+        "configs/models/exploratory_dl/dataset.yaml",
+        "--log-level",
+        "INFO"
+      ]
+    },
+    {
+      "key": "compare_exploratory_deep_learning",
+      "label": "Compare exploratory deep-learning showcase bundle",
+      "optional": false,
+      "status": "completed",
+      "return_code": 0,
+      "duration_seconds": 6.705067299990333,
+      "command": [
+        "D:\\MG\\anaconda3\\python.exe",
+        "-m",
+        "src.main",
+        "compare-dl",
+        "--config",
+        "configs/experiments/dl/exploratory_gross_regression.yaml",
+        "--log-level",
+        "INFO"
+      ]
+    },
+    {
+      "key": "compare_exploratory_direction",
+      "label": "Compare exploratory direction-classification bundle",
+      "optional": false,
+      "status": "completed",
+      "return_code": 0,
+      "duration_seconds": 6.6563504000077955,
+      "command": [
+        "D:\\MG\\anaconda3\\python.exe",
+        "-m",
+        "src.main",
+        "compare-dl",
+        "--config",
+        "configs/experiments/dl/exploratory_direction_classification.yaml",
+        "--log-level",
+        "INFO"
+      ]
+    },
+    {
+      "key": "generate_exploratory_signals",
+      "label": "Generate exploratory deep-learning signals",
+      "optional": false,
+      "status": "completed",
+      "return_code": 0,
+      "duration_seconds": 46.36016379999637,
+      "command": [
+        "D:\\MG\\anaconda3\\python.exe",
+        "-m",
+        "src.main",
+        "generate-exploratory-dl-signals",
+        "--config",
+        "configs/signals/exploratory_dl/default.yaml",
+        "--log-level",
+        "INFO"
+      ]
+    },
+    {
+      "key": "backtest_exploratory",
+      "label": "Run exploratory deep-learning backtest",
+      "optional": false,
+      "status": "reused_existing_artifacts",
+      "return_code": 120,
+      "duration_seconds": 635.4502476999915,
+      "command": [
+        "D:\\MG\\anaconda3\\python.exe",
+        "-m",
+        "src.main",
+        "backtest",
+        "--config",
+        "configs/backtests/exploratory_dl/default.yaml",
+        "--log-level",
+        "INFO"
+      ]
+    },
+    {
+      "key": "report_exploratory",
+      "label": "Generate exploratory deep-learning report",
+      "optional": false,
+      "status": "reused_existing_artifacts",
+      "return_code": 120,
+      "duration_seconds": 10.892030200004228,
+      "command": [
+        "D:\\MG\\anaconda3\\python.exe",
+        "-m",
+        "src.main",
+        "generate-exploratory-dl-report",
+        "--config",
+        "configs/reports/exploratory_dl/showcase.yaml",
+        "--log-level",
+        "INFO"
+      ]
+    },
+    {
+      "key": "export_demo_snapshot",
+      "label": "Export frontend demo snapshot",
+      "optional": true,
+      "status": "reused_existing_artifacts",
+      "return_code": 120,
+      "duration_seconds": 1.039194299999508,
+      "command": [
+        "D:\\MG\\anaconda3\\python.exe",
+        "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\scripts\\demo\\export_demo_snapshot.py",
+        "--config",
+        "configs/demo/exploratory_snapshot.yaml",
+        "--log-level",
+        "INFO"
+      ]
+    }
+  ],
+  "artifact_snapshot_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\demo\\exploratory\\demo_snapshot.json",
+  "frontend_snapshot_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\frontend\\public\\demo\\exploratory\\demo_snapshot.json",
+  "frontend_ready": true,
+  "frontend_dir": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\frontend",
+  "frontend_dashboard_url": "http://127.0.0.1:5173",
+  "frontend_dev_command": "npm run dev",
+  "notes": {
+    "purpose": "Generate the standalone exploratory DL showcase artifacts without overwriting the strict primary demo outputs.",
+    "prerequisite": "This workflow expects the strict upstream market dataset and supervised dataset artifacts to already exist."
+  }
+}

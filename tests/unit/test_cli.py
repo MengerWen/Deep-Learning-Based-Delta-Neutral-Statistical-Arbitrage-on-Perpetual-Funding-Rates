@@ -30,6 +30,15 @@ def test_cli_parser_accepts_build_labels_command() -> None:
     ) or args.config.endswith("configs/labels/default.yaml")
 
 
+def test_cli_parser_accepts_build_exploratory_dataset_command() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["build-exploratory-dl-dataset"])
+    assert args.command == "build-exploratory-dl-dataset"
+    assert args.config.endswith(
+        "configs\\models\\exploratory_dl\\dataset.yaml"
+    ) or args.config.endswith("configs/models/exploratory_dl/dataset.yaml")
+
+
 def test_cli_parser_accepts_generate_signals_with_source_override() -> None:
     parser = build_parser()
     args = parser.parse_args(["generate-signals", "--source", "dl"])
@@ -92,6 +101,24 @@ def test_cli_parser_accepts_compare_dl_command() -> None:
     ) or args.config.endswith("configs/experiments/dl/regression_all.yaml")
 
 
+def test_cli_parser_accepts_generate_exploratory_signal_command() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["generate-exploratory-dl-signals"])
+    assert args.command == "generate-exploratory-dl-signals"
+    assert args.config.endswith(
+        "configs\\signals\\exploratory_dl\\default.yaml"
+    ) or args.config.endswith("configs/signals/exploratory_dl/default.yaml")
+
+
+def test_cli_parser_accepts_generate_exploratory_report_command() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["generate-exploratory-dl-report"])
+    assert args.command == "generate-exploratory-dl-report"
+    assert args.config.endswith(
+        "configs\\reports\\exploratory_dl\\showcase.yaml"
+    ) or args.config.endswith("configs/reports/exploratory_dl/showcase.yaml")
+
+
 def test_cli_parser_accepts_sync_vault_command() -> None:
     parser = build_parser()
     args = parser.parse_args(["sync-vault"])
@@ -108,3 +135,12 @@ def test_cli_parser_accepts_run_demo_command() -> None:
     assert args.config.endswith(
         "configs\\demo\\workflow.yaml"
     ) or args.config.endswith("configs/demo/workflow.yaml")
+
+
+def test_cli_parser_accepts_run_exploratory_demo_command() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["run-exploratory-dl-demo"])
+    assert args.command == "run-exploratory-dl-demo"
+    assert args.config.endswith(
+        "configs\\demo\\exploratory_workflow.yaml"
+    ) or args.config.endswith("configs/demo/exploratory_workflow.yaml")

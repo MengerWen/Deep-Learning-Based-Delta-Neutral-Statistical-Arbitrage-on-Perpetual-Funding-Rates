@@ -185,6 +185,7 @@ def _build_summary(
     settings: FinalReportSettings,
     snapshot: dict[str, Any],
     robustness_summary: dict[str, Any] | None,
+    exploratory_summary: dict[str, Any] | None,
     charts: list[dict[str, Any]],
 ) -> dict[str, Any]:
     best_strategy = snapshot["backtest"].get("best_strategy", {})
@@ -227,6 +228,7 @@ def _build_summary(
             "top_strategies": _sorted_strategies(snapshot)[:5],
             "assumptions": snapshot["backtest"].get("assumptions", []),
         },
+        "exploratory": exploratory_summary or {},
         "robustness": robustness_summary or {},
         "vault": snapshot.get("vault", {}),
         "charts": charts,
@@ -302,6 +304,29 @@ def _robustness_rows(summary: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
+def _exploratory_rows(summary: dict[str, Any]) -> list[dict[str, Any]]:
+    exploratory = summary.get("exploratory", {}) or {}
+    showcase = exploratory.get("exploratory_summary", {}) or {}
+    best_row = showcase.get("best_showcase_row", {}) or {}
+    if not best_row:
+        return []
+    return [
+        {
+            "strategy": best_row.get("strategy_name", "n/a"),
+            "model": best_row.get("model_name", "n/a"),
+            "target": best_row.get("target_type", "n/a"),
+            "signal_rule": best_row.get("signal_rule", "n/a"),
+            "split": best_row.get("evaluation_split", "n/a"),
+            "trades": _fmt_int(best_row.get("trade_count")),
+            "cum_return": _fmt_pct(best_row.get("cumulative_return")),
+            "mtm_sharpe": _fmt_num(best_row.get("sharpe_ratio"), 3),
+            "net_pnl": _fmt_usd(best_row.get("total_net_pnl_usd")),
+            "status": best_row.get("status", "n/a"),
+            "reason": best_row.get("reason", ""),
+        }
+    ]
+
+
 def _build_markdown(summary: dict[str, Any]) -> str:
     research = summary["research"]
     best_strategy = summary["backtest"]["best_strategy"]
@@ -314,6 +339,31 @@ def _build_markdown(summary: dict[str, Any]) -> str:
         if summary.get("best_family_note")
         else ""
     )
+    exploratory_section = ""
+    if summary.get("exploratory"):
+        exploratory_section = f"""
+
+## Exploratory DL Showcase
+
+Exploratory DL results are supplementary showcase results designed to demonstrate model learning behavior, ranking ability, and alternative opportunity definitions. They do not replace the strict post-cost primary conclusion.
+
+{_table_md(
+    _exploratory_rows(summary),
+    [
+        ("Strategy", "strategy"),
+        ("Model", "model"),
+        ("Target", "target"),
+        ("Signal Rule", "signal_rule"),
+        ("Split", "split"),
+        ("Trades", "trades"),
+        ("Cum Return", "cum_return"),
+        ("MTM Sharpe", "mtm_sharpe"),
+        ("Net PnL", "net_pnl"),
+        ("Status", "status"),
+        ("Reason", "reason"),
+    ],
+)}
+"""
     return f"""# {summary['meta']['title']}
 
 {summary['meta']['subtitle']}
@@ -403,6 +453,7 @@ def _build_markdown(summary: dict[str, Any]) -> str:
         ("Net PnL", "net_pnl"),
     ],
 )}{note}
+{exploratory_section}
 
 ## Vault Prototype
 
@@ -452,6 +503,33 @@ def _build_html(summary: dict[str, Any]) -> str:
         if summary.get("best_family_note")
         else ""
     )
+    exploratory_html = ""
+    if summary.get("exploratory"):
+        exploratory_html = f"""
+      <section class="section">
+        <p class="eyebrow">Exploratory</p>
+        <h2>Supplementary DL showcase results stay separate from the strict conclusion</h2>
+        <p>Exploratory DL results are supplementary showcase results designed to demonstrate model learning behavior, ranking ability, and alternative opportunity definitions. They do not replace the strict post-cost primary conclusion.</p>
+        <div class="table-shell">
+          {_table_html(
+              _exploratory_rows(summary),
+              [
+                  ("Strategy", "strategy"),
+                  ("Model", "model"),
+                  ("Target", "target"),
+                  ("Signal Rule", "signal_rule"),
+                  ("Split", "split"),
+                  ("Trades", "trades"),
+                  ("Cum Return", "cum_return"),
+                  ("MTM Sharpe", "mtm_sharpe"),
+                  ("Net PnL", "net_pnl"),
+                  ("Status", "status"),
+                  ("Reason", "reason"),
+              ],
+          )}
+        </div>
+      </section>
+        """
     return f"""<!doctype html>
 <html lang="en">
   <head>
@@ -638,6 +716,8 @@ def _build_html(summary: dict[str, Any]) -> str:
         {note_html}
       </section>
 
+      {exploratory_html}
+
       <section class="section">
         <p class="eyebrow">Vault</p>
         <h2>The on-chain layer mirrors accounting and state, not live exchange execution</h2>
@@ -687,6 +767,11 @@ def run_final_report(settings: FinalReportSettings) -> FinalReportArtifacts:
         robustness_path = _resolve_path(settings.input.robustness_summary_path)
         if robustness_path.exists():
             robustness_summary = _load_json(robustness_path)
+    exploratory_summary = None
+    if settings.input.exploratory_summary_path is not None:
+        exploratory_path = _resolve_path(settings.input.exploratory_summary_path)
+        if exploratory_path.exists():
+            exploratory_summary = _load_json(exploratory_path)
 
     artifact_output_dir = ensure_directory(
         _resolve_path(settings.output.artifact_dir)
@@ -704,7 +789,13 @@ def run_final_report(settings: FinalReportSettings) -> FinalReportArtifacts:
         artifact_output_dir / "assets",
         public_report_dir / "assets" if public_report_dir is not None else None,
     )
-    summary = _build_summary(settings, snapshot, robustness_summary, charts)
+    summary = _build_summary(
+        settings,
+        snapshot,
+        robustness_summary,
+        exploratory_summary,
+        charts,
+    )
 
     markdown_report_path: str | None = None
     if settings.output.write_markdown:

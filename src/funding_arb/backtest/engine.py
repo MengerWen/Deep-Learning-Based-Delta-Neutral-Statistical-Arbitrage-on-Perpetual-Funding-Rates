@@ -586,7 +586,8 @@ def calculate_trade_pnl(
 
 def _entry_conditions_met(row: pd.Series, settings: BacktestSettings) -> bool:
     direction = str(row.get("suggested_direction", "flat"))
-    if direction != settings.selection.direction:
+    configured_direction = str(settings.selection.direction)
+    if configured_direction not in {"any", "both"} and direction != configured_direction:
         return False
     if settings.selection.require_should_trade and int(row.get("should_trade", 0)) != 1:
         return False

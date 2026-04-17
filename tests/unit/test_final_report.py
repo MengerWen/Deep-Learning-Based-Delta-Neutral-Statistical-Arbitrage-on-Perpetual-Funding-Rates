@@ -185,3 +185,115 @@ def test_generate_final_report_writes_artifact_and_public_outputs() -> None:
         assert summary_payload["charts"][0]["artifact_path"] == "assets/chart.png"
     finally:
         shutil.rmtree(tmp_path, ignore_errors=True)
+
+
+def test_generate_final_report_can_embed_exploratory_summary() -> None:
+    tmp_path = _make_temp_dir()
+    input_dir = tmp_path / "inputs"
+    input_dir.mkdir(parents=True, exist_ok=True)
+    artifact_dir = tmp_path / "reports"
+    public_dir = tmp_path / "public"
+
+    snapshot_path = input_dir / "demo_snapshot.json"
+    robustness_path = input_dir / "robustness_summary.json"
+    exploratory_summary_path = input_dir / "exploratory_summary.json"
+
+    _write_json(
+        snapshot_path,
+        {
+            "meta": {
+                "date_range": {
+                    "start": "2021-01-01T00:00:00+00:00",
+                    "end_exclusive": "2026-04-08T00:00:00+00:00",
+                }
+            },
+            "research": {
+                "canonical_rows": 46152,
+                "funding_events": 3092,
+                "coverage_ratio": 1.0,
+                "funding_mean_bps": 1.04,
+                "funding_std_bps": 1.89,
+                "spread_mean_bps": -1.53,
+                "annualized_volatility": 0.51,
+            },
+            "models": {
+                "baseline_best": {
+                    "model_name": "elastic_net_regression",
+                    "pearson_corr": 0.677,
+                    "signal_count": 0,
+                },
+                "deep_learning_best": {
+                    "model_name": "transformer_encoder",
+                    "pearson_corr": 0.646,
+                    "signal_count": 0,
+                },
+            },
+            "backtest": {
+                "summary": {"primary_split": "test"},
+                "best_strategy": {
+                    "strategy_name": "spread_zscore_1p5",
+                    "trade_count": 200,
+                    "cumulative_return": -0.0647,
+                    "sharpe_ratio": -14.07,
+                    "total_net_pnl_usd": -6474.85,
+                },
+                "top_strategies": [],
+                "assumptions": [],
+            },
+            "vault": {
+                "selected_strategy": "spread_zscore_1p5",
+                "strategy_state": "idle",
+                "suggested_direction": "flat",
+                "reported_nav_assets": 93525146215,
+                "summary_pnl_usd": -6474.85,
+                "call_count": 2,
+            },
+            "charts": [],
+        },
+    )
+    _write_json(robustness_path, {"family_comparison": []})
+    _write_json(
+        exploratory_summary_path,
+        {
+            "disclaimer": "Exploratory results are supplementary only.",
+            "exploratory_summary": {
+                "nonzero_trade_strategy_count": 3,
+                "best_showcase_row": {
+                    "strategy_name": "transformer_direction__rolling_top_decile_abs",
+                    "trade_count": 12,
+                    "cumulative_return": 0.018,
+                    "total_net_pnl_usd": 180.0,
+                },
+            },
+        },
+    )
+
+    config = FinalReportSettings.model_validate(
+        {
+            "input": {
+                "demo_snapshot_path": str(snapshot_path),
+                "robustness_summary_path": str(robustness_path),
+                "exploratory_summary_path": str(exploratory_summary_path),
+            },
+            "output": {
+                "artifact_dir": str(artifact_dir),
+                "frontend_public_dir": str(public_dir),
+                "write_markdown": True,
+                "write_html": False,
+                "write_json_summary": True,
+                "copy_to_frontend_public": False,
+            },
+        }
+    )
+
+    try:
+        artifacts = run_final_report(config)
+        markdown_text = (
+            Path(artifacts.artifact_output_dir) / "final_report.md"
+        ).read_text(encoding="utf-8")
+
+        assert "Exploratory DL Showcase" in markdown_text
+        assert "supplementary" in markdown_text
+        assert "transformer_direction__rolling_top_decile_abs" in markdown_text
+    finally:
+        shutil.rmtree(tmp_path, ignore_errors=True)
