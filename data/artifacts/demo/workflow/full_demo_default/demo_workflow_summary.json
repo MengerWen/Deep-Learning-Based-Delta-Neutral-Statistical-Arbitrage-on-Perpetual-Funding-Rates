@@ -2,7 +2,7 @@
   "run_name": "full_demo_default",
   "overall_status": "completed_with_warnings",
   "failed_stage": null,
-  "generated_at_epoch_seconds": 1776337276.0022435,
+  "generated_at_epoch_seconds": 1776398389.7243414,
   "completed_stage_count": 12,
   "stage_results": [
     {
@@ -11,7 +11,7 @@
       "optional": false,
       "status": "reused_existing_artifacts",
       "return_code": 1,
-      "duration_seconds": 29.272387299999536,
+      "duration_seconds": 33.29445219998888,
       "command": [
         "D:\\MG\\anaconda3\\python.exe",
         "-m",
@@ -29,7 +29,7 @@
       "optional": false,
       "status": "completed",
       "return_code": 0,
-      "duration_seconds": 12.5921315999949,
+      "duration_seconds": 18.51546030001191,
       "command": [
         "D:\\MG\\anaconda3\\python.exe",
         "-m",
@@ -47,7 +47,7 @@
       "optional": false,
       "status": "completed",
       "return_code": 0,
-      "duration_seconds": 11.734700900000462,
+      "duration_seconds": 18.972234200002276,
       "command": [
         "D:\\MG\\anaconda3\\python.exe",
         "-m",
@@ -65,7 +65,7 @@
       "optional": false,
       "status": "completed",
       "return_code": 0,
-      "duration_seconds": 13.956344599995646,
+      "duration_seconds": 21.541686999989906,
       "command": [
         "D:\\MG\\anaconda3\\python.exe",
         "-m",
@@ -81,9 +81,9 @@
       "key": "train_baseline",
       "label": "Train baseline models",
       "optional": false,
-      "status": "completed",
-      "return_code": 0,
-      "duration_seconds": 312.90723589999834,
+      "status": "reused_existing_artifacts",
+      "return_code": 1,
+      "duration_seconds": 28.263891000009608,
       "command": [
         "D:\\MG\\anaconda3\\python.exe",
         "-m",
@@ -101,7 +101,7 @@
       "optional": true,
       "status": "reused_existing_artifacts",
       "return_code": 3221226505,
-      "duration_seconds": 27.958094699999492,
+      "duration_seconds": 25.793274499999825,
       "command": [
         "D:\\MG\\anaconda3\\python.exe",
         "-m",
@@ -119,7 +119,7 @@
       "optional": true,
       "status": "completed",
       "return_code": 0,
-      "duration_seconds": 7.049049699999159,
+      "duration_seconds": 7.179912499996135,
       "command": [
         "D:\\MG\\anaconda3\\python.exe",
         "-m",
@@ -137,7 +137,7 @@
       "optional": false,
       "status": "completed",
       "return_code": 0,
-      "duration_seconds": 55.2282511999947,
+      "duration_seconds": 48.467868900013855,
       "command": [
         "D:\\MG\\anaconda3\\python.exe",
         "-m",
@@ -157,7 +157,7 @@
       "optional": true,
       "status": "completed",
       "return_code": 0,
-      "duration_seconds": 11.590138899999147,
+      "duration_seconds": 11.635522199998377,
       "command": [
         "D:\\MG\\anaconda3\\python.exe",
         "-m",
@@ -177,7 +177,7 @@
       "optional": false,
       "status": "completed",
       "return_code": 0,
-      "duration_seconds": 29.500682900004904,
+      "duration_seconds": 27.59015499999805,
       "command": [
         "D:\\MG\\anaconda3\\python.exe",
         "-m",
@@ -195,7 +195,7 @@
       "optional": false,
       "status": "completed",
       "return_code": 0,
-      "duration_seconds": 7.806228599998576,
+      "duration_seconds": 7.628110099991318,
       "command": [
         "D:\\MG\\anaconda3\\python.exe",
         "-m",
@@ -213,7 +213,7 @@
       "optional": false,
       "status": "completed",
       "return_code": 0,
-      "duration_seconds": 1.1055890999996336,
+      "duration_seconds": 1.2099471999972593,
       "command": [
         "D:\\MG\\anaconda3\\python.exe",
         "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\scripts\\demo\\export_demo_snapshot.py",

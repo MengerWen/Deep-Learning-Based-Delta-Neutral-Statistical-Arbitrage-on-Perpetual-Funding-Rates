@@ -118,7 +118,9 @@ Supported source name:
 
 - `dl`
 
-The adapter maps LSTM outputs into the same signal schema. In regression mode, `expected_return_bps` is populated; in classification mode, `confidence` is populated.
+The adapter maps deep-learning outputs into the same signal schema. In regression mode, `expected_return_bps` is populated; in classification mode, `confidence` is populated.
+
+The same path now also propagates degenerate-experiment metadata so later signal and backtest reports can say "no tradable signals" explicitly instead of showing only zero-valued numeric columns.
 
 ## Output Layout
 
@@ -138,6 +140,17 @@ Each run writes:
 - `signals_manifest.json`
 
 The manifest includes summary stats such as row count, active signal count, strategies present, source subtype breakdown, and strategy-level metadata previews for thresholds, calibration, prediction mode, checkpoint-selection mode, and selected loss/preprocessing settings.
+
+It now also includes explicit degeneracy fields:
+
+- `status`
+- `reason`
+- `degenerate_experiment`
+- `signal_count_by_split`
+- `selected_threshold`
+- `threshold_search_summary`
+
+At the per-strategy level, the manifest records the same status information so a strategy with zero active signals is clearly labeled as `no_tradable_signals` rather than being indistinguishable from a healthy but inactive strategy.
 
 ## CLI
 
@@ -196,3 +209,4 @@ That gives us three advantages:
 - Confidence is naturally better defined for classification models than for regression models.
 - The normalized signal layer now keeps the most important baseline-training decisions as first-class columns so backtesting and robustness reporting can stay finance-aware without reparsing JSON blobs.
 - The full raw prediction context still remains available inside `metadata_json` for diagnostics.
+- Zero-signal validation or test splits now emit an explicit warning and manifest status instead of silently blending into a normal summary.

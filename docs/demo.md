@@ -63,6 +63,7 @@ Design notes:
 - The default `dl` signal source points to the current Phase 2 comparison winner, while the LSTM remains the stable reference single-model config.
 - `sync-vault` reuses the existing integration config and stays in dry-run mode until you explicitly switch it to broadcast mode.
 - If a stage fails but the expected downstream artifact already exists locally, the workflow records a warning and reuses the existing artifact so the demo can still proceed.
+- Default deep-learning configs now fail fast on degenerate validation threshold-selection paths. In the demo workflow that is acceptable because the DL stages are optional and the workflow summary will record the warning or artifact reuse explicitly.
 
 ## Exact Commands To Run In Order
 
@@ -153,6 +154,16 @@ Then rerun:
 
 The snapshot exporter now degrades gracefully and will still package a valid frontend demo.
 
+### If deep-learning training fails because the experiment degenerates
+
+This is now treated as a modeling diagnostic, not as a silent success case.
+
+Recommended interpretation:
+
+- if the optional DL stage fails and the workflow reuses an existing artifact, read the workflow summary and the DL manifest `status` / `reason` fields
+- if there is no existing artifact, keep the DL stages disabled for a pure baseline demo path
+- only enable `allow_degenerate_fallback` intentionally when you want a diagnostic artifact that clearly documents the degenerate run
+
 ### If you want to skip the on-chain part for a pure research demo
 
 Disable:
@@ -176,6 +187,7 @@ npm run dev
 - Workflow summary:
   - `data/artifacts/demo/workflow/full_demo_default/demo_workflow_summary.json`
   - `data/artifacts/demo/workflow/full_demo_default/demo_workflow_report.md`
+  - stage rows record whether an optional failure was reused from existing artifacts
 - Frontend snapshot:
   - `frontend/public/demo/demo_snapshot.json`
 - Frontend image assets:
@@ -185,6 +197,7 @@ npm run dev
   - primary leaderboard metrics are test-split and mark-to-market by default
   - `primary_trade_log` is the test-split trade log used for primary plots and summaries
   - combined metrics are kept separately as secondary diagnostics
+  - leaderboard rows now include `status` and `diagnostic_reason` for no-trade strategies
 - Vault integration artifacts:
   - `data/artifacts/integration/binance/btcusdt/1h/mock_operator_default/`
 

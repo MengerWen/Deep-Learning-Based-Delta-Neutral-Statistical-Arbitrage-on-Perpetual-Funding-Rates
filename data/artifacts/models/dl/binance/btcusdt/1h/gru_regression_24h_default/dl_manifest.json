@@ -75,7 +75,8 @@
       2.5,
       5.0
     ],
-    "top_quantile": 0.1
+    "top_quantile": 0.1,
+    "allow_degenerate_fallback": true
   },
   "tuning": {
     "enabled": false,
@@ -137,6 +138,7 @@
     "deterministic": true,
     "use_balanced_classification_loss": true,
     "selection_metric": "validation_avg_signal_return_bps",
+    "allow_degenerate_fallback": true,
     "regression_loss": "huber",
     "huber_delta": 1.0,
     "internal_validation_fraction": 0.15
@@ -148,6 +150,78 @@
     "validation": 6576,
     "test": 8822
   },
+  "signal_count_by_split": {
+    "train": 0,
+    "validation": 0,
+    "test": 0
+  },
+  "label_diagnostics_by_split": {
+    "train": {
+      "row_count": 30625,
+      "valid_row_count": 30625,
+      "tradeable_rate": 0.0023510204081632654,
+      "profitable_rate": 0.003395918367346939,
+      "tradeable_positive_count": 72,
+      "profitable_positive_count": 104,
+      "future_net_return_bps": {
+        "min": -214.9034609165239,
+        "max": 201.50858380537719,
+        "mean": -32.01292566435731
+      },
+      "status": "ok",
+      "reason": null,
+      "supports_threshold_selection": true
+    },
+    "validation": {
+      "row_count": 6576,
+      "valid_row_count": 6576,
+      "tradeable_rate": 0.0,
+      "profitable_rate": 0.00015206812652068127,
+      "tradeable_positive_count": 0,
+      "profitable_positive_count": 1,
+      "future_net_return_bps": {
+        "min": -51.99938029074042,
+        "max": 0.09380736955770885,
+        "mean": -32.3403105415856
+      },
+      "status": "no_tradeable_positive_labels",
+      "reason": "tradeable_rate == 0; future_net_return_bps never exceeds the trade threshold on this split",
+      "supports_threshold_selection": false
+    },
+    "test": {
+      "row_count": 8928,
+      "valid_row_count": 8926,
+      "tradeable_rate": 0.0,
+      "profitable_rate": 0.0,
+      "tradeable_positive_count": 0,
+      "profitable_positive_count": 0,
+      "future_net_return_bps": {
+        "min": -44.683527195685386,
+        "max": -21.498322010460395,
+        "mean": -33.466994278267755
+      },
+      "status": "no_tradeable_positive_labels",
+      "reason": "tradeable_rate == 0; profitable_rate == 0; future_net_return_bps never exceeds the trade threshold on this split",
+      "supports_threshold_selection": false
+    }
+  },
+  "tradeable_rate_by_split": {
+    "train": 0.0023510204081632654,
+    "validation": 0.0,
+    "test": 0.0
+  },
+  "profitable_rate_by_split": {
+    "train": 0.003395918367346939,
+    "validation": 0.00015206812652068127,
+    "test": 0.0
+  },
+  "degenerate_experiment": true,
+  "status": "warning",
+  "degenerate_stage": "signal_generation",
+  "degenerate_reason": "test: signal_count == 0 for split 'test'.; validation: signal_count == 0 for split 'validation'.",
+  "reason": "test: signal_count == 0 for split 'test'.; validation: signal_count == 0 for split 'validation'.",
+  "fallback_used": true,
+  "fallback_reason": "Validation split cannot support threshold selection because label diagnostics are degenerate: tradeable_rate == 0; future_net_return_bps never exceeds the trade threshold on this split.",
   "best_epoch": 5,
   "best_validation_loss": 0.9972175764341424,
   "best_checkpoint_metric": "validation_avg_signal_return_bps",
@@ -158,6 +232,17 @@
   "selected_threshold": 0.0,
   "selected_threshold_objective": "avg_signal_return_bps",
   "selected_threshold_objective_value": null,
+  "threshold_search_summary": {
+    "candidate_count": 1,
+    "valid_candidate_count": 0,
+    "all_objective_values_nan": true,
+    "selected_threshold": 0.0,
+    "selected_objective_value": null,
+    "objective_value_min": null,
+    "objective_value_max": null,
+    "status": "no_valid_threshold_candidates",
+    "reason": "All threshold candidates have NaN or missing objective_value."
+  },
   "selected_loss": "huber",
   "loss_metadata": {
     "loss_name": "huber",

@@ -497,6 +497,9 @@ def _run_feature_ablation(
                     *excluded_columns,
                 }
             )
+            scenario_baseline_settings.threshold_search.allow_degenerate_fallback = (
+                settings.feature_ablation.allow_degenerate_fallback
+            )
             scenario_baseline_settings.output.model_dir = str(
                 artifacts_root / "models" / "baselines"
             )
@@ -546,6 +549,12 @@ def _run_feature_ablation(
                     *scenario_dl_settings.feature_selection.exclude_columns,
                     *excluded_columns,
                 }
+            )
+            scenario_dl_settings.threshold_search.allow_degenerate_fallback = (
+                settings.feature_ablation.allow_degenerate_fallback
+            )
+            scenario_dl_settings.training.allow_degenerate_fallback = (
+                settings.feature_ablation.allow_degenerate_fallback
             )
             scenario_dl_settings.output.model_dir = str(
                 artifacts_root / "models" / "dl"

@@ -140,6 +140,13 @@ def _write_fake_artifacts(
         "best_checkpoint_effective_metric": "validation_pearson_corr",
         "best_checkpoint_effective_metric_value": validation_score,
         "checkpoint_metric_fallback_used": False,
+        "status": "ok",
+        "reason": None,
+        "degenerate_experiment": False,
+        "degenerate_stage": None,
+        "degenerate_reason": None,
+        "fallback_used": False,
+        "fallback_reason": None,
         "selected_threshold": 0.0,
         "selected_threshold_objective": "avg_signal_return_bps",
         "selected_threshold_objective_value": 1.0,
@@ -254,10 +261,14 @@ def test_run_deep_learning_comparison_reuses_artifacts_and_writes_tables() -> No
     assert len(summary) == 2
     assert set(summary["model_name"]) == {"lstm", "gru"}
     assert summary["artifact_reused"].all()
+    assert set(summary["status"]) == {"ok"}
+    assert set(summary["degenerate_experiment"]) == {False}
     assert "manifest_path" in summary.columns
     assert "report_path" in summary.columns
+    assert "status" in validation.columns
     assert validation.iloc[0]["run_label"] == "lstm"
     assert test.iloc[0]["run_label"] == "lstm"
     assert manifest["run_count"] == 2
+    assert manifest["runs"][0]["status"] == "ok"
     assert Path(artifacts.report_path).exists()
     assert len(artifacts.figure_paths) >= 2

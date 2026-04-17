@@ -1,9 +1,2 @@
-threshold,objective_value,selected
-0.45,,False
-0.5,,True
-0.55,,False
-0.6,,False
-0.65,,False
-0.7,,False
-0.75,,False
-0.8,,False
+threshold,objective_value,valid_candidate,selected,status,reason,fallback_used,fallback_reason
+0.5,,False,True,degenerate_fallback,Validation split cannot support threshold selection because label diagnostics are degenerate: tradeable_rate == 0; future_net_return_bps never exceeds the trade threshold on this split.,True,Validation split cannot support threshold selection because label diagnostics are degenerate: tradeable_rate == 0; future_net_return_bps never exceeds the trade threshold on this split.

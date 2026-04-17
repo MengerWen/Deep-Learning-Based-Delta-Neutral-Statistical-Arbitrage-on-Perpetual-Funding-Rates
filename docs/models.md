@@ -114,7 +114,7 @@ It now supports configurable checkpoint selection metrics such as:
 
 For the default regression experiment, the config now uses a trading-aware selection metric so the saved checkpoint is chosen with signal usefulness in mind rather than loss alone.
 
-If a trading-oriented validation metric is undefined because a given epoch produces zero traded signals, the pipeline falls back to `validation_loss` for checkpoint comparison. That fallback is recorded in the training history and manifest so the selection behavior stays auditable.
+If a trading-oriented validation metric becomes undefined because an epoch produces zero traded signals, the pipeline still computes the fallback-to-loss diagnostic internally so the history remains auditable. However, the run no longer silently accepts that fallback by default. If the final selected checkpoint would only be chosen via fallback, the training command now fails unless `training.allow_degenerate_fallback: true` is set explicitly.
 
 Thresholds are also no longer fixed-only. The module can search thresholds on the validation split:
 
@@ -122,6 +122,14 @@ Thresholds are also no longer fixed-only. The module can search thresholds on th
 - predicted-return thresholds for regression
 
 The default threshold objective is `avg_signal_return_bps`.
+
+Threshold search also now fails fast by default when:
+
+- validation label diagnostics show no support for threshold selection
+- every candidate threshold has an invalid objective
+- the only way to continue would be a silent default-threshold fallback
+
+To continue anyway for diagnostic artifact generation, you must opt in through `threshold_search.allow_degenerate_fallback: true`.
 
 ## Input Shape
 
@@ -190,6 +198,18 @@ Additional diagnostics may also be written under `diagnostics/`, including:
 - tuning results when enabled
 - classification calibration tables
 - feature-group ablation summaries
+
+The training report and manifest now also expose:
+
+- `degenerate_experiment`
+- `degenerate_stage`
+- `degenerate_reason`
+- `fallback_used`
+- `fallback_reason`
+- `signal_count_by_split`
+- `tradeable_rate_by_split`
+- `profitable_rate_by_split`
+- `threshold_search_summary`
 
 ## Prediction Output Contract
 

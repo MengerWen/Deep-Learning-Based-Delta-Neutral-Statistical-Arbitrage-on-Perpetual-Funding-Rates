@@ -24,6 +24,30 @@
     "row_count": 45488,
     "active_signal_count": 1,
     "active_signal_rate": 2.198381990854731e-05,
+    "status": "warning",
+    "reason": "transformer_encoder: validation: signal_count == 0 for split 'validation'.; test: signal_count == 0 for split 'test'.",
+    "degenerate_experiment": true,
+    "signal_count_by_split": {
+      "train": 1,
+      "validation": 0,
+      "test": 0
+    },
+    "selected_threshold": {
+      "transformer_encoder": 0.0
+    },
+    "threshold_search_summary": {
+      "transformer_encoder": {
+        "candidate_count": 1,
+        "valid_candidate_count": 0,
+        "all_objective_values_nan": true,
+        "selected_threshold": 0.0,
+        "selected_objective_value": null,
+        "objective_value_min": null,
+        "objective_value_max": null,
+        "status": "no_valid_threshold_candidates",
+        "reason": "All threshold candidates have NaN or missing objective_value."
+      }
+    },
     "strategies": [
       "transformer_encoder"
     ],
@@ -84,9 +108,65 @@
         "checkpoint_selection_fallback_used": true,
         "selected_loss": "huber",
         "regression_loss": "huber",
-        "preprocessing_scaler": "robust"
+        "preprocessing_scaler": "robust",
+        "status": "no_tradable_signals",
+        "reason": "validation: signal_count == 0 for split 'validation'.; test: signal_count == 0 for split 'test'.",
+        "degenerate_experiment": true,
+        "fallback_used": true,
+        "fallback_reason": "Validation split cannot support threshold selection because label diagnostics are degenerate: tradeable_rate == 0; future_net_return_bps never exceeds the trade threshold on this split.",
+        "signal_count_by_split": {
+          "train": 1,
+          "validation": 0,
+          "test": 0
+        },
+        "tradeable_rate_by_split": {
+          "train": 0.0023510204081632654,
+          "validation": 0.0,
+          "test": 0.0
+        },
+        "profitable_rate_by_split": {
+          "train": 0.003395918367346939,
+          "validation": 0.00015206812652068127,
+          "test": 0.0
+        },
+        "selected_threshold": 0.0,
+        "threshold_search_summary": {
+          "candidate_count": 1,
+          "valid_candidate_count": 0,
+          "all_objective_values_nan": true,
+          "selected_threshold": 0.0,
+          "selected_objective_value": null,
+          "objective_value_min": null,
+          "objective_value_max": null,
+          "status": "no_valid_threshold_candidates",
+          "reason": "All threshold candidates have NaN or missing objective_value."
+        }
       }
     ]
+  },
+  "status": "warning",
+  "reason": "transformer_encoder: validation: signal_count == 0 for split 'validation'.; test: signal_count == 0 for split 'test'.",
+  "degenerate_experiment": true,
+  "signal_count_by_split": {
+    "train": 1,
+    "validation": 0,
+    "test": 0
+  },
+  "selected_threshold": {
+    "transformer_encoder": 0.0
+  },
+  "threshold_search_summary": {
+    "transformer_encoder": {
+      "candidate_count": 1,
+      "valid_candidate_count": 0,
+      "all_objective_values_nan": true,
+      "selected_threshold": 0.0,
+      "selected_objective_value": null,
+      "objective_value_min": null,
+      "objective_value_max": null,
+      "status": "no_valid_threshold_candidates",
+      "reason": "All threshold candidates have NaN or missing objective_value."
+    }
   },
   "signals_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\binance\\btcusdt\\1h\\dl\\signals.parquet",
   "signals_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\binance\\btcusdt\\1h\\dl\\signals.csv"

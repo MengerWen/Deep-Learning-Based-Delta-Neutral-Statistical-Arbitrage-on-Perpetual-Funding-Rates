@@ -220,6 +220,16 @@ Sharpe caveat:
 
 The main Sharpe is a simple square-root-scaled annualized Sharpe from the mark-to-market return stream. This is useful for comparison, but sparse and serially correlated strategy returns can make annualization optimistic. Treat it as a compact diagnostic rather than proof of live-trading quality.
 
+No-trade caveat:
+
+If a strategy has no executable trades on the evaluation split, the backtest now records:
+
+- `status = no_tradable_signals` when the upstream signal layer produced no tradeable signals
+- `status = no_executed_trades` when signals existed but execution logic never opened a position
+- `diagnostic_reason` and `skip_reason`
+
+In those cases, Sharpe and drawdown style risk metrics are written as `NaN`, not `0`, because `0` can falsely imply a meaningful flat-risk outcome when nothing actually traded.
+
 ## Outputs
 
 The backtester writes:
@@ -234,6 +244,8 @@ The backtester writes:
 - `backtest_report.md`
 - `backtest_manifest.json`
 - figures under `figures/`
+
+Strategy metric and leaderboard tables now also preserve `status`, `diagnostic_reason`, `skip_reason`, and split-level signal counts so zero-trade rows remain interpretable downstream.
 
 Plots:
 

@@ -24,6 +24,54 @@
     "row_count": 136470,
     "active_signal_count": 1699,
     "active_signal_rate": 0.01244962262768374,
+    "status": "warning",
+    "reason": "combined_funding_spread: test: signal_count == 0 for split 'test'.; funding_threshold_2bps: test: signal_count == 0 for split 'test'.",
+    "degenerate_experiment": true,
+    "signal_count_by_split": {
+      "train": 1234,
+      "validation": 228,
+      "test": 237
+    },
+    "selected_threshold": {
+      "combined_funding_spread": 0.0,
+      "funding_threshold_2bps": 3.0,
+      "spread_zscore_1p5": 2.0
+    },
+    "threshold_search_summary": {
+      "combined_funding_spread": {
+        "candidate_count": 16,
+        "valid_candidate_count": 16,
+        "all_objective_values_nan": false,
+        "selected_threshold": null,
+        "selected_objective_value": -20.852416175044237,
+        "objective_value_min": -30.08220047087354,
+        "objective_value_max": -20.852416175044237,
+        "status": "ok",
+        "reason": null
+      },
+      "funding_threshold_2bps": {
+        "candidate_count": 6,
+        "valid_candidate_count": 6,
+        "all_objective_values_nan": false,
+        "selected_threshold": null,
+        "selected_objective_value": -26.204587340926327,
+        "objective_value_min": -31.54113982456741,
+        "objective_value_max": -26.204587340926327,
+        "status": "ok",
+        "reason": null
+      },
+      "spread_zscore_1p5": {
+        "candidate_count": 6,
+        "valid_candidate_count": 6,
+        "all_objective_values_nan": false,
+        "selected_threshold": null,
+        "selected_objective_value": -29.3300237594414,
+        "objective_value_min": -30.863492947165344,
+        "objective_value_max": -29.3300237594414,
+        "status": "ok",
+        "reason": null
+      }
+    },
     "strategies": [
       "combined_funding_spread",
       "funding_threshold_2bps",
@@ -76,7 +124,39 @@
         "checkpoint_selection_fallback_used": false,
         "selected_loss": null,
         "regression_loss": null,
-        "preprocessing_scaler": null
+        "preprocessing_scaler": null,
+        "status": "no_tradable_signals",
+        "reason": "test: signal_count == 0 for split 'test'.",
+        "degenerate_experiment": true,
+        "fallback_used": false,
+        "fallback_reason": null,
+        "signal_count_by_split": {
+          "train": 46,
+          "validation": 3,
+          "test": 0
+        },
+        "tradeable_rate_by_split": {
+          "train": 0.001927550681289465,
+          "validation": 0.0,
+          "test": 0.0
+        },
+        "profitable_rate_by_split": {
+          "train": 0.0029910269192422734,
+          "validation": 0.00015206812652068127,
+          "test": 0.0
+        },
+        "selected_threshold": 0.0,
+        "threshold_search_summary": {
+          "candidate_count": 16,
+          "valid_candidate_count": 16,
+          "all_objective_values_nan": false,
+          "selected_threshold": null,
+          "selected_objective_value": -20.852416175044237,
+          "objective_value_min": -30.08220047087354,
+          "objective_value_max": -20.852416175044237,
+          "status": "ok",
+          "reason": null
+        }
       },
       {
         "strategy_name": "funding_threshold_2bps",
@@ -94,7 +174,39 @@
         "checkpoint_selection_fallback_used": false,
         "selected_loss": null,
         "regression_loss": null,
-        "preprocessing_scaler": null
+        "preprocessing_scaler": null,
+        "status": "no_tradable_signals",
+        "reason": "test: signal_count == 0 for split 'test'.",
+        "degenerate_experiment": true,
+        "fallback_used": false,
+        "fallback_reason": null,
+        "signal_count_by_split": {
+          "train": 200,
+          "validation": 9,
+          "test": 0
+        },
+        "tradeable_rate_by_split": {
+          "train": 0.001927550681289465,
+          "validation": 0.0,
+          "test": 0.0
+        },
+        "profitable_rate_by_split": {
+          "train": 0.0029910269192422734,
+          "validation": 0.00015206812652068127,
+          "test": 0.0
+        },
+        "selected_threshold": 3.0,
+        "threshold_search_summary": {
+          "candidate_count": 6,
+          "valid_candidate_count": 6,
+          "all_objective_values_nan": false,
+          "selected_threshold": null,
+          "selected_objective_value": -26.204587340926327,
+          "objective_value_min": -31.54113982456741,
+          "objective_value_max": -26.204587340926327,
+          "status": "ok",
+          "reason": null
+        }
       },
       {
         "strategy_name": "spread_zscore_1p5",
@@ -112,9 +224,89 @@
         "checkpoint_selection_fallback_used": false,
         "selected_loss": null,
         "regression_loss": null,
-        "preprocessing_scaler": null
+        "preprocessing_scaler": null,
+        "status": "ok",
+        "reason": null,
+        "degenerate_experiment": false,
+        "fallback_used": false,
+        "fallback_reason": null,
+        "signal_count_by_split": {
+          "train": 988,
+          "validation": 216,
+          "test": 237
+        },
+        "tradeable_rate_by_split": {
+          "train": 0.001927550681289465,
+          "validation": 0.0,
+          "test": 0.0
+        },
+        "profitable_rate_by_split": {
+          "train": 0.0029910269192422734,
+          "validation": 0.00015206812652068127,
+          "test": 0.0
+        },
+        "selected_threshold": 2.0,
+        "threshold_search_summary": {
+          "candidate_count": 6,
+          "valid_candidate_count": 6,
+          "all_objective_values_nan": false,
+          "selected_threshold": null,
+          "selected_objective_value": -29.3300237594414,
+          "objective_value_min": -30.863492947165344,
+          "objective_value_max": -29.3300237594414,
+          "status": "ok",
+          "reason": null
+        }
       }
     ]
+  },
+  "status": "warning",
+  "reason": "combined_funding_spread: test: signal_count == 0 for split 'test'.; funding_threshold_2bps: test: signal_count == 0 for split 'test'.",
+  "degenerate_experiment": true,
+  "signal_count_by_split": {
+    "train": 1234,
+    "validation": 228,
+    "test": 237
+  },
+  "selected_threshold": {
+    "combined_funding_spread": 0.0,
+    "funding_threshold_2bps": 3.0,
+    "spread_zscore_1p5": 2.0
+  },
+  "threshold_search_summary": {
+    "combined_funding_spread": {
+      "candidate_count": 16,
+      "valid_candidate_count": 16,
+      "all_objective_values_nan": false,
+      "selected_threshold": null,
+      "selected_objective_value": -20.852416175044237,
+      "objective_value_min": -30.08220047087354,
+      "objective_value_max": -20.852416175044237,
+      "status": "ok",
+      "reason": null
+    },
+    "funding_threshold_2bps": {
+      "candidate_count": 6,
+      "valid_candidate_count": 6,
+      "all_objective_values_nan": false,
+      "selected_threshold": null,
+      "selected_objective_value": -26.204587340926327,
+      "objective_value_min": -31.54113982456741,
+      "objective_value_max": -26.204587340926327,
+      "status": "ok",
+      "reason": null
+    },
+    "spread_zscore_1p5": {
+      "candidate_count": 6,
+      "valid_candidate_count": 6,
+      "all_objective_values_nan": false,
+      "selected_threshold": null,
+      "selected_objective_value": -29.3300237594414,
+      "objective_value_min": -30.863492947165344,
+      "objective_value_max": -29.3300237594414,
+      "status": "ok",
+      "reason": null
+    }
   },
   "signals_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\binance\\btcusdt\\1h\\rules\\signals.parquet",
   "signals_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\binance\\btcusdt\\1h\\rules\\signals.csv"

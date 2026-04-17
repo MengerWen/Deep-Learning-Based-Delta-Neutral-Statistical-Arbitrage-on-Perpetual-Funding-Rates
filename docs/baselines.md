@@ -137,6 +137,30 @@ Useful objectives include:
 
 For this project, `avg_signal_return_bps` is a strong default because the target is trading usefulness, not raw classification accuracy alone.
 
+## Degenerate Threshold Search Handling
+
+Threshold search is now guarded explicitly.
+
+Default behavior:
+
+- if the validation split cannot support threshold selection, the run fails
+- if every threshold candidate has an invalid objective or zero usable traded signals, the run fails
+- if a model produces zero signals on validation or test, the report and manifest record that status instead of silently presenting a healthy-looking zero row
+
+The baseline artifacts now carry:
+
+- `degenerate_experiment`
+- `status`
+- `reason`
+- `fallback_used`
+- `fallback_reason`
+- `signal_count_by_split`
+- `tradeable_rate_by_split`
+- `profitable_rate_by_split`
+- `threshold_search_summary`
+
+If you intentionally want to keep writing diagnostic artifacts even when threshold selection degenerates, you must opt in through `threshold_search.allow_degenerate_fallback: true`.
+
 ## Probability Calibration
 
 Classifier baselines support:
@@ -272,6 +296,8 @@ Key outputs:
 - `baseline_manifest.json`
   Reproducibility metadata including tuned hyperparameters, selected thresholds, calibration choices, prediction mode, and artifact paths.
 
+The report and manifest now also distinguish a healthy model-selection path from a degenerate one, so a strategy row with `signal_count = 0` is accompanied by a machine-readable reason.
+
 ## Prediction Table Contract
 
 Downstream signal generation still relies on these columns:
@@ -318,4 +344,5 @@ When presenting the baseline layer, a clean narrative is:
 - Walk-forward prediction here is lighter than the full execution logic in the backtest engine.
 - Threshold search is validation-driven, so validation remains a model-selection surface rather than a purely final reporting surface.
 - Extremely sparse post-cost positives can still make classifier metrics unstable.
+- That sparsity is now surfaced directly through degenerate-experiment diagnostics rather than being hidden inside ordinary-looking zero metrics.
 - Tree models remain optional because they are slower and easier to overfit than the penalized-linear baselines.

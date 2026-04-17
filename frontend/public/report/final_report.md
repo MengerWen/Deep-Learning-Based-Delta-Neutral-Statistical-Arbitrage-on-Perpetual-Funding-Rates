@@ -9,7 +9,7 @@ Final technical report for the end-to-end research, backtesting, vault, and show
 - Repository: `https://github.com/MengerWen/Deep-Learning-Based-Delta-Neutral-Statistical-Arbitrage-on-Perpetual-Funding-Rates`
 - Market: `BTCUSDT` on `binance` at `1h`
 - Sample window: `2021-01-01` to `2026-04-08`
-- Generated at: `2026-04-16T11:02:15.018230+00:00`
+- Generated at: `2026-04-17T04:00:09.794164+00:00`
 
 ## Executive Summary
 
@@ -53,13 +53,13 @@ Final technical report for the end-to-end research, backtesting, vault, and show
 - Mark-to-market Sharpe: `-14.072`
 - Net PnL: `$-6,474.85`
 
-| Strategy | Source | Split | Trades | Cum Return | MTM Drawdown | MTM Sharpe | Net PnL |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| spread_zscore_1p5 | rule_based | test | 200 | -6.47% | -6.47% | -14.072 | $-6,474.85 |
-| combined_funding_spread | rule_based | test | 0 | 0.00% | 0.00% | 0.000 | $0.00 |
-| elastic_net_regression | baseline_linear | test | 0 | 0.00% | 0.00% | 0.000 | $0.00 |
-| funding_threshold_2bps | rule_based | test | 0 | 0.00% | 0.00% | 0.000 | $0.00 |
-| logistic_l1 | baseline_linear | test | 0 | 0.00% | 0.00% | 0.000 | $0.00 |
+| Strategy | Source | Split | Status | Trades | Cum Return | MTM Drawdown | MTM Sharpe | Net PnL | Reason |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| spread_zscore_1p5 | rule_based | test | completed | 200 | -6.47% | -6.47% | -14.072 | $-6,474.85 |  |
+| combined_funding_spread | rule_based | test | no_tradable_signals | 0 | 0.00% | n/a | n/a | $0.00 | test: signal_count == 0 for split 'test'. |
+| elastic_net_regression | baseline_linear | test | no_tradable_signals | 0 | 0.00% | n/a | n/a | $0.00 | validation: signal_count == 0 for split 'validation'.; test: signal_count == 0 for split 'test'. |
+| funding_threshold_2bps | rule_based | test | no_tradable_signals | 0 | 0.00% | n/a | n/a | $0.00 | test: signal_count == 0 for split 'test'. |
+| logistic_l1 | baseline_linear | test | no_tradable_signals | 0 | 0.00% | n/a | n/a | $0.00 | test: signal_count == 0 for split 'test'. |
 
 ### Core Assumptions
 
@@ -76,9 +76,9 @@ Final technical report for the end-to-end research, backtesting, vault, and show
 
 | Family | Representative Strategy | Trades | Cum Return | Sharpe | Net PnL |
 | --- | --- | --- | --- | --- | --- |
-| Simple ML Baseline | logistic_regression | 3 | -0.11% | -1.709 | $-105.01 |
-| Deep Learning | lstm | 0 | 0.00% | 0.000 | $0.00 |
-| Rule-Based Baseline | combined_funding_spread | 7 | -0.23% | -2.618 | $-232.82 |
+| Simple ML Baseline | elastic_net_regression | 0 | 0.00% | nan | $0.00 |
+| Deep Learning | transformer_encoder | 0 | 0.00% | nan | $0.00 |
+| Rule-Based Baseline | spread_zscore_1p5 | 200 | -6.47% | -14.072 | $-6,474.85 |
 
 ## Vault Prototype
 

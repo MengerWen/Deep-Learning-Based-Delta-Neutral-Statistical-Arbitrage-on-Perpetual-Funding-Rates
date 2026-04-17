@@ -32,6 +32,7 @@ This is intentionally more conservative:
 - realized-only drawdown remains available as a secondary diagnostic
 - the main leaderboard defaults to out-of-sample `test` trades instead of silently mixing train/validation/test
 - slippage remains embedded in effective prices and is not deducted twice
+- no-trade rows now carry explicit `status` / `diagnostic_reason`, and no-trade Sharpe or drawdown metrics are written as `NaN` rather than misleading `0`
 
 ## Outputs
 

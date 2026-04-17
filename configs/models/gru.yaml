@@ -51,6 +51,7 @@ preprocessing:
 threshold_search:
   enabled: true
   objective: avg_signal_return_bps
+  allow_degenerate_fallback: false
   probability_grid:
     - 0.4
     - 0.5
@@ -117,6 +118,7 @@ training:
   regression_loss: huber
   huber_delta: 1.0
   internal_validation_fraction: 0.15
+  allow_degenerate_fallback: false
 
 output:
   model_dir: data/artifacts/models/dl

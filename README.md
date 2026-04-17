@@ -208,6 +208,29 @@ http://127.0.0.1:5173
 
 `train-dl` keeps LSTM as the stable reference model. The default `dl` signal source points to the current Phase 2 comparison winner from the regression bundle, so run `compare-dl` before refreshing deep-learning signals if you want the latest model-zoo result reflected downstream.
 
+## Degenerate Experiment Guardrails
+
+The repository now treats degenerate model-selection paths as first-class diagnostics instead of silent success cases.
+
+Default behavior:
+
+- label manifests record split-level `tradeable_rate`, `profitable_rate`, and degenerate reasons
+- baseline and deep-learning threshold search fail fast when validation cannot support threshold selection
+- checkpoint selection that only works through a fallback metric is no longer silently accepted by default
+- signal manifests record `status`, `reason`, `degenerate_experiment`, `signal_count_by_split`, `selected_threshold`, and `threshold_search_summary`
+- backtest leaderboards keep `trades = 0` when nothing executes, but also add `status` and `diagnostic_reason`
+- no-trade Sharpe and drawdown fields are written as `NaN` rather than misleading `0`
+
+This matters because a table full of `0 trades / 0 pnl / 0 sharpe` can otherwise hide the fact that validation/test produced no tradable signals at all.
+
+If you explicitly want a diagnostic artifact even for a degenerate run, set the relevant config flags to `true`:
+
+- baseline: `threshold_search.allow_degenerate_fallback`
+- deep learning: `threshold_search.allow_degenerate_fallback`
+- deep learning checkpoint selection: `training.allow_degenerate_fallback`
+
+Those fallback modes are opt-in. They are meant for inspection and report generation, not for pretending the experiment was healthy.
+
 ### Evaluation and demo
 
 ```powershell
@@ -264,6 +287,12 @@ npm run build
 
 The final report and showcase entry point are copied into `frontend/public/report/`, so the built static site can expose both the dashboard and the report together.
 
+When validating modeling changes, it is worth checking the report and manifest status fields in addition to whether a command exited successfully. The intended outcome is:
+
+- healthy experiment: `status = ok`
+- warning-only continuation: explicit warning plus `degenerate_experiment = true`
+- invalid model-selection path: command fails with a diagnostic error instead of silently writing normal-looking zero results
+
 ## Important Artifact Locations
 
 - Canonical market data:
@@ -280,7 +309,7 @@ The final report and showcase entry point are copied into `frontend/public/repor
   - `data/artifacts/signals/binance/btcusdt/1h/`
 - Backtest outputs:
   - `data/artifacts/backtests/binance/btcusdt/1h/baseline_signals_default/`
-  - includes `primary_trade_log`, mark-to-market equity, test-primary leaderboard, and combined metrics as secondary diagnostics
+  - includes `primary_trade_log`, mark-to-market equity, test-primary leaderboard, combined metrics as secondary diagnostics, and strategy-level `status` / `diagnostic_reason`
 - Robustness report:
   - `reports/robustness/binance/btcusdt/1h/`
 - Integration artifacts:

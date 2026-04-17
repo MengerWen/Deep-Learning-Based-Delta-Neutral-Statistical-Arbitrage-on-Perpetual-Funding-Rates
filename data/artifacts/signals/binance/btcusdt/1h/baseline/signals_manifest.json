@@ -22,8 +22,104 @@
   },
   "summary": {
     "row_count": 318422,
-    "active_signal_count": 2450,
-    "active_signal_rate": 0.0076941919842221955,
+    "active_signal_count": 2856,
+    "active_signal_rate": 0.008969229513036159,
+    "status": "warning",
+    "reason": "combined_funding_spread: test: signal_count == 0 for split 'test'.; elastic_net_regression: validation: signal_count == 0 for split 'validation'.; test: signal_count == 0 for split 'test'.; funding_threshold_2bps: test: signal_count == 0 for split 'test'.; logistic_l1: test: signal_count == 0 for split 'test'.; logistic_regression: validation: signal_count == 0 for split 'validation'.; test: signal_count == 0 for split 'test'.; ridge_regression: validation: signal_count == 0 for split 'validation'.; test: signal_count == 0 for split 'test'.",
+    "degenerate_experiment": true,
+    "signal_count_by_split": {
+      "train": 2376,
+      "validation": 243,
+      "test": 237
+    },
+    "selected_threshold": {
+      "combined_funding_spread": 0.0,
+      "elastic_net_regression": 0.0,
+      "funding_threshold_2bps": 3.0,
+      "logistic_l1": 0.5,
+      "logistic_regression": 0.5,
+      "ridge_regression": 0.0,
+      "spread_zscore_1p5": 2.0
+    },
+    "threshold_search_summary": {
+      "combined_funding_spread": {
+        "candidate_count": 16,
+        "valid_candidate_count": 16,
+        "all_objective_values_nan": false,
+        "selected_threshold": null,
+        "selected_objective_value": -20.852416175044237,
+        "objective_value_min": -30.08220047087354,
+        "objective_value_max": -20.852416175044237,
+        "status": "ok",
+        "reason": null
+      },
+      "elastic_net_regression": {
+        "candidate_count": 1,
+        "valid_candidate_count": 0,
+        "all_objective_values_nan": true,
+        "selected_threshold": 0.0,
+        "selected_objective_value": null,
+        "objective_value_min": null,
+        "objective_value_max": null,
+        "status": "no_valid_threshold_candidates",
+        "reason": "All threshold candidates have NaN or missing objective_value."
+      },
+      "funding_threshold_2bps": {
+        "candidate_count": 6,
+        "valid_candidate_count": 6,
+        "all_objective_values_nan": false,
+        "selected_threshold": null,
+        "selected_objective_value": -26.204587340926327,
+        "objective_value_min": -31.54113982456741,
+        "objective_value_max": -26.204587340926327,
+        "status": "ok",
+        "reason": null
+      },
+      "logistic_l1": {
+        "candidate_count": 1,
+        "valid_candidate_count": 0,
+        "all_objective_values_nan": true,
+        "selected_threshold": 0.5,
+        "selected_objective_value": null,
+        "objective_value_min": null,
+        "objective_value_max": null,
+        "status": "no_valid_threshold_candidates",
+        "reason": "All threshold candidates have NaN or missing objective_value."
+      },
+      "logistic_regression": {
+        "candidate_count": 1,
+        "valid_candidate_count": 0,
+        "all_objective_values_nan": true,
+        "selected_threshold": 0.5,
+        "selected_objective_value": null,
+        "objective_value_min": null,
+        "objective_value_max": null,
+        "status": "no_valid_threshold_candidates",
+        "reason": "All threshold candidates have NaN or missing objective_value."
+      },
+      "ridge_regression": {
+        "candidate_count": 1,
+        "valid_candidate_count": 0,
+        "all_objective_values_nan": true,
+        "selected_threshold": 0.0,
+        "selected_objective_value": null,
+        "objective_value_min": null,
+        "objective_value_max": null,
+        "status": "no_valid_threshold_candidates",
+        "reason": "All threshold candidates have NaN or missing objective_value."
+      },
+      "spread_zscore_1p5": {
+        "candidate_count": 6,
+        "valid_candidate_count": 6,
+        "all_objective_values_nan": false,
+        "selected_threshold": null,
+        "selected_objective_value": -29.3300237594414,
+        "objective_value_min": -30.863492947165344,
+        "objective_value_max": -29.3300237594414,
+        "status": "ok",
+        "reason": null
+      }
+    },
     "strategies": [
       "combined_funding_spread",
       "elastic_net_regression",
@@ -63,8 +159,8 @@
       "validation": 46032
     },
     "directions": {
-      "flat": 315972,
-      "short_perp_long_spot": 2450
+      "flat": 315566,
+      "short_perp_long_spot": 2856
     },
     "strategy_summary": [
       {
@@ -83,7 +179,39 @@
         "checkpoint_selection_fallback_used": false,
         "selected_loss": null,
         "regression_loss": null,
-        "preprocessing_scaler": null
+        "preprocessing_scaler": null,
+        "status": "no_tradable_signals",
+        "reason": "test: signal_count == 0 for split 'test'.",
+        "degenerate_experiment": true,
+        "fallback_used": false,
+        "fallback_reason": null,
+        "signal_count_by_split": {
+          "train": 46,
+          "validation": 3,
+          "test": 0
+        },
+        "tradeable_rate_by_split": {
+          "train": 0.001927550681289465,
+          "validation": 0.0,
+          "test": 0.0
+        },
+        "profitable_rate_by_split": {
+          "train": 0.0029910269192422734,
+          "validation": 0.00015206812652068127,
+          "test": 0.0
+        },
+        "selected_threshold": 0.0,
+        "threshold_search_summary": {
+          "candidate_count": 16,
+          "valid_candidate_count": 16,
+          "all_objective_values_nan": false,
+          "selected_threshold": null,
+          "selected_objective_value": -20.852416175044237,
+          "objective_value_min": -30.08220047087354,
+          "objective_value_max": -20.852416175044237,
+          "status": "ok",
+          "reason": null
+        }
       },
       {
         "strategy_name": "elastic_net_regression",
@@ -101,7 +229,39 @@
         "checkpoint_selection_fallback_used": false,
         "selected_loss": null,
         "regression_loss": null,
-        "preprocessing_scaler": null
+        "preprocessing_scaler": null,
+        "status": "no_tradable_signals",
+        "reason": "validation: signal_count == 0 for split 'validation'.; test: signal_count == 0 for split 'test'.",
+        "degenerate_experiment": true,
+        "fallback_used": true,
+        "fallback_reason": "Validation split cannot support threshold selection because label diagnostics are degenerate: tradeable_rate == 0; future_net_return_bps never exceeds the trade threshold on this split.",
+        "signal_count_by_split": {
+          "train": 13,
+          "validation": 0,
+          "test": 0
+        },
+        "tradeable_rate_by_split": {
+          "train": 0.001927550681289465,
+          "validation": 0.0,
+          "test": 0.0
+        },
+        "profitable_rate_by_split": {
+          "train": 0.0029910269192422734,
+          "validation": 0.00015206812652068127,
+          "test": 0.0
+        },
+        "selected_threshold": 0.0,
+        "threshold_search_summary": {
+          "candidate_count": 1,
+          "valid_candidate_count": 0,
+          "all_objective_values_nan": true,
+          "selected_threshold": 0.0,
+          "selected_objective_value": null,
+          "objective_value_min": null,
+          "objective_value_max": null,
+          "status": "no_valid_threshold_candidates",
+          "reason": "All threshold candidates have NaN or missing objective_value."
+        }
       },
       {
         "strategy_name": "funding_threshold_2bps",
@@ -119,14 +279,46 @@
         "checkpoint_selection_fallback_used": false,
         "selected_loss": null,
         "regression_loss": null,
-        "preprocessing_scaler": null
+        "preprocessing_scaler": null,
+        "status": "no_tradable_signals",
+        "reason": "test: signal_count == 0 for split 'test'.",
+        "degenerate_experiment": true,
+        "fallback_used": false,
+        "fallback_reason": null,
+        "signal_count_by_split": {
+          "train": 200,
+          "validation": 9,
+          "test": 0
+        },
+        "tradeable_rate_by_split": {
+          "train": 0.001927550681289465,
+          "validation": 0.0,
+          "test": 0.0
+        },
+        "profitable_rate_by_split": {
+          "train": 0.0029910269192422734,
+          "validation": 0.00015206812652068127,
+          "test": 0.0
+        },
+        "selected_threshold": 3.0,
+        "threshold_search_summary": {
+          "candidate_count": 6,
+          "valid_candidate_count": 6,
+          "all_objective_values_nan": false,
+          "selected_threshold": null,
+          "selected_objective_value": -26.204587340926327,
+          "objective_value_min": -31.54113982456741,
+          "objective_value_max": -26.204587340926327,
+          "status": "ok",
+          "reason": null
+        }
       },
       {
         "strategy_name": "logistic_l1",
         "source_subtype": "baseline_linear",
         "model_family": "linear",
         "task": "classification",
-        "signal_threshold": 0.75,
+        "signal_threshold": 0.5,
         "threshold_objective": "avg_signal_return_bps",
         "selected_threshold_objective_value": NaN,
         "prediction_mode": "static",
@@ -137,7 +329,39 @@
         "checkpoint_selection_fallback_used": false,
         "selected_loss": null,
         "regression_loss": null,
-        "preprocessing_scaler": null
+        "preprocessing_scaler": null,
+        "status": "no_tradable_signals",
+        "reason": "test: signal_count == 0 for split 'test'.",
+        "degenerate_experiment": true,
+        "fallback_used": true,
+        "fallback_reason": "Validation split cannot support threshold selection because label diagnostics are degenerate: tradeable_rate == 0; future_net_return_bps never exceeds the trade threshold on this split.",
+        "signal_count_by_split": {
+          "train": 1097,
+          "validation": 15,
+          "test": 0
+        },
+        "tradeable_rate_by_split": {
+          "train": 0.001927550681289465,
+          "validation": 0.0,
+          "test": 0.0
+        },
+        "profitable_rate_by_split": {
+          "train": 0.0029910269192422734,
+          "validation": 0.00015206812652068127,
+          "test": 0.0
+        },
+        "selected_threshold": 0.5,
+        "threshold_search_summary": {
+          "candidate_count": 1,
+          "valid_candidate_count": 0,
+          "all_objective_values_nan": true,
+          "selected_threshold": 0.5,
+          "selected_objective_value": null,
+          "objective_value_min": null,
+          "objective_value_max": null,
+          "status": "no_valid_threshold_candidates",
+          "reason": "All threshold candidates have NaN or missing objective_value."
+        }
       },
       {
         "strategy_name": "logistic_regression",
@@ -155,14 +379,46 @@
         "checkpoint_selection_fallback_used": false,
         "selected_loss": null,
         "regression_loss": null,
-        "preprocessing_scaler": null
+        "preprocessing_scaler": null,
+        "status": "no_tradable_signals",
+        "reason": "validation: signal_count == 0 for split 'validation'.; test: signal_count == 0 for split 'test'.",
+        "degenerate_experiment": true,
+        "fallback_used": true,
+        "fallback_reason": "Validation split cannot support threshold selection because label diagnostics are degenerate: tradeable_rate == 0; future_net_return_bps never exceeds the trade threshold on this split.",
+        "signal_count_by_split": {
+          "train": 1,
+          "validation": 0,
+          "test": 0
+        },
+        "tradeable_rate_by_split": {
+          "train": 0.001927550681289465,
+          "validation": 0.0,
+          "test": 0.0
+        },
+        "profitable_rate_by_split": {
+          "train": 0.0029910269192422734,
+          "validation": 0.00015206812652068127,
+          "test": 0.0
+        },
+        "selected_threshold": 0.5,
+        "threshold_search_summary": {
+          "candidate_count": 1,
+          "valid_candidate_count": 0,
+          "all_objective_values_nan": true,
+          "selected_threshold": 0.5,
+          "selected_objective_value": null,
+          "objective_value_min": null,
+          "objective_value_max": null,
+          "status": "no_valid_threshold_candidates",
+          "reason": "All threshold candidates have NaN or missing objective_value."
+        }
       },
       {
         "strategy_name": "ridge_regression",
         "source_subtype": "baseline_linear",
         "model_family": "linear",
         "task": "regression",
-        "signal_threshold": -5.0,
+        "signal_threshold": 0.0,
         "threshold_objective": "avg_signal_return_bps",
         "selected_threshold_objective_value": NaN,
         "prediction_mode": "static",
@@ -173,7 +429,39 @@
         "checkpoint_selection_fallback_used": false,
         "selected_loss": null,
         "regression_loss": null,
-        "preprocessing_scaler": null
+        "preprocessing_scaler": null,
+        "status": "no_tradable_signals",
+        "reason": "validation: signal_count == 0 for split 'validation'.; test: signal_count == 0 for split 'test'.",
+        "degenerate_experiment": true,
+        "fallback_used": true,
+        "fallback_reason": "Validation split cannot support threshold selection because label diagnostics are degenerate: tradeable_rate == 0; future_net_return_bps never exceeds the trade threshold on this split.",
+        "signal_count_by_split": {
+          "train": 31,
+          "validation": 0,
+          "test": 0
+        },
+        "tradeable_rate_by_split": {
+          "train": 0.001927550681289465,
+          "validation": 0.0,
+          "test": 0.0
+        },
+        "profitable_rate_by_split": {
+          "train": 0.0029910269192422734,
+          "validation": 0.00015206812652068127,
+          "test": 0.0
+        },
+        "selected_threshold": 0.0,
+        "threshold_search_summary": {
+          "candidate_count": 1,
+          "valid_candidate_count": 0,
+          "all_objective_values_nan": true,
+          "selected_threshold": 0.0,
+          "selected_objective_value": null,
+          "objective_value_min": null,
+          "objective_value_max": null,
+          "status": "no_valid_threshold_candidates",
+          "reason": "All threshold candidates have NaN or missing objective_value."
+        }
       },
       {
         "strategy_name": "spread_zscore_1p5",
@@ -191,9 +479,137 @@
         "checkpoint_selection_fallback_used": false,
         "selected_loss": null,
         "regression_loss": null,
-        "preprocessing_scaler": null
+        "preprocessing_scaler": null,
+        "status": "ok",
+        "reason": null,
+        "degenerate_experiment": false,
+        "fallback_used": false,
+        "fallback_reason": null,
+        "signal_count_by_split": {
+          "train": 988,
+          "validation": 216,
+          "test": 237
+        },
+        "tradeable_rate_by_split": {
+          "train": 0.001927550681289465,
+          "validation": 0.0,
+          "test": 0.0
+        },
+        "profitable_rate_by_split": {
+          "train": 0.0029910269192422734,
+          "validation": 0.00015206812652068127,
+          "test": 0.0
+        },
+        "selected_threshold": 2.0,
+        "threshold_search_summary": {
+          "candidate_count": 6,
+          "valid_candidate_count": 6,
+          "all_objective_values_nan": false,
+          "selected_threshold": null,
+          "selected_objective_value": -29.3300237594414,
+          "objective_value_min": -30.863492947165344,
+          "objective_value_max": -29.3300237594414,
+          "status": "ok",
+          "reason": null
+        }
       }
     ]
+  },
+  "status": "warning",
+  "reason": "combined_funding_spread: test: signal_count == 0 for split 'test'.; elastic_net_regression: validation: signal_count == 0 for split 'validation'.; test: signal_count == 0 for split 'test'.; funding_threshold_2bps: test: signal_count == 0 for split 'test'.; logistic_l1: test: signal_count == 0 for split 'test'.; logistic_regression: validation: signal_count == 0 for split 'validation'.; test: signal_count == 0 for split 'test'.; ridge_regression: validation: signal_count == 0 for split 'validation'.; test: signal_count == 0 for split 'test'.",
+  "degenerate_experiment": true,
+  "signal_count_by_split": {
+    "train": 2376,
+    "validation": 243,
+    "test": 237
+  },
+  "selected_threshold": {
+    "combined_funding_spread": 0.0,
+    "elastic_net_regression": 0.0,
+    "funding_threshold_2bps": 3.0,
+    "logistic_l1": 0.5,
+    "logistic_regression": 0.5,
+    "ridge_regression": 0.0,
+    "spread_zscore_1p5": 2.0
+  },
+  "threshold_search_summary": {
+    "combined_funding_spread": {
+      "candidate_count": 16,
+      "valid_candidate_count": 16,
+      "all_objective_values_nan": false,
+      "selected_threshold": null,
+      "selected_objective_value": -20.852416175044237,
+      "objective_value_min": -30.08220047087354,
+      "objective_value_max": -20.852416175044237,
+      "status": "ok",
+      "reason": null
+    },
+    "elastic_net_regression": {
+      "candidate_count": 1,
+      "valid_candidate_count": 0,
+      "all_objective_values_nan": true,
+      "selected_threshold": 0.0,
+      "selected_objective_value": null,
+      "objective_value_min": null,
+      "objective_value_max": null,
+      "status": "no_valid_threshold_candidates",
+      "reason": "All threshold candidates have NaN or missing objective_value."
+    },
+    "funding_threshold_2bps": {
+      "candidate_count": 6,
+      "valid_candidate_count": 6,
+      "all_objective_values_nan": false,
+      "selected_threshold": null,
+      "selected_objective_value": -26.204587340926327,
+      "objective_value_min": -31.54113982456741,
+      "objective_value_max": -26.204587340926327,
+      "status": "ok",
+      "reason": null
+    },
+    "logistic_l1": {
+      "candidate_count": 1,
+      "valid_candidate_count": 0,
+      "all_objective_values_nan": true,
+      "selected_threshold": 0.5,
+      "selected_objective_value": null,
+      "objective_value_min": null,
+      "objective_value_max": null,
+      "status": "no_valid_threshold_candidates",
+      "reason": "All threshold candidates have NaN or missing objective_value."
+    },
+    "logistic_regression": {
+      "candidate_count": 1,
+      "valid_candidate_count": 0,
+      "all_objective_values_nan": true,
+      "selected_threshold": 0.5,
+      "selected_objective_value": null,
+      "objective_value_min": null,
+      "objective_value_max": null,
+      "status": "no_valid_threshold_candidates",
+      "reason": "All threshold candidates have NaN or missing objective_value."
+    },
+    "ridge_regression": {
+      "candidate_count": 1,
+      "valid_candidate_count": 0,
+      "all_objective_values_nan": true,
+      "selected_threshold": 0.0,
+      "selected_objective_value": null,
+      "objective_value_min": null,
+      "objective_value_max": null,
+      "status": "no_valid_threshold_candidates",
+      "reason": "All threshold candidates have NaN or missing objective_value."
+    },
+    "spread_zscore_1p5": {
+      "candidate_count": 6,
+      "valid_candidate_count": 6,
+      "all_objective_values_nan": false,
+      "selected_threshold": null,
+      "selected_objective_value": -29.3300237594414,
+      "objective_value_min": -30.863492947165344,
+      "objective_value_max": -29.3300237594414,
+      "status": "ok",
+      "reason": null
+    }
   },
   "signals_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\binance\\btcusdt\\1h\\baseline\\signals.parquet",
   "signals_csv_path": "D:\\MG\\! CUHKSZ\\~\uff01\u5927\u4e09 \u4e0b\\FTE 4312\\Github\\data\\artifacts\\signals\\binance\\btcusdt\\1h\\baseline\\signals.csv"

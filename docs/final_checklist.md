@@ -23,6 +23,7 @@ Primary reading path:
 - [x] Rule-based and simple ML baselines are implemented.
 - [x] A deep-learning sequence-model zoo and comparison workflow are implemented.
 - [x] Standardized signals are generated for backtesting.
+- [x] Degenerate validation/test regimes are surfaced explicitly through diagnostics rather than silent zero-filled reports.
 
 Main Python entrypoint:
 
@@ -37,6 +38,7 @@ Main Python entrypoint:
 - [x] Fees, slippage, and funding are modeled explicitly.
 - [x] Full and primary-split trade logs, summary metrics, and figures are saved.
 - [x] Backtest assumptions are documented in [backtest.md](backtest.md).
+- [x] No-trade strategies are labeled with explicit status and reason fields instead of only `0` risk metrics.
 
 ## Solidity Vault Prototype
 
@@ -75,6 +77,7 @@ npm run build
 - [x] The vault is clearly described as an accounting/state prototype, not a real execution engine.
 - [x] The off-chain to on-chain bridge is clearly described as a trusted operator flow, not a production oracle network.
 - [x] Demo fallback behavior is documented when network or optional artifacts are unavailable.
+- [x] Model-selection fallback behavior is opt-in and documented when degenerate experiments are intentionally kept for diagnostics.
 
 ## Validation Status
 
@@ -88,6 +91,7 @@ Final audit note:
 
 - the end-to-end demo workflow is runnable and submission-friendly
 - if live Binance fetch fails because of temporary network conditions, the workflow can reuse existing local artifacts and still produce a valid demo snapshot
+- if validation/test degenerates into no tradable signals, manifests and reports now say so explicitly instead of silently presenting ordinary zero rows
 
 ## Remaining Prototype-Level Items
 

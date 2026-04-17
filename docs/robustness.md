@@ -64,6 +64,8 @@ Then it:
 2. regenerates signals
 3. reruns the same backtest logic
 
+Because feature ablation can easily make an already sparse post-cost task even sparser, the default robustness config now explicitly enables degenerate-fallback handling for ablation retraining. That keeps the report runnable while still surfacing `status`, `reason`, and fallback metadata inside the regenerated artifacts.
+
 Rule-based strategies are not included in feature ablation because they do not directly consume the supervised feature matrix.
 
 ## Strategy Families Compared
@@ -95,6 +97,8 @@ After the baseline upgrade, the robustness tables also preserve the strategy con
   Shows the penalized linear or deep-learning loss that produced the saved model.
 - `preprocessing_scaler`
   Shows whether the upstream predictive pipeline used standard or robust scaling.
+- `status` / `diagnostic_reason`
+  Distinguish a true evaluated strategy from a no-trade row caused by missing tradable signals.
 
 ## File / Module Ownership
 
@@ -161,6 +165,7 @@ Compatibility wrapper:
 - Threshold sensitivity operates on standardized signal strength rather than raw rule parameter search.
 - Feature ablation can be slower because it retrains models.
 - Family-level comparisons intentionally keep the high-level family names, but the detail tables now preserve the underlying baseline configuration so the report can explain why one baseline won.
+- A no-trade row should now be interpreted through its status fields first, not only through zero-valued numeric metrics.
 - The backtest is still the project prototype backtest:
   - single asset
   - delta-neutral abstraction

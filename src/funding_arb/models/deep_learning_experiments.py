@@ -233,6 +233,13 @@ def _build_summary_frame(
             "checkpoint_selection_fallback_used": manifest.get(
                 "checkpoint_metric_fallback_used"
             ),
+            "status": manifest.get("status", "ok"),
+            "reason": manifest.get("reason"),
+            "degenerate_experiment": bool(manifest.get("degenerate_experiment", False)),
+            "degenerate_stage": manifest.get("degenerate_stage"),
+            "degenerate_reason": manifest.get("degenerate_reason"),
+            "fallback_used": bool(manifest.get("fallback_used", False)),
+            "fallback_reason": manifest.get("fallback_reason"),
             "selected_threshold": manifest.get("selected_threshold"),
             "selected_threshold_objective": manifest.get("selected_threshold_objective"),
             "selected_threshold_objective_value": manifest.get(
@@ -333,6 +340,9 @@ def _build_leaderboard_tables(
         "run_label",
         "model_name",
         "model_group",
+        "status",
+        "reason",
+        "degenerate_experiment",
         "task",
         "target_column",
         "lookback_steps",
@@ -397,11 +407,15 @@ def _best_model_note(
         metric_prefix="test",
     )
     best_row = ranked.iloc[0]
-    return (
+    note = (
         "Current default best model under the configured test ranking metric "
         f"(`{comparison_settings.ranking.test_metric}`) is `{best_row['run_label']}` "
         f"with score `{best_row['ranking_metric_value']}`."
     )
+    if bool(best_row.get("degenerate_experiment", False)):
+        reason = best_row.get("reason") or best_row.get("degenerate_reason") or "degenerate experiment"
+        note += f" This run is flagged as degenerate: {reason}."
+    return note
 
 
 def _write_bar_plot(
@@ -481,6 +495,7 @@ def _write_report(
         "- This Phase 2 comparison layer reuses the stable Phase 1 per-model artifact contract rather than inventing a new tracking system.",
         "- Runs are compared only after validating that provider, symbol, frequency, task, and target column match.",
         "- Artifact reuse is allowed so repeated comparison refreshes stay lightweight when model outputs already exist.",
+        "- Comparison tables now preserve per-run `status`, `reason`, and `degenerate_experiment` so a high predictive score cannot silently hide a no-signal trading regime.",
     ]
     if figure_paths:
         lines.extend(
@@ -639,6 +654,13 @@ def run_deep_learning_comparison(
                 "config_path": run.config_path,
                 "resolved_config_path": run.resolved_config_path,
                 "artifact_reused": run.artifact_reused,
+                "status": run.manifest.get("status", "ok"),
+                "reason": run.manifest.get("reason"),
+                "degenerate_experiment": bool(run.manifest.get("degenerate_experiment", False)),
+                "degenerate_stage": run.manifest.get("degenerate_stage"),
+                "degenerate_reason": run.manifest.get("degenerate_reason"),
+                "fallback_used": bool(run.manifest.get("fallback_used", False)),
+                "fallback_reason": run.manifest.get("fallback_reason"),
                 "manifest_path": str(_model_output_dir(run.settings) / "dl_manifest.json"),
                 "report_path": run.manifest.get("report_path"),
             }

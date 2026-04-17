@@ -30,6 +30,7 @@ The project has a coherent runnable path across all major layers:
    - `data/artifacts/demo/workflow/full_demo_default/demo_workflow_summary.json`
 4. Inspect the latest dashboard snapshot:
    - `frontend/public/demo/demo_snapshot.json`
+5. When a model or strategy row shows zero trades or zero signals, inspect the corresponding manifest/report `status` and `reason` fields rather than relying on the numeric columns alone.
 5. If you want code-level confirmation, scan:
    - `src/funding_arb/data/`
    - `src/funding_arb/features/`
@@ -76,9 +77,9 @@ npm run dev
 - `data/artifacts/models/baselines/`
   Shows interpretable benchmark behavior.
 - `data/artifacts/models/dl/`
-  Shows the first sequence-model experiment.
+  Shows the first sequence-model experiment, including whether a run was healthy or degenerate.
 - `data/artifacts/backtests/`
-  Shows full and primary-split trade logs, mark-to-market equity curves, realized-only audit columns, test-primary leaderboard, and summary metrics.
+  Shows full and primary-split trade logs, mark-to-market equity curves, realized-only audit columns, test-primary leaderboard, summary metrics, and no-trade statuses.
 - `reports/robustness/`
   Shows whether the results are fragile under changed assumptions.
 
@@ -110,6 +111,23 @@ Important prototype simplifications:
 - accounting-oriented vault instead of live multi-venue execution
 - trusted operator sync instead of decentralized oracle infrastructure
 - lightweight local dashboard instead of wallet-heavy app architecture
+
+## What A Reviewer Should Notice About Zero Rows
+
+The repository now distinguishes two very different situations:
+
+- a genuine flat or inactive strategy that still had a valid model-selection path
+- a degenerate experiment where validation/test never produced tradable signals
+
+That distinction appears in manifests and reports through fields such as:
+
+- `degenerate_experiment`
+- `status`
+- `reason`
+- `diagnostic_reason`
+- `signal_count_by_split`
+
+So if you see `0 trades` or `NaN` Sharpe/drawdown, treat those status fields as the authoritative explanation.
 
 ## How To Interpret "Completed"
 

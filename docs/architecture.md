@@ -361,6 +361,7 @@ The 8-hour horizon is naturally aligned with the common funding interval in the 
 - labels must be shifted so the trade enters after the signal timestamp
 - cost terms must be included in the label if the model is supposed to predict tradeability
 - negative-funding labels should include borrow assumptions if short-spot or synthetic shorting is modeled
+- split-level label diagnostics should be saved so later stages can detect when validation/test contain no tradable post-cost opportunities
 
 ## 9. Baseline Strategy Choices
 
@@ -453,6 +454,7 @@ Use it if:
 - normalize using training-only statistics
 - save model metadata with config, seed, feature set, and horizon
 - compare against the best rule baseline and the best simple ML baseline
+- fail fast when threshold selection or checkpoint selection degenerates instead of silently defaulting to normal-looking zero-signal outputs
 
 ### Deep model ownership
 
@@ -519,6 +521,7 @@ At minimum, report:
 - funding contribution share
 - turnover
 - cost drag
+- strategy/report status fields that explain whether `0 trades` means a real flat strategy or simply no tradable signals
 
 ### Backtest ownership
 

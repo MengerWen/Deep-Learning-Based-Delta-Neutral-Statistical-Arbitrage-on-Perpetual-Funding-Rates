@@ -9,7 +9,9 @@
 - Market dataset: `data/processed/binance/btcusdt/1h/hourly_market_data.parquet`
 - Output root: `data/artifacts/backtests`
 - Signal rows: `318422`
-- Active signal count: `2450`
+- Active signal count: `2856`
+- Signal status: `warning`
+- Signal reason: `combined_funding_spread: test: signal_count == 0 for split 'test'.; elastic_net_regression: validation: signal_count == 0 for split 'validation'.; test: signal_count == 0 for split 'test'.; funding_threshold_2bps: test: signal_count == 0 for split 'test'.; logistic_l1: test: signal_count == 0 for split 'test'.; logistic_regression: validation: signal_count == 0 for split 'validation'.; test: signal_count == 0 for split 'test'.; ridge_regression: validation: signal_count == 0 for split 'validation'.; test: signal_count == 0 for split 'test'.`
 - Signal prediction modes: `['static']`
 - Signal calibration methods: `['none', 'sigmoid']`
 - Signal checkpoint metrics: `[]`
@@ -33,6 +35,7 @@
 - Gas cost is `2.0` USD per closed trade.
 - Stop logic is `bar_close_observed` and `next_bar_executed`, not intrabar execution.
 - Simple annualized Sharpe uses square-root scaling and may be distorted by sparse, serially correlated trading returns.
+- When a strategy has zero executable trades on the evaluation split, Sharpe and drawdown fields are reported as NaN because they are not meaningful for a flat path.
 
 ## Run Diagnostics
 
@@ -52,15 +55,15 @@
 
 ## Strategy Summary
 
-| strategy_name | source_subtype | evaluation_split | prediction_mode | calibration_method | checkpoint_selection_effective_metric | selected_loss | preprocessing_scaler | signal_threshold | has_trades | trade_count | cumulative_return | annualized_return | sharpe_ratio | raw_period_sharpe | autocorr_adjusted_sharpe | max_drawdown | realized_max_drawdown | mark_to_market_max_drawdown | win_rate | profit_factor | average_trade_return_bps | median_trade_return_bps | exposure_time_fraction | total_net_pnl_usd |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| spread_zscore_1p5 | rule_based | test | static | none |  |  |  | 2.0 | True | 200 | -0.064749 | -0.063419 | -14.072107 | -0.150351 | -12.912402 | -0.064749 | -0.064749 | -0.064749 | 0.0 | 0.0 | -32.374269 | -32.56414 | 0.026477 | -6474.853785 |
-| combined_funding_spread | rule_based | test | static | none |  |  |  | 0.0 | False | 0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 |
-| elastic_net_regression | baseline_linear | test | static | none |  |  |  | 0.0 | False | 0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 |
-| funding_threshold_2bps | rule_based | test | static | none |  |  |  | 3.0 | False | 0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 |
-| logistic_l1 | baseline_linear | test | static | none |  |  |  | 0.75 | False | 0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 |
-| logistic_regression | baseline_linear | test | static | sigmoid |  |  |  | 0.5 | False | 0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 |
-| ridge_regression | baseline_linear | test | static | none |  |  |  | -5.0 | False | 0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 |
+| strategy_name | source_subtype | evaluation_split | status | diagnostic_reason | prediction_mode | calibration_method | checkpoint_selection_effective_metric | selected_loss | preprocessing_scaler | signal_threshold | has_trades | trade_count | cumulative_return | annualized_return | sharpe_ratio | raw_period_sharpe | autocorr_adjusted_sharpe | max_drawdown | realized_max_drawdown | mark_to_market_max_drawdown | win_rate | profit_factor | average_trade_return_bps | median_trade_return_bps | exposure_time_fraction | total_net_pnl_usd |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| spread_zscore_1p5 | rule_based | test | completed |  | static | none |  |  |  | 2.0 | True | 200 | -0.064749 | -0.063419 | -14.072107 | -0.150351 | -12.912402 | -0.064749 | -0.064749 | -0.064749 | 0.0 | 0.0 | -32.374269 | -32.56414 | 0.026477 | -6474.853785 |
+| combined_funding_spread | rule_based | test | no_tradable_signals | test: signal_count == 0 for split 'test'. | static | none |  |  |  | 0.0 | False | 0 | 0.0 | 0.0 |  |  |  |  |  |  |  |  |  |  | 0.0 | 0.0 |
+| elastic_net_regression | baseline_linear | test | no_tradable_signals | validation: signal_count == 0 for split 'validation'.; test: signal_count == 0 for split 'test'. | static | none |  |  |  | 0.0 | False | 0 | 0.0 | 0.0 |  |  |  |  |  |  |  |  |  |  | 0.0 | 0.0 |
+| funding_threshold_2bps | rule_based | test | no_tradable_signals | test: signal_count == 0 for split 'test'. | static | none |  |  |  | 3.0 | False | 0 | 0.0 | 0.0 |  |  |  |  |  |  |  |  |  |  | 0.0 | 0.0 |
+| logistic_l1 | baseline_linear | test | no_tradable_signals | test: signal_count == 0 for split 'test'. | static | none |  |  |  | 0.5 | False | 0 | 0.0 | 0.0 |  |  |  |  |  |  |  |  |  |  | 0.0 | 0.0 |
+| logistic_regression | baseline_linear | test | no_tradable_signals | validation: signal_count == 0 for split 'validation'.; test: signal_count == 0 for split 'test'. | static | sigmoid |  |  |  | 0.5 | False | 0 | 0.0 | 0.0 |  |  |  |  |  |  |  |  |  |  | 0.0 | 0.0 |
+| ridge_regression | baseline_linear | test | no_tradable_signals | validation: signal_count == 0 for split 'validation'.; test: signal_count == 0 for split 'test'. | static | none |  |  |  | 0.0 | False | 0 | 0.0 | 0.0 |  |  |  |  |  |  |  |  |  |  | 0.0 | 0.0 |
 
 ## Split Summary
 
@@ -71,11 +74,10 @@
 | elastic_net_regression | train | baseline_linear | static | none |  |  | 6 | 0.666667 | 8.496974 | 33.40012 | 6.360311 | 2.166667 | 2.0 | 1 | 240000.0 | 0.0 | 200.400721 |
 | funding_threshold_2bps | train | rule_based | static | none |  |  | 200 | 0.0 | 0.0 | -33.923359 | -33.933253 | 1.0 | 1.0 | 200 | 8000000.0 | 0.0 | -6784.671852 |
 | funding_threshold_2bps | validation | rule_based | static | none |  |  | 9 | 0.0 | 0.0 | -33.604761 | -33.974805 | 1.0 | 1.0 | 9 | 360000.0 | 0.0 | -302.44285 |
-| logistic_l1 | train | baseline_linear | static | none |  |  | 292 | 0.020548 | 0.031143 | -27.954312 | -30.427016 | 2.34589 | 1.0 | 154 | 11680000.0 | 286.5088 | -8162.659091 |
-| logistic_l1 | validation | baseline_linear | static | none |  |  | 7 | 0.0 | 0.0 | -31.342442 | -32.999951 | 1.285714 | 1.0 | 7 | 280000.0 | 2.1856 | -219.397097 |
+| logistic_l1 | train | baseline_linear | static | none |  |  | 433 | 0.016166 | 0.019113 | -28.947747 | -30.634579 | 2.524249 | 1.0 | 133 | 17320000.0 | 363.8462 | -12534.374494 |
+| logistic_l1 | validation | baseline_linear | static | none |  |  | 13 | 0.0 | 0.0 | -32.67478 | -34.035809 | 1.153846 | 1.0 | 13 | 520000.0 | 3.1856 | -424.772141 |
 | logistic_regression | train | baseline_linear | static | sigmoid |  |  | 1 | 1.0 | inf | 121.504187 | 121.504187 | 1.0 | 1.0 | 0 | 40000.0 | 0.0 | 121.504187 |
-| ridge_regression | train | baseline_linear | static | none |  |  | 25 | 0.2 | 0.722544 | -4.30948 | -17.496839 | 1.6 | 1.0 | 14 | 1000000.0 | 69.2553 | -107.737007 |
-| ridge_regression | validation | baseline_linear | static | none |  |  | 1 | 0.0 | 0.0 | -16.78442 | -16.78442 | 1.0 | 1.0 | 1 | 40000.0 | 0.0 | -16.78442 |
+| ridge_regression | train | baseline_linear | static | none |  |  | 20 | 0.25 | 1.131911 | 1.571862 | -12.026944 | 1.55 | 1.0 | 11 | 800000.0 | 61.4125 | 31.437237 |
 | spread_zscore_1p5 | test | rule_based | static | none |  |  | 200 | 0.0 | 0.0 | -32.374269 | -32.56414 | 1.185 | 1.0 | 200 | 8000000.0 | 7.9136 | -6474.853785 |
 | spread_zscore_1p5 | train | rule_based | static | none |  |  | 700 | 0.007143 | 0.016974 | -30.29208 | -31.821551 | 1.411429 | 1.0 | 570 | 28000000.0 | 70.593 | -21204.456266 |
 | spread_zscore_1p5 | validation | rule_based | static | none |  |  | 157 | 0.0 | 0.0 | -32.007754 | -32.563769 | 1.375796 | 1.0 | 157 | 6280000.0 | 21.0287 | -5025.217388 |

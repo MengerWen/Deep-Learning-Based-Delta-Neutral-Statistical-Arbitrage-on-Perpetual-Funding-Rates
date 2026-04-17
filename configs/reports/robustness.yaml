@@ -83,6 +83,7 @@ feature_ablation:
   backtest_output_dir: data/artifacts/robustness/backtests
   baseline_run_name_prefix: robustness_baseline
   dl_run_name_prefix: robustness_dl
+  allow_degenerate_fallback: true
   groups:
     - name: no_funding
       feature_groups:

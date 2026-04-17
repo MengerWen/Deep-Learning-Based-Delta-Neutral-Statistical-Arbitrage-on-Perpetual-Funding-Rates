@@ -32,6 +32,7 @@ Compare simple statistical baselines against sequence models that attempt to pre
 - use time-based train/validation/test splits
 - document feature leakage controls
 - report post-cost performance, not just raw prediction accuracy
+- fail fast when validation/test degenerates into no tradable threshold-selection path unless fallback is explicitly enabled for diagnostics
 
 ## Current Files
 
@@ -45,4 +46,4 @@ Compare simple statistical baselines against sequence models that attempt to pre
 
 ## Caveats
 
-Baseline training and the sequence-model zoo are now implemented, but post-cost positive labels are intentionally sparse under the current assumptions, so benchmark interpretation should emphasize signal-return diagnostics in addition to standard classification metrics. The comparison workflow is intentionally compact and report-oriented rather than a full experiment-tracking platform.
+Baseline training and the sequence-model zoo are now implemented, but post-cost positive labels are intentionally sparse under the current assumptions, so benchmark interpretation should emphasize signal-return diagnostics and the new `status` / `reason` fields in manifests and reports, not just raw numeric metrics. The comparison workflow is intentionally compact and report-oriented rather than a full experiment-tracking platform.

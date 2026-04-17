@@ -165,6 +165,7 @@ def test_robustness_report_default_config_loads_typed_model() -> None:
     assert config.evaluation.split_filter == ["test"]
     assert len(config.families) == 3
     assert config.families[0].name == "rule_based"
+    assert config.feature_ablation.allow_degenerate_fallback is True
     assert len(config.feature_ablation.groups) >= 3
 
 

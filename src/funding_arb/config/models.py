@@ -1221,6 +1221,7 @@ class FeatureAblationSettings(SettingsBase):
     backtest_output_dir: str = "data/artifacts/robustness/backtests"
     baseline_run_name_prefix: str = "robustness_baseline"
     dl_run_name_prefix: str = "robustness_dl"
+    allow_degenerate_fallback: bool = False
     groups: list[FeatureAblationSpec] = Field(default_factory=list)
 
 

@@ -35,6 +35,7 @@ Read these if you want the cleanest demonstration path from research artifacts t
 
 This sequence follows the actual data flow in the repository.
 The deep-learning comparison bundles and `compare-dl` workflow are documented in [models.md](models.md).
+These module docs also explain the degenerate-experiment guardrails now used across labels, models, signals, and backtests.
 
 ### 4. Understand the smart-contract layer
 
@@ -94,3 +95,4 @@ Read:
 - The root [../README.md](../README.md) is the best single entry point.
 - [architecture.md](architecture.md) is the main technical design reference.
 - [demo.md](demo.md) is the main operational guide for the end-to-end classroom demo.
+- Manifest and report `status` / `reason` fields are the source of truth when a strategy row shows zero trades or a model run abstains from trading.

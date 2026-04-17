@@ -147,6 +147,15 @@ Artifacts:
 - manifest: `btcusdt_supervised_manifest.json`
 - split datasets: `splits/train.parquet`, `splits/validation.parquet`, `splits/test.parquet`
 
+The manifest now also records split-level diagnostics that matter for downstream model selection:
+
+- `label_diagnostics_by_split`
+- `tradeable_rate_by_split`
+- `profitable_rate_by_split`
+- `degenerate_experiment`
+- `degenerate_stage`
+- `degenerate_reason`
+
 The combined supervised dataset contains:
 
 - feature columns from the feature pipeline
@@ -177,3 +186,20 @@ Main command:
 - Final rows near the end of the sample will naturally have `NaN` labels for longer horizons.
 - This is expected and is handled through `supervised_ready` rather than by silently dropping rows from the combined dataset.
 - The first label version is deliberately interpretable and cost-aware. It is a strong prototype target for both rule baselines and deep learning models.
+
+## Degenerate Split Detection
+
+The label pipeline now explicitly diagnoses splits that cannot support sensible downstream threshold selection.
+
+Examples:
+
+- `tradeable_rate == 0`
+- `profitable_rate == 0`
+- the relevant `future_net_return_bps` values never exceed the configured tradable edge threshold
+
+These cases no longer stay implicit. The manifest flags them so later training stages can either:
+
+- fail fast when validation cannot support threshold selection, or
+- continue only with an explicit warning or opt-in fallback setting
+
+This design keeps the repository honest about sparse post-cost labels instead of letting later reports hide the issue behind normal-looking zeroes.
