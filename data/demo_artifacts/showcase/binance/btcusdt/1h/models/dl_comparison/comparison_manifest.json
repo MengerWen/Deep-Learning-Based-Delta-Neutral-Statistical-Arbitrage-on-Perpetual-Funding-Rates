@@ -1,0 +1,8 @@
+{
+  "artifact_label": "DEMO ONLY",
+  "artifact_scope": "Synthetic illustrative results",
+  "demo_only": true,
+  "best_model_note": "DEMO ONLY: `transformer_encoder` is the synthetic strict-track leader. The ranking is illustrative and only intended to show a believable model hierarchy.",
+  "run_count": 3,
+  "report_path": "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\data\\demo_artifacts\\showcase\\binance\\btcusdt\\1h\\models\\dl_comparison\\comparison_report.md"
+}

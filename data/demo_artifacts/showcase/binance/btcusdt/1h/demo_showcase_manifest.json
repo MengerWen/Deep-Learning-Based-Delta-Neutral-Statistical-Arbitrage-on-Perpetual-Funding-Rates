@@ -1,0 +1,14 @@
+{
+  "artifact_label": "DEMO ONLY",
+  "artifact_scope": "Synthetic illustrative results",
+  "demo_only": true,
+  "generated_at": "2026-04-20T07:56:00.288827+00:00",
+  "best_strict_strategy": "transformer_encoder",
+  "best_strict_cumulative_return": 0.10199990714548002,
+  "best_strict_sharpe": 1.583591950674022,
+  "data_root": "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\data\\demo_artifacts\\showcase\\binance\\btcusdt\\1h",
+  "report_root": "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\reports\\demo_showcase\\binance\\btcusdt\\1h",
+  "frontend_public_dir": "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\frontend\\public\\demo_showcase",
+  "snapshot_path": "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\data\\demo_artifacts\\showcase\\binance\\btcusdt\\1h\\demo_snapshot.json",
+  "final_report_summary_path": "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\reports\\demo_showcase\\binance\\btcusdt\\1h\\summary.json"
+}

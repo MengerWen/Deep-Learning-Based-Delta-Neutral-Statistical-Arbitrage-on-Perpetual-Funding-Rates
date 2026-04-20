@@ -1,0 +1,10 @@
+split,strategy_name,trade_count,total_net_pnl_usd,average_net_return_bps,artifact_label,artifact_scope
+test,gru_gross__validation_support,224,7863.094142920602,17.551549426162058,DEMO ONLY,Synthetic illustrative results
+test,lstm_gross__rolling_top_decile_abs,191,5980.8856957064145,15.656768836927787,DEMO ONLY,Synthetic illustrative results
+test,transformer_direction__rolling_top_decile_abs,247,7539.296682601111,15.261734175305891,DEMO ONLY,Synthetic illustrative results
+train,gru_gross__validation_support,116,4530.001307745419,19.525867705799218,DEMO ONLY,Synthetic illustrative results
+train,lstm_gross__rolling_top_decile_abs,106,3403.377440769457,16.053667173440836,DEMO ONLY,Synthetic illustrative results
+train,transformer_direction__rolling_top_decile_abs,124,6975.928546622571,28.128744139607143,DEMO ONLY,Synthetic illustrative results
+validation,gru_gross__validation_support,57,1106.7525134974383,9.708355381556474,DEMO ONLY,Synthetic illustrative results
+validation,lstm_gross__rolling_top_decile_abs,49,2515.62658833586,25.669659064651633,DEMO ONLY,Synthetic illustrative results
+validation,transformer_direction__rolling_top_decile_abs,62,1284.5396368523789,10.359190619777248,DEMO ONLY,Synthetic illustrative results

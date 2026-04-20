@@ -1,0 +1,4 @@
+artifact_label,artifact_scope,rank,run_label,model_name,display_name,model_group,task,lookback_steps,ranking_metric,ranking_metric_value,test_pearson_corr,test_rmse,selected_loss,test_signal_count,test_top_quantile_avg_return_bps,test_cumulative_return,test_sharpe_ratio,test_max_drawdown
+DEMO ONLY,Synthetic illustrative results,1,transformer_encoder,transformer_encoder,TransformerEncoder,attention,regression,48,pearson_corr,0.681,0.681,1.63,huber,120,29.641298273137522,0.10199990714548002,1.583591950674022,-0.029593123126590792
+DEMO ONLY,Synthetic illustrative results,2,gru,gru,GRU,recurrent,regression,48,pearson_corr,0.648,0.648,1.79,huber,128,20.677240041622706,0.08400040946095966,1.3286383279917422,-0.034490388361193336
+DEMO ONLY,Synthetic illustrative results,3,lstm,lstm,LSTM,recurrent,regression,48,pearson_corr,0.621,0.621,1.91,huber,136,14.228385641189051,0.07100060282675336,1.1365867917785097,-0.04347499263159771

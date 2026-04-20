@@ -1,0 +1,16 @@
+split,strategy_name,trade_count,total_net_pnl_usd,average_net_return_bps,artifact_label,artifact_scope
+test,elastic_net_regression,126,2316.2398221773637,9.19142786578319,DEMO ONLY,Synthetic illustrative results
+test,gru_regression,109,3756.3652742281256,17.231033368018924,DEMO ONLY,Synthetic illustrative results
+test,lstm_regression,118,2798.2491761005135,11.85698803432421,DEMO ONLY,Synthetic illustrative results
+test,spread_zscore_1p5,94,1626.8058332036119,8.653222517040488,DEMO ONLY,Synthetic illustrative results
+test,transformer_encoder,97,4792.009887490567,24.701081894281273,DEMO ONLY,Synthetic illustrative results
+train,elastic_net_regression,82,1817.1503873015595,11.080185288424143,DEMO ONLY,Synthetic illustrative results
+train,gru_regression,71,3585.2994371461236,25.248587585536082,DEMO ONLY,Synthetic illustrative results
+train,lstm_regression,75,3093.620049006165,20.6241336600411,DEMO ONLY,Synthetic illustrative results
+train,spread_zscore_1p5,70,485.6575217364134,3.468982298117239,DEMO ONLY,Synthetic illustrative results
+train,transformer_encoder,68,4195.760943180247,30.851183405737107,DEMO ONLY,Synthetic illustrative results
+validation,elastic_net_regression,33,-33.34309456751386,-0.5051984025380897,DEMO ONLY,Synthetic illustrative results
+validation,gru_regression,30,1058.3762347217164,17.6396039120286,DEMO ONLY,Synthetic illustrative results
+validation,lstm_regression,31,1208.1910575686572,19.486952541429954,DEMO ONLY,Synthetic illustrative results
+validation,spread_zscore_1p5,28,287.57219431398397,5.135217755606855,DEMO ONLY,Synthetic illustrative results
+validation,transformer_encoder,28,1212.2198838771887,21.64678364066409,DEMO ONLY,Synthetic illustrative results

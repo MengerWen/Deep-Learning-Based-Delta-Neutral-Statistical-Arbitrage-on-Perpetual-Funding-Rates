@@ -184,6 +184,49 @@ Default local URL:
 http://127.0.0.1:5173
 ```
 
+## Synthetic Demo Mode
+
+The repository now includes a completely separate synthetic showcase path for
+presentation-only artifacts.
+
+Use it when you need a polished demo bundle with:
+
+- `DEMO ONLY` labels on generated JSON, CSV, parquet, markdown, HTML, and chart assets
+- isolated output directories that do not overwrite real experiment artifacts
+- a coherent strict-vs-exploratory story for reports, dashboards, and screenshots
+
+Rebuild the full synthetic bundle with one command:
+
+```powershell
+& 'd:\MG\anaconda3\python.exe' -m src.main build-demo-showcase --config configs/demo/showcase.yaml
+```
+
+Synthetic showcase output directories:
+
+- `data/demo_artifacts/showcase/binance/btcusdt/1h/`
+- `reports/demo_showcase/binance/btcusdt/1h/`
+- `frontend/public/demo_showcase/`
+
+Frontend launch:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Then open the isolated bundle at:
+
+```text
+http://127.0.0.1:5173/?mode=demo_showcase
+```
+
+The synthetic final report is copied to:
+
+- `frontend/public/demo_showcase/report/`
+
+while the default real-report path under `frontend/public/report/` stays unchanged.
+
 ## Main Commands
 
 ### Core pipeline

@@ -213,6 +213,9 @@ def _build_summary(
             "frequency": settings.metadata.frequency,
             "date_range": snapshot["meta"].get("date_range", {}),
             "generated_at": datetime.now(UTC).isoformat(),
+            "artifact_label": snapshot["meta"].get("artifact_label"),
+            "artifact_note": snapshot["meta"].get("artifact_note"),
+            "bundle_name": snapshot["meta"].get("bundle_name"),
         },
         "executive_summary": settings.sections.executive_summary,
         "contributions": settings.sections.contributions,
@@ -330,6 +333,10 @@ def _exploratory_rows(summary: dict[str, Any]) -> list[dict[str, Any]]:
 def _build_markdown(summary: dict[str, Any]) -> str:
     research = summary["research"]
     best_strategy = summary["backtest"]["best_strategy"]
+    demo_banner = ""
+    if summary["meta"].get("artifact_label"):
+        banner_note = summary["meta"].get("artifact_note") or "Illustrative results"
+        demo_banner = f"> **{summary['meta']['artifact_label']}** - {banner_note}\n\n"
     chart_md = "\n\n".join(
         f"### {chart['title']}\n\n{chart['subtitle']}\n\n![{chart['title']}]({chart['artifact_path']})"
         for chart in summary["charts"]
@@ -366,7 +373,7 @@ Exploratory DL results are supplementary showcase results designed to demonstrat
 """
     return f"""# {summary['meta']['title']}
 
-{summary['meta']['subtitle']}
+{demo_banner}{summary['meta']['subtitle']}
 
 ## Metadata
 
@@ -485,6 +492,15 @@ Exploratory DL results are supplementary showcase results designed to demonstrat
 def _build_html(summary: dict[str, Any]) -> str:
     research = summary["research"]
     best_strategy = summary["backtest"]["best_strategy"]
+    demo_banner_html = ""
+    if summary["meta"].get("artifact_label"):
+        artifact_note = escape(str(summary["meta"].get("artifact_note") or "Illustrative results"))
+        demo_banner_html = f"""
+        <div class="demo-banner">
+          <strong>{escape(str(summary["meta"]["artifact_label"]))}</strong>
+          <span>{artifact_note}</span>
+        </div>
+        """
     chart_cards = "".join(
         f"""
         <figure class="chart-card">
@@ -611,6 +627,18 @@ def _build_html(summary: dict[str, Any]) -> str:
       img {{ width: 100%; display: block; border-top: 1px solid var(--line); }}
       ul {{ margin: 0; padding-left: 20px; }}
       .note {{ margin-top: 14px; }}
+      .demo-banner {{
+        display: inline-flex;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 18px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(185, 28, 28, 0.18);
+        background: rgba(254, 242, 242, 0.88);
+        color: #991b1b;
+        font-size: 0.92rem;
+      }}
       @media (max-width: 900px) {{
         .grid, .metrics, .charts {{ grid-template-columns: 1fr; }}
       }}
@@ -619,6 +647,7 @@ def _build_html(summary: dict[str, Any]) -> str:
   <body>
     <main class="page">
       <section class="hero">
+        {demo_banner_html}
         <div class="grid">
           <div>
             <p class="eyebrow">Final Report</p>

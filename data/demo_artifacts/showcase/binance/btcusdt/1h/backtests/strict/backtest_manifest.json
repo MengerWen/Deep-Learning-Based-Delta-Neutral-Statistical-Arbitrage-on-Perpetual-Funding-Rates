@@ -1,0 +1,71 @@
+{
+  "artifact_label": "DEMO ONLY",
+  "artifact_scope": "Synthetic illustrative results",
+  "demo_only": true,
+  "summary": {
+    "artifact_label": "DEMO ONLY",
+    "artifact_scope": "Synthetic illustrative results",
+    "demo_only": true,
+    "strategy_count": 5,
+    "trade_count": 1060,
+    "primary_trade_count": 544,
+    "combined_trade_count": 1033,
+    "primary_split": "test",
+    "best_strategy": "transformer_encoder",
+    "best_strategy_status": "completed",
+    "best_sharpe_ratio": 1.583591950674022,
+    "best_cumulative_return": 0.10199990714548002,
+    "best_mark_to_market_max_drawdown": -0.029593123126590792,
+    "status_counts": {
+      "completed": 5
+    },
+    "source_subtypes": [
+      "baseline_linear",
+      "deep_learning",
+      "rule_based"
+    ]
+  },
+  "diagnostics": {
+    "leverage": {
+      "hedge_mode": "equal_notional_hedge",
+      "gross_notional_usd": 40000.0,
+      "position_notional_usd": 20000.0,
+      "initial_capital_usd": 100000.0,
+      "implied_gross_leverage": 0.4,
+      "max_gross_leverage": 2.0,
+      "leverage_check_passed": true
+    },
+    "funding": {
+      "funding_mode": "synthetic_showcase",
+      "funding_notional_mode": "initial_notional",
+      "funding_event_source": "synthetic_hourly_schedule",
+      "funding_rows_used": 0,
+      "funding_nonzero_rows_used": 0,
+      "funding_total_rows": 0
+    }
+  },
+  "assumptions": [
+    "DEMO ONLY: all returns, reports, and charts in this branch are synthetic illustrative results for presentation only.",
+    "Strict showcase metrics are designed to look plausible, non-monotonic, and internally consistent rather than to reproduce the real experiment.",
+    "Exploratory showcase metrics intentionally target a more active opportunity set, higher trade counts, and visibly higher drawdown.",
+    "Primary leaderboards are test-split views; combined tables remain supplementary context.",
+    "Backtest curves are sampled on business days for presentation readability while the surrounding market narrative remains aligned with the hourly BTCUSDT setup.",
+    "Fees, slippage, and funding contribution fields are synthetic but sized to stay within credible delta-neutral prototype ranges."
+  ],
+  "artifacts": {
+    "leaderboard_path": "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\data\\demo_artifacts\\showcase\\binance\\btcusdt\\1h\\backtests\\strict\\leaderboard.parquet",
+    "strategy_metrics_path": "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\data\\demo_artifacts\\showcase\\binance\\btcusdt\\1h\\backtests\\strict\\strategy_metrics.parquet",
+    "trade_log_path": "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\data\\demo_artifacts\\showcase\\binance\\btcusdt\\1h\\backtests\\strict\\trade_log.parquet",
+    "primary_trade_log_path": "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\data\\demo_artifacts\\showcase\\binance\\btcusdt\\1h\\backtests\\strict\\primary_trade_log.parquet",
+    "equity_curve_path": "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\data\\demo_artifacts\\showcase\\binance\\btcusdt\\1h\\backtests\\strict\\equity_curve.parquet",
+    "split_summary_path": "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\data\\demo_artifacts\\showcase\\binance\\btcusdt\\1h\\backtests\\strict\\split_summary.parquet",
+    "monthly_returns_path": "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\data\\demo_artifacts\\showcase\\binance\\btcusdt\\1h\\backtests\\strict\\monthly_returns.parquet",
+    "figure_paths": {
+      "cumulative_returns": "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\data\\demo_artifacts\\showcase\\binance\\btcusdt\\1h\\backtests\\strict\\figures\\strict_cumulative_returns.png",
+      "cumulative_pnl": "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\data\\demo_artifacts\\showcase\\binance\\btcusdt\\1h\\backtests\\strict\\figures\\strict_cumulative_pnl.png",
+      "drawdowns": "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\data\\demo_artifacts\\showcase\\binance\\btcusdt\\1h\\backtests\\strict\\figures\\strict_drawdowns.png",
+      "monthly_returns": "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\data\\demo_artifacts\\showcase\\binance\\btcusdt\\1h\\backtests\\strict\\figures\\strict_monthly_returns.png",
+      "strategy_comparison": "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\data\\demo_artifacts\\showcase\\binance\\btcusdt\\1h\\backtests\\strict\\figures\\strict_strategy_comparison.png"
+    }
+  }
+}

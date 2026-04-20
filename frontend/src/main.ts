@@ -12,6 +12,9 @@ interface DemoMeta {
     end_exclusive: string;
   };
   chain_name: string;
+  artifact_label?: string;
+  artifact_note?: string;
+  bundle_name?: string;
 }
 
 interface DemoChart {
@@ -193,13 +196,18 @@ if (!appNode) {
 
 const app = appNode;
 const BASE_URL = import.meta.env.BASE_URL;
-const DEMO_SNAPSHOT_URL = `${BASE_URL}demo/demo_snapshot.json`;
-const EXPLORATORY_SUMMARY_URL = `${BASE_URL}demo/exploratory_dl_summary.json`;
-const EXPLORATORY_LEADERBOARD_URL = `${BASE_URL}demo/exploratory_dl_leaderboard.json`;
-const EXPLORATORY_PREDICTION_DISTRIBUTION_URL = `${BASE_URL}demo/exploratory_prediction_distribution.json`;
-const EXPLORATORY_QUANTILE_ANALYSIS_URL = `${BASE_URL}demo/exploratory_quantile_analysis.json`;
-const FINAL_REPORT_URL = `${BASE_URL}report/`;
-const FINAL_REPORT_MARKDOWN_URL = `${BASE_URL}report/final_report.md`;
+const urlParams = new URLSearchParams(window.location.search);
+const DEMO_BUNDLE = urlParams.get("mode") || "demo";
+const REPORT_BUNDLE =
+  urlParams.get("reportMode") ||
+  (DEMO_BUNDLE === "demo" ? "report" : `${DEMO_BUNDLE}/report`);
+const DEMO_SNAPSHOT_URL = `${BASE_URL}${DEMO_BUNDLE}/demo_snapshot.json`;
+const EXPLORATORY_SUMMARY_URL = `${BASE_URL}${DEMO_BUNDLE}/exploratory_dl_summary.json`;
+const EXPLORATORY_LEADERBOARD_URL = `${BASE_URL}${DEMO_BUNDLE}/exploratory_dl_leaderboard.json`;
+const EXPLORATORY_PREDICTION_DISTRIBUTION_URL = `${BASE_URL}${DEMO_BUNDLE}/exploratory_prediction_distribution.json`;
+const EXPLORATORY_QUANTILE_ANALYSIS_URL = `${BASE_URL}${DEMO_BUNDLE}/exploratory_quantile_analysis.json`;
+const FINAL_REPORT_URL = `${BASE_URL}${REPORT_BUNDLE}/`;
+const FINAL_REPORT_MARKDOWN_URL = `${BASE_URL}${REPORT_BUNDLE}/final_report.md`;
 const REPOSITORY_URL =
   "https://github.com/MengerWen/Deep-Learning-Based-Delta-Neutral-Statistical-Arbitrage-on-Perpetual-Funding-Rates";
 
@@ -334,15 +342,23 @@ function renderLoading(): void {
 }
 
 function renderError(errorMessage: string): void {
+  const refreshCommand =
+    DEMO_BUNDLE === "demo_showcase"
+      ? "& 'd:\\MG\\anaconda3\\python.exe' -m src.main build-demo-showcase --config configs/demo/showcase.yaml"
+      : "& 'd:\\MG\\anaconda3\\python.exe' -m src.main run-demo --config configs/demo/workflow.yaml";
+  const snapshotCommand =
+    DEMO_BUNDLE === "demo_showcase"
+      ? "& 'd:\\MG\\anaconda3\\python.exe' scripts/demo/build_demo_showcase.py --config configs/demo/showcase.yaml"
+      : "& 'd:\\MG\\anaconda3\\python.exe' scripts/demo/export_demo_snapshot.py --config configs/demo/default.yaml";
   app.innerHTML = `
     <main class="loading-shell">
       <div class="loading-panel error-panel">
         <p class="eyebrow">Snapshot Missing</p>
         <h1>The frontend could not load <code>${DEMO_SNAPSHOT_URL}</code>.</h1>
         <p>${errorMessage}</p>
-        <pre class="command-block">& 'd:\\MG\\anaconda3\\python.exe' -m src.main run-demo --config configs/demo/workflow.yaml</pre>
+        <pre class="command-block">${refreshCommand}</pre>
         <pre class="command-block"># or only refresh the frontend snapshot
-& 'd:\\MG\\anaconda3\\python.exe' scripts/demo/export_demo_snapshot.py --config configs/demo/default.yaml</pre>
+${snapshotCommand}</pre>
         <pre class="command-block">cd frontend
 npm install
 npm run dev</pre>
@@ -468,7 +484,7 @@ function renderExploratoryShowcase(): string {
                     <figure class="chart-card">
                       <div class="chart-header">
                         <p class="chart-section">exploratory</p>
-                        <h3>${figure.label.replaceAll("_", " ")}</h3>
+                        <h3>${figure.label.split("_").join(" ")}</h3>
                         <p>Generated from the best exploratory showcase run and copied into the frontend-ready demo bundle.</p>
                       </div>
                       <img src="${BASE_URL}${figure.image}" alt="${figure.label}" loading="lazy" />
@@ -576,12 +592,33 @@ function renderDashboard(snapshot: DemoSnapshot, state: SimulationState): void {
     bestPnl > 0
       ? "That makes the showcase a clean demonstration of both research quality and strategy viability under the configured assumptions."
       : "That is still a strong course-project outcome because the repository makes the negative result explicit instead of hiding it behind pre-cost metrics.";
+  const signalBody =
+    bestPnl > 0
+      ? "The synthetic strict bundle keeps the baseline modestly positive, then improves the payoff profile across the DL variants without removing path volatility."
+      : "Both simple and sequence models learn some structure in the 24-hour post-cost target, which is why the modeling layer remains meaningful even when trading outcomes stay weak.";
+  const executionBody =
+    bestPnl > 0
+      ? "The best strict strategy remains profitable after fees, slippage, and funding, but it still experiences visible drawdowns and non-monotonic recovery."
+      : "The current best test-period strategy is still negative after fees, slippage, gas, and next-bar execution, so the repository is explicit about the true cost of monetizing funding dislocations.";
+  const architectureBody =
+    snapshot.meta.artifact_label
+      ? "The same frontend and report contract can now render either real artifacts or the isolated DEMO ONLY showcase bundle without changing the default pipeline."
+      : "The project already demonstrates an end-to-end hybrid design: off-chain modeling, transparent backtests, dry-run operator sync, and on-chain share-accounting logic in one coherent story.";
+  const bannerHtml = snapshot.meta.artifact_label
+    ? `
+      <div class="demo-flag">
+        <strong>${snapshot.meta.artifact_label}</strong>
+        <span>${snapshot.meta.artifact_note ?? "Illustrative showcase bundle"}</span>
+      </div>
+    `
+    : "";
 
   app.innerHTML = `
     <div class="page-shell">
       <div class="page-noise"></div>
       <header class="masthead" id="top">
         <div class="masthead-copy">
+          ${bannerHtml}
           <p class="eyebrow">Signal To Settlement</p>
           <h1>${snapshot.meta.title}</h1>
           <p class="lede">${snapshot.meta.subtitle}</p>
@@ -674,17 +711,17 @@ function renderDashboard(snapshot: DemoSnapshot, state: SimulationState): void {
             <article class="verdict-card">
               <p class="story-index">Signals</p>
               <h3>${formatNumber(baselineCorr, 3)} vs ${formatNumber(dlMetric, 3)}</h3>
-              <p>Both simple and sequence models learn some structure in the 24-hour post-cost target, which is why the modeling layer remains meaningful even when trading outcomes stay weak.</p>
+              <p>${signalBody}</p>
             </article>
             <article class="verdict-card">
               <p class="story-index">Execution</p>
               <h3>${formatUsd(bestPnl)}</h3>
-              <p>The current best test-period strategy is still negative after fees, slippage, gas, and next-bar execution, so the repository is explicit about the true cost of monetizing funding dislocations.</p>
+              <p>${executionBody}</p>
             </article>
             <article class="verdict-card">
               <p class="story-index">Architecture</p>
               <h3>Research -> Vault</h3>
-              <p>The project already demonstrates an end-to-end hybrid design: off-chain modeling, transparent backtests, dry-run operator sync, and on-chain share-accounting logic in one coherent story.</p>
+              <p>${architectureBody}</p>
             </article>
           </div>
         </section>

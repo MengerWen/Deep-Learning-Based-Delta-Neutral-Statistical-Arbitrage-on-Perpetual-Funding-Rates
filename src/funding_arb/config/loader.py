@@ -26,6 +26,7 @@ from funding_arb.config.models import (
     RobustnessReportSettings,
     SignalSettings,
 )
+from funding_arb.demo_showcase import DemoShowcaseSettings
 from funding_arb.utils.config import load_config
 from funding_arb.utils.paths import repo_path
 
@@ -133,6 +134,11 @@ COMMAND_SETTINGS: dict[str, CommandSettings] = {
         command_name="run-exploratory-dl-demo",
         default_config_path=repo_path("configs", "demo", "exploratory_workflow.yaml"),
         config_model=DemoWorkflowSettings,
+    ),
+    "build-demo-showcase": CommandSettings(
+        command_name="build-demo-showcase",
+        default_config_path=repo_path("configs", "demo", "showcase.yaml"),
+        config_model=DemoShowcaseSettings,
     ),
 }
 

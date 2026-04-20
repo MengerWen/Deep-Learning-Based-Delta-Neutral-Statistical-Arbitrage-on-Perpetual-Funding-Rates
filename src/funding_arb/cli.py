@@ -12,6 +12,7 @@ from funding_arb.backtest.engine import describe_backtest_job, run_backtest_pipe
 from funding_arb.config.loader import COMMAND_SETTINGS, load_command_settings
 from funding_arb.data.pipeline import describe_ingestion_job, run_data_pipeline
 from funding_arb.demo.workflow import describe_demo_workflow_job, run_demo_workflow
+from funding_arb.demo_showcase import describe_demo_showcase_job, run_demo_showcase
 from funding_arb.exploratory_dl import (
     describe_exploratory_dataset_job,
     describe_exploratory_report_job,
@@ -379,6 +380,28 @@ def _run_demo(config: Any, config_path: Path) -> int:
     return 0
 
 
+def _run_demo_showcase(config: Any, config_path: Path) -> int:
+    _log_config_summary("build-demo-showcase", config_path, config)
+    LOGGER.info(describe_demo_showcase_job(config))
+    artifacts = run_demo_showcase(config)
+    LOGGER.info("Data root: %s", artifacts.data_root)
+    LOGGER.info("Report root: %s", artifacts.report_root)
+    LOGGER.info("Frontend public dir: %s", artifacts.frontend_public_dir)
+    LOGGER.info("Snapshot: %s", artifacts.snapshot_path)
+    LOGGER.info("Frontend snapshot: %s", artifacts.frontend_snapshot_path)
+    if artifacts.final_report_path is not None:
+        LOGGER.info("Final report markdown: %s", artifacts.final_report_path)
+    if artifacts.final_report_html_path is not None:
+        LOGGER.info("Final report HTML: %s", artifacts.final_report_html_path)
+    if artifacts.final_report_summary_path is not None:
+        LOGGER.info("Final report summary: %s", artifacts.final_report_summary_path)
+    LOGGER.info("Modeling summary: %s", artifacts.modeling_summary_path)
+    LOGGER.info("Backtest summary: %s", artifacts.backtest_summary_path)
+    LOGGER.info("Exploratory summary: %s", artifacts.exploratory_summary_path)
+    LOGGER.info("Manifest: %s", artifacts.manifest_path)
+    return 0
+
+
 COMMAND_HANDLERS: dict[str, Callable[[Any, Path], int]] = {
     "fetch-data": _run_fetch_data,
     "report-data-quality": _run_report_data_quality,
@@ -398,6 +421,7 @@ COMMAND_HANDLERS: dict[str, Callable[[Any, Path], int]] = {
     "sync-vault": _run_sync_vault,
     "run-demo": _run_demo,
     "run-exploratory-dl-demo": _run_demo,
+    "build-demo-showcase": _run_demo_showcase,
 }
 
 

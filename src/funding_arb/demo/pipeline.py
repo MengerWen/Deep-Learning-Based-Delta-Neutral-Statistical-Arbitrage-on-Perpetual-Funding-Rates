@@ -370,7 +370,10 @@ def export_demo_snapshot(config: dict[str, Any]) -> DemoArtifacts:
         "exploratory_dl": (
             {
                 "available": True,
-                "summary": exploratory_summary,
+                "summary": (
+                    (exploratory_summary or {}).get("exploratory_summary", exploratory_summary)
+                ),
+                "summary_payload": exploratory_summary,
                 "leaderboard_preview": (
                     [
                         {key: _json_ready(value) for key, value in row.items()}

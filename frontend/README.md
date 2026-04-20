@@ -48,6 +48,25 @@ npm run dev
 http://127.0.0.1:5173
 ```
 
+## Synthetic Showcase Bundle
+
+An isolated frontend-ready synthetic bundle is also available for presentation use.
+
+Rebuild it with:
+
+```powershell
+& 'd:\MG\anaconda3\python.exe' -m src.main build-demo-showcase --config configs/demo/showcase.yaml
+```
+
+Then open:
+
+```text
+http://127.0.0.1:5173/?mode=demo_showcase
+```
+
+This reads from `frontend/public/demo_showcase/` and keeps the default
+`frontend/public/demo/` plus `frontend/public/report/` outputs untouched.
+
 ## Production / static build
 
 To build the showcase as a static site:

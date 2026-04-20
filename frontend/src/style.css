@@ -145,6 +145,19 @@ code {
     var(--panel);
 }
 
+.demo-flag {
+  display: inline-flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(164, 77, 54, 0.2);
+  background: rgba(254, 242, 242, 0.9);
+  color: #991b1b;
+  font-size: 0.9rem;
+}
+
 .masthead-copy::after {
   content: "Research -> Signals -> Backtest -> Vault";
   position: absolute;

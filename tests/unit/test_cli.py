@@ -144,3 +144,12 @@ def test_cli_parser_accepts_run_exploratory_demo_command() -> None:
     assert args.config.endswith(
         "configs\\demo\\exploratory_workflow.yaml"
     ) or args.config.endswith("configs/demo/exploratory_workflow.yaml")
+
+
+def test_cli_parser_accepts_build_demo_showcase_command() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["build-demo-showcase"])
+    assert args.command == "build-demo-showcase"
+    assert args.config.endswith(
+        "configs\\demo\\showcase.yaml"
+    ) or args.config.endswith("configs/demo/showcase.yaml")

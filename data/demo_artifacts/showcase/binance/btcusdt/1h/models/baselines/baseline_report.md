@@ -1,0 +1,8 @@
+# DEMO ONLY | Synthetic Modeling Summary
+
+> Synthetic illustrative results. Baseline metrics below are illustrative showcase outputs.
+
+| artifact_label   | artifact_scope                 | model_name             | display_name        | model_family    | task           | split   | status    |   pearson_corr |   rmse |   signal_count |   cumulative_signal_return_bps |
+|:-----------------|:-------------------------------|:-----------------------|:--------------------|:----------------|:---------------|:--------|:----------|---------------:|-------:|---------------:|-------------------------------:|
+| DEMO ONLY        | Synthetic illustrative results | elastic_net_regression | Baseline ML         | baseline_linear | regression     | test    | completed |          0.566 |   2.12 |            154 |                        410.005 |
+| DEMO ONLY        | Synthetic illustrative results | spread_zscore_1p5      | Rule-Based Baseline | rule_based      | classification | test    | completed |          0.411 |   2.48 |            122 |                        240.004 |

@@ -201,6 +201,30 @@ npm run dev
 - Vault integration artifacts:
   - `data/artifacts/integration/binance/btcusdt/1h/mock_operator_default/`
 
+## Separate Synthetic Showcase Mode
+
+For presentation scenarios where you need illustrative but fully isolated
+results, use:
+
+```powershell
+& 'd:\MG\anaconda3\python.exe' -m src.main build-demo-showcase --config configs/demo/showcase.yaml
+```
+
+This command writes only to the demo-only paths:
+
+- `data/demo_artifacts/showcase/binance/btcusdt/1h/`
+- `reports/demo_showcase/binance/btcusdt/1h/`
+- `frontend/public/demo_showcase/`
+
+The frontend can then load that bundle via:
+
+```text
+http://127.0.0.1:5173/?mode=demo_showcase
+```
+
+Every generated artifact in that branch is labeled `DEMO ONLY`, and the
+default real pipeline plus real report directories remain unchanged.
+
 ## Why This Workflow Is Presentation-Friendly
 
 - It uses one primary entry point.

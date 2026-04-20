@@ -1,0 +1,19 @@
+{
+  "artifact_label": "DEMO ONLY",
+  "artifact_scope": "Synthetic illustrative results",
+  "demo_only": true,
+  "dataset": {
+    "symbol": "BTCUSDT",
+    "venue": "binance",
+    "frequency": "1h"
+  },
+  "time_range": {
+    "start": "2021-01-01T00:00:00+00:00",
+    "end_exclusive": "2026-04-08T00:00:00+00:00"
+  },
+  "canonical_row_count": 46152,
+  "row_counts": {
+    "perpetual_bars": 46152,
+    "funding_rows": 46152
+  }
+}
