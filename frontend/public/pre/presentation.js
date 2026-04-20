@@ -1,7 +1,14 @@
 (function () {
-  const snapshotUrl = "../demo_showcase/demo_snapshot.json";
-  const exploratoryUrl = "../demo_showcase/exploratory_dl_summary.json";
-  const reportSummaryUrl = "../demo_showcase/report/summary.json";
+  const snapshotUrl = "/demo_showcase/demo_snapshot.json";
+  const exploratoryUrl = "/demo_showcase/exploratory_dl_summary.json";
+  const reportSummaryUrl = "/demo_showcase/report/summary.json";
+
+  const toPublicAssetUrl = (path) => {
+    if (!path) {
+      return "";
+    }
+    return path.startsWith("/") ? path : `/${path}`;
+  };
 
   const formatNumber = (value, digits = 2) => {
     if (value == null || Number.isNaN(Number(value))) {
@@ -261,7 +268,7 @@
         (chart) => `
           <article class="panel chart-card">
             <div class="chart-frame">
-              <img src="../${chart.image}" alt="${chart.title}" />
+              <img src="${toPublicAssetUrl(chart.image)}" alt="${chart.title}" />
             </div>
             <div class="chart-copy">
               <p class="chart-tag">${chart.section}</p>
