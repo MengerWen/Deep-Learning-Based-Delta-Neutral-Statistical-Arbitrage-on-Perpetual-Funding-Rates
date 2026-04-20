@@ -439,6 +439,8 @@ def _generate_market_context(
 
     context_paths = {
         "manifest_path": _write_json(data_root / "market_manifest.json", manifest),
+        "market_context_path": _write_frame(context_frame, data_root / "market_context.parquet"),
+        "market_context_csv_path": _write_frame(context_frame, data_root / "market_context.csv"),
         "data_quality_summary_path": str(quality_dir / "summary.json"),
         "funding_figure_path": str(funding_fig),
         "spread_figure_path": str(spread_fig),

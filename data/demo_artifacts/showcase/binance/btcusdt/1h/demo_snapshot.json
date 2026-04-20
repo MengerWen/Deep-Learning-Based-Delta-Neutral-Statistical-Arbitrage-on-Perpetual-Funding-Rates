@@ -2,7 +2,7 @@
   "meta": {
     "title": "Deep Learning-Based Delta-Neutral Statistical Arbitrage on Perpetual Funding Rates",
     "subtitle": "DEMO ONLY: synthetic illustrative results for pipeline, reporting, and dashboard showcase.",
-    "generated_at": "2026-04-20T07:56:00.257280+00:00",
+    "generated_at": "2026-04-20T08:56:04.076202+00:00",
     "symbol": "BTCUSDT",
     "venue": "binance",
     "frequency": "1h",
@@ -920,7 +920,7 @@
       "detail": "Aggressive exploratory variants were rebuilt in a separate track with higher trade counts and higher drawdown."
     },
     {
-      "timestamp": "2026-04-20T07:56:00.259280+00:00",
+      "timestamp": "2026-04-20T08:56:04.077709+00:00",
       "kind": "vault",
       "title": "Frontend demo bundle exported",
       "detail": "Snapshot JSON, charts, reports, and exploratory artifacts were copied into the demo_showcase frontend directory."

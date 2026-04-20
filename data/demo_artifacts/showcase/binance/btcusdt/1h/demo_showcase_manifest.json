@@ -2,7 +2,7 @@
   "artifact_label": "DEMO ONLY",
   "artifact_scope": "Synthetic illustrative results",
   "demo_only": true,
-  "generated_at": "2026-04-20T07:56:00.288827+00:00",
+  "generated_at": "2026-04-20T08:56:04.105120+00:00",
   "best_strict_strategy": "transformer_encoder",
   "best_strict_cumulative_return": 0.10199990714548002,
   "best_strict_sharpe": 1.583591950674022,
