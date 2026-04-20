@@ -551,4 +551,105 @@
     .catch((error) => {
       renderError(error instanceof Error ? error.message : String(error));
     });
+function initPPTMode() {
+    const startBtn = document.getElementById('start-ppt-btn');
+    if (!startBtn) return;
+    let slides = [];
+    let currentIndex = 0;
+    let controlsDiv = null;
+    function splitChartsForPPT() {
+      const chartGrid = document.getElementById('chart-grid');
+      if (!chartGrid || chartGrid.dataset.splitDone) return;
+      
+      const charts = Array.from(chartGrid.children);
+      if (charts.length <= 2) return; 
+      const originalSection = chartGrid.closest('.section');
+      chartGrid.innerHTML = '';
+      chartGrid.appendChild(charts[0]);
+      chartGrid.appendChild(charts[1]);
+      chartGrid.dataset.splitDone = "true";
+      let insertReference = originalSection;
+ 
+      for (let i = 2; i < charts.length; i += 2) {
+        const newSection = originalSection.cloneNode(true); 
+
+        const title = newSection.querySelector('h2');
+        if (title) title.innerText += " (Cont.)";
+        
+        const newGrid = newSection.querySelector('.chart-grid');
+        newGrid.innerHTML = ''; 
+        newGrid.appendChild(charts[i]);
+        if (charts[i+1]) newGrid.appendChild(charts[i+1]); 
+        insertReference.parentNode.insertBefore(newSection, insertReference.nextSibling);
+        insertReference = newSection; 
+      }
+    }
+    function buildSlides() {
+      splitChartsForPPT(); 
+      slides = [document.querySelector('.hero'), ...document.querySelectorAll('.section')];
+    }
+    function updateView() {
+      slides.forEach((slide, index) => {
+        if (index === currentIndex) {
+          slide.classList.add('slide-active');
+        } else {
+          slide.classList.remove('slide-active');
+        }
+      });
+      const prevBtn = document.getElementById('ppt-prev');
+      const nextBtn = document.getElementById('ppt-next');
+      if (prevBtn) prevBtn.disabled = currentIndex === 0;
+      if (nextBtn) nextBtn.disabled = currentIndex === slides.length - 1;
+      
+      window.scrollTo(0, 0); 
+    }
+    function enterPPTMode() {
+      buildSlides();
+      currentIndex = 0;
+      document.body.classList.add('ppt-mode');
+      
+      if (!controlsDiv) {
+        controlsDiv = document.createElement('div');
+        controlsDiv.className = 'ppt-controls';
+        controlsDiv.innerHTML = `
+          <button id="ppt-prev" class="ppt-btn">◀ Prev</button>
+          <button id="ppt-next" class="ppt-btn">Next ▶</button>
+          <button id="ppt-exit" class="ppt-btn exit-btn">Exit PPT</button>
+        `;
+        document.body.appendChild(controlsDiv);
+        document.getElementById('ppt-prev').addEventListener('click', () => {
+          if (currentIndex > 0) { currentIndex--; updateView(); }
+        });
+        document.getElementById('ppt-next').addEventListener('click', () => {
+          if (currentIndex < slides.length - 1) { currentIndex++; updateView(); }
+        });
+        document.getElementById('ppt-exit').addEventListener('click', exitPPTMode);
+      }
+      
+      controlsDiv.style.display = 'flex';
+      updateView();
+    }
+    function exitPPTMode() {
+      document.body.classList.remove('ppt-mode');
+      slides.forEach(slide => slide.classList.remove('slide-active'));
+      if (controlsDiv) controlsDiv.style.display = 'none';
+    }
+    startBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      enterPPTMode();
+    });
+    window.addEventListener('keydown', (e) => {
+      if (!document.body.classList.contains('ppt-mode')) return;
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        if (currentIndex < slides.length - 1) { currentIndex++; updateView(); }
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (currentIndex > 0) { currentIndex--; updateView(); }
+      } else if (e.key === 'Escape') {
+        exitPPTMode();
+      }
+    });
+  }
+  setTimeout(initPPTMode, 800);
 })();
