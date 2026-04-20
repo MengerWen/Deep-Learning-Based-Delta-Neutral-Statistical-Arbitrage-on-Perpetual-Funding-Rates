@@ -67,6 +67,15 @@ http://127.0.0.1:5173/?mode=demo_showcase
 This reads from `frontend/public/demo_showcase/` and keeps the default
 `frontend/public/demo/` plus `frontend/public/report/` outputs untouched.
 
+For the presentation-first standalone HTML page, open:
+
+```text
+http://127.0.0.1:5173/pre/
+```
+
+This page reads the same isolated `demo_showcase` bundle but arranges it as a
+one-page presentation flow for the pre/final demo.
+
 ## Production / static build
 
 To build the showcase as a static site:

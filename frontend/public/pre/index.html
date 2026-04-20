@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Presentation page for the synthetic showcase of the funding-rate arbitrage course project."
+    />
+    <title>Funding-Rate Arbitrage Presentation</title>
+    <link rel="stylesheet" href="./presentation.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">FTE 4312 Course Project</p>
+          <h1>Deep Learning-Based Delta-Neutral Statistical Arbitrage on Perpetual Funding Rates</h1>
+          <p class="hero-lede">
+            A presentation-first walkthrough of our research pipeline: market data, feature engineering,
+            deep-learning ranking, cost-aware backtesting, and vault-state mirroring.
+          </p>
+          <div class="hero-actions">
+            <a class="action primary" href="../?mode=demo_showcase">Open interactive dashboard</a>
+            <a class="action" href="../demo_showcase/report/">Open final report</a>
+            <a
+              class="action"
+              href="https://github.com/MengerWen/Deep-Learning-Based-Delta-Neutral-Statistical-Arbitrage-on-Perpetual-Funding-Rates"
+              target="_blank"
+              rel="noreferrer"
+              >Open repository</a
+            >
+          </div>
+        </div>
+        <div class="hero-panel" id="hero-panel">
+          <p class="panel-kicker">Loading showcase snapshot...</p>
+        </div>
+      </header>
+
+      <main id="presentation-root">
+        <section class="section intro-grid">
+          <article class="panel">
+            <p class="section-kicker">Core Question</p>
+            <h2>Can a delta-neutral funding dislocation survive fees, slippage, and holding risk?</h2>
+            <p id="goal-text">
+              We frame the project around post-cost opportunity selection rather than pure directional
+              prediction.
+            </p>
+          </article>
+          <article class="panel accent-panel">
+            <p class="section-kicker">System Flow</p>
+            <div class="flow-steps" id="layer-list"></div>
+          </article>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <p class="section-kicker">Data Foundation</p>
+            <h2>What the model sees before any trading decision</h2>
+          </div>
+          <div class="metrics-grid" id="research-metrics"></div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <p class="section-kicker">Model Story</p>
+            <h2>Baseline, deep learning, and exploratory tracks in one slide flow</h2>
+          </div>
+          <div class="comparison-grid">
+            <article class="panel" id="model-summary"></article>
+            <article class="panel" id="strict-summary"></article>
+            <article class="panel" id="exploratory-summary"></article>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <p class="section-kicker">Visual Evidence</p>
+            <h2>Charts we can use directly during the presentation</h2>
+          </div>
+          <div class="chart-grid" id="chart-grid"></div>
+        </section>
+
+        <section class="section split-section">
+          <article class="panel">
+            <p class="section-kicker">Vault Prototype</p>
+            <h2>Off-chain model, on-chain accounting story</h2>
+            <div id="vault-summary" class="detail-stack"></div>
+          </article>
+          <article class="panel">
+            <p class="section-kicker">Presentation Notes</p>
+            <h2>What we should say clearly during the pre</h2>
+            <ul class="bullet-list" id="presentation-notes"></ul>
+          </article>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <p class="section-kicker">Caveats</p>
+            <h2>What this showcase is and is not</h2>
+          </div>
+          <div class="notes-grid">
+            <article class="panel">
+              <h3>Executive Summary</h3>
+              <ul class="bullet-list" id="executive-summary"></ul>
+            </article>
+            <article class="panel">
+              <h3>Limitations</h3>
+              <ul class="bullet-list" id="limitations"></ul>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./presentation.js"></script>
+  </body>
+</html>
