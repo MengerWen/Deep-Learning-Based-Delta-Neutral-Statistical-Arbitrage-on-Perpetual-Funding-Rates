@@ -74,7 +74,9 @@ http://127.0.0.1:5173/pre/
 ```
 
 This page reads the same isolated `demo_showcase` bundle but arranges it as a
-one-page presentation flow for the pre/final demo.
+one-page presentation flow for the pre/final demo. It is aligned to the course
+presentation rubric and is intended to cover project idea, technical design,
+implementation, evaluation/results, and system demo in one page.
 
 ## Production / static build
 

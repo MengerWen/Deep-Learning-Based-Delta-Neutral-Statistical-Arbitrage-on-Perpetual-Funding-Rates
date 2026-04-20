@@ -5,24 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Presentation page for the synthetic showcase of the funding-rate arbitrage course project."
+      content="Presentation page for the funding-rate arbitrage course project."
     />
     <title>Funding-Rate Arbitrage Presentation</title>
-    <link rel="stylesheet" href="/pre/presentation.css?v=2" />
+    <link rel="stylesheet" href="/pre/presentation.css?v=3" />
   </head>
   <body>
     <div class="page-shell">
       <header class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">FTE 4312 Course Project</p>
+          <p class="eyebrow">FTE 4312 | Final Presentation</p>
           <h1>Deep Learning-Based Delta-Neutral Statistical Arbitrage on Perpetual Funding Rates</h1>
           <p class="hero-lede">
-            A presentation-first walkthrough of our research pipeline: market data, feature engineering,
-            deep-learning ranking, cost-aware backtesting, and vault-state mirroring.
+            A presentation-first narrative for our hybrid quant plus smart-contract prototype, aligned
+            to the course requirements: project idea, technical design, implementation, evaluation,
+            and system demo.
           </p>
+          <div class="team-row" id="team-row"></div>
           <div class="hero-actions">
-            <a class="action primary" href="../?mode=demo_showcase">Open interactive dashboard</a>
-            <a class="action" href="../demo_showcase/report/">Open final report</a>
+            <a class="action primary" href="/?mode=demo_showcase">Open interactive dashboard</a>
+            <a class="action" href="/demo_showcase/report/">Open final report</a>
             <a
               class="action"
               href="https://github.com/MengerWen/Deep-Learning-Based-Delta-Neutral-Statistical-Arbitrage-on-Perpetual-Funding-Rates"
@@ -32,87 +34,161 @@
             >
           </div>
         </div>
-        <div class="hero-panel" id="hero-panel">
-          <p class="panel-kicker">Loading showcase snapshot...</p>
+        <div class="hero-panel">
+          <p class="panel-kicker">Presentation Alignment</p>
+          <h2>Idea -> Design -> Implementation -> Demo</h2>
+          <p class="panel-text" id="hero-verdict">
+            Loading the isolated demo_showcase bundle for the presentation page.
+          </p>
+          <div class="summary-badge-row" id="hero-metrics"></div>
+          <div class="status-pill" id="artifact-pill">Loading bundle metadata...</div>
         </div>
       </header>
 
       <main id="presentation-root">
-        <section class="section intro-grid">
+        <section class="section spotlight-grid">
           <article class="panel">
-            <p class="section-kicker">Core Question</p>
-            <h2>Can a delta-neutral funding dislocation survive fees, slippage, and holding risk?</h2>
-            <p id="goal-text">
-              We frame the project around post-cost opportunity selection rather than pure directional
-              prediction.
-            </p>
+            <div class="section-head compact-head">
+              <p class="section-kicker">Presentation Route</p>
+              <h2>What this page is designed to cover</h2>
+            </div>
+            <div class="rubric-grid" id="rubric-grid"></div>
           </article>
           <article class="panel accent-panel">
-            <p class="section-kicker">System Flow</p>
-            <div class="flow-steps" id="layer-list"></div>
+            <div class="section-head compact-head">
+              <p class="section-kicker">Scope Snapshot</p>
+              <h2>Single-market, end-to-end prototype</h2>
+            </div>
+            <div class="detail-stack" id="scope-details"></div>
+            <div class="subsection">
+              <h3>Story Points</h3>
+              <ul class="bullet-list" id="story-points"></ul>
+            </div>
           </article>
         </section>
 
         <section class="section">
           <div class="section-head">
-            <p class="section-kicker">Data Foundation</p>
-            <h2>What the model sees before any trading decision</h2>
+            <p class="section-kicker">Problem And Motivation</p>
+            <h2>Why funding-rate arbitrage is interesting but not easy</h2>
+            <p class="section-intro">
+              The presentation needs to explain not just what we built, but why this problem is
+              financially meaningful and technically layered.
+            </p>
           </div>
-          <div class="metrics-grid" id="research-metrics"></div>
+          <div class="problem-grid" id="problem-grid"></div>
+        </section>
+
+        <section class="section split-section">
+          <article class="panel">
+            <div class="section-head compact-head">
+              <p class="section-kicker">System Architecture</p>
+              <h2>Hybrid off-chain analytics plus on-chain vault accounting</h2>
+            </div>
+            <div class="architecture-rail" id="architecture-rail"></div>
+          </article>
+          <article class="panel">
+            <div class="section-head compact-head">
+              <p class="section-kicker">Implementation Details</p>
+              <h2>How the prototype is actually assembled</h2>
+            </div>
+            <div class="implementation-grid" id="implementation-grid"></div>
+          </article>
         </section>
 
         <section class="section">
           <div class="section-head">
-            <p class="section-kicker">Model Story</p>
-            <h2>Baseline, deep learning, and exploratory tracks in one slide flow</h2>
+            <p class="section-kicker">Evaluation And Results</p>
+            <h2>Performance, ranking, and robustness in one presentation block</h2>
+            <p class="section-intro">
+              We keep the strict track as the main claim and use the exploratory track as supporting
+              evidence for model behavior and opportunity definition.
+            </p>
           </div>
-          <div class="comparison-grid">
-            <article class="panel" id="model-summary"></article>
-            <article class="panel" id="strict-summary"></article>
-            <article class="panel" id="exploratory-summary"></article>
+          <div class="results-grid">
+            <article class="panel" id="results-highlight"></article>
+            <article class="panel" id="leaderboard-panel"></article>
+            <article class="panel" id="robustness-panel"></article>
           </div>
         </section>
 
         <section class="section">
           <div class="section-head">
-            <p class="section-kicker">Visual Evidence</p>
-            <h2>Charts we can use directly during the presentation</h2>
+            <p class="section-kicker">Presentation Figures</p>
+            <h2>Full-frame charts with visible edges and direct open links</h2>
+            <p class="section-intro">
+              These figure cards now preserve the full image with padding and can be opened at full
+              size in a new tab.
+            </p>
           </div>
           <div class="chart-grid" id="chart-grid"></div>
         </section>
 
         <section class="section split-section">
           <article class="panel">
-            <p class="section-kicker">Vault Prototype</p>
-            <h2>Off-chain model, on-chain accounting story</h2>
-            <div id="vault-summary" class="detail-stack"></div>
+            <div class="section-head compact-head">
+              <p class="section-kicker">System Demo</p>
+              <h2>Suggested flow while we present live</h2>
+            </div>
+            <div class="demo-links">
+              <a class="link-card" href="/pre/index.html">
+                <span class="link-label">Presentation page</span>
+                <strong>Main speaking interface</strong>
+              </a>
+              <a class="link-card" href="/?mode=demo_showcase">
+                <span class="link-label">Interactive dashboard</span>
+                <strong>Switch here for deeper drill-down</strong>
+              </a>
+              <a class="link-card" href="/demo_showcase/report/">
+                <span class="link-label">Final report</span>
+                <strong>Use this for appendix-style evidence</strong>
+              </a>
+            </div>
+            <div class="timeline" id="activity-timeline"></div>
           </article>
-          <article class="panel">
-            <p class="section-kicker">Presentation Notes</p>
-            <h2>What we should say clearly during the pre</h2>
-            <ul class="bullet-list" id="presentation-notes"></ul>
+          <article class="panel accent-panel">
+            <div class="section-head compact-head">
+              <p class="section-kicker">Vault Demo Story</p>
+              <h2>Where off-chain signals become on-chain state</h2>
+            </div>
+            <div class="detail-stack" id="vault-summary"></div>
+            <div class="callout" id="vault-callout"></div>
           </article>
         </section>
 
-        <section class="section">
-          <div class="section-head">
-            <p class="section-kicker">Caveats</p>
-            <h2>What this showcase is and is not</h2>
-          </div>
-          <div class="notes-grid">
-            <article class="panel">
+        <section class="section split-section">
+          <article class="panel">
+            <div class="section-head compact-head">
+              <p class="section-kicker">Caveats</p>
+              <h2>What we should state clearly in the room</h2>
+            </div>
+            <div class="subsection">
               <h3>Executive Summary</h3>
               <ul class="bullet-list" id="executive-summary"></ul>
-            </article>
-            <article class="panel">
+            </div>
+            <div class="subsection">
               <h3>Limitations</h3>
               <ul class="bullet-list" id="limitations"></ul>
-            </article>
-          </div>
+            </div>
+          </article>
+          <article class="panel">
+            <div class="section-head compact-head">
+              <p class="section-kicker">Next Steps</p>
+              <h2>What we built and where it can go next</h2>
+            </div>
+            <div class="subsection">
+              <h3>Key Contributions</h3>
+              <ul class="bullet-list" id="contributions"></ul>
+            </div>
+            <div class="subsection">
+              <h3>Future Work</h3>
+              <ul class="bullet-list" id="future-work"></ul>
+            </div>
+          </article>
         </section>
       </main>
     </div>
 
-    <script src="/pre/presentation.js?v=2"></script>
+    <script src="/pre/presentation.js?v=3"></script>
   </body>
 </html>
