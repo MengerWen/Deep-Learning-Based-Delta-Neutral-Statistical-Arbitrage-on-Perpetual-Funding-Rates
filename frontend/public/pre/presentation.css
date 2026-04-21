@@ -713,3 +713,25 @@ body.ppt-mode .chart-media {
 body.ppt-mode .chart-media img {
   max-height: 300px !important;
 }
+.ppt-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 4px;
+  background: var(--teal);
+  z-index: 10000;
+  transition: width 0.3s ease;
+}
+.ppt-page-count {
+  position: fixed;
+  bottom: 30px;
+  left: 30px;
+  font-family: var(--body);
+  font-weight: 700;
+  color: var(--teal);
+  background: rgba(255, 255, 255, 0.8);
+  padding: 6px 12px;
+  border-radius: 8px;
+  z-index: 9999;
+  border: 1px solid rgba(13, 110, 102, 0.2);
+}
