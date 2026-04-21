@@ -1221,8 +1221,8 @@
         controlsDiv = document.createElement('div');
         controlsDiv.className = 'ppt-controls';
         controlsDiv.innerHTML = `
-          <button id="ppt-prev" class="ppt-btn">◀ Prev</button>
-          <button id="ppt-next" class="ppt-btn">Next ▶</button>
+          <button id="ppt-prev" class="ppt-btn">Prev</button>
+          <button id="ppt-next" class="ppt-btn">Next</button>
           <button id="ppt-exit" class="ppt-btn exit-btn">Exit PPT</button>
         `;
         document.body.appendChild(controlsDiv);
@@ -1251,6 +1251,10 @@
       e.preventDefault();
       enterPPTMode();
     });
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('ppt') === '1' || params.get('mode') === 'ppt' || window.location.hash === '#ppt') {
+      setTimeout(enterPPTMode, 100);
+    }
     window.addEventListener('keydown', (e) => {
       if (!document.body.classList.contains('ppt-mode')) return;
       if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
