@@ -551,7 +551,7 @@
     .catch((error) => {
       renderError(error instanceof Error ? error.message : String(error));
     });
-function initPPTMode() {
+ function initPPTMode() {
     const startBtn = document.getElementById('start-ppt-btn');
     if (!startBtn) return;
     let slides = [];
@@ -672,8 +672,7 @@ function initPPTMode() {
     });
   }
   setTimeout(initPPTMode, 800);
-})();
-function initImageLightbox() {
+ function initImageLightbox() {
   document.addEventListener('click', (e) => {
     if (e.target.closest('.chart-media') || e.target.closest('.chart-open')) {
       e.preventDefault();
@@ -692,5 +691,6 @@ function initImageLightbox() {
       overlay.addEventListener('click', () => overlay.remove());
     }
   });
-}
-setTimeout(initImageLightbox, 800);
+ }
+ setTimeout(initImageLightbox, 800);
+})();
