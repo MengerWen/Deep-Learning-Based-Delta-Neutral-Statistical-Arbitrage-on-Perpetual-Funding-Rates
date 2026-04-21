@@ -1252,7 +1252,9 @@
       enterPPTMode();
     });
     const params = new URLSearchParams(window.location.search);
-    if (params.get('ppt') === '1' || params.get('mode') === 'ppt' || window.location.hash === '#ppt') {
+    const pptParam = (params.get('ppt') || '').trim();
+    const modeParam = (params.get('mode') || '').trim().toLowerCase();
+    if (pptParam === '1' || modeParam === 'ppt' || window.location.hash === '#ppt') {
       setTimeout(enterPPTMode, 100);
     }
     window.addEventListener('keydown', (e) => {

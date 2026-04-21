@@ -70,7 +70,13 @@ This reads from `frontend/public/demo_showcase/` and keeps the default
 For the presentation-first standalone HTML page, open:
 
 ```text
-http://127.0.0.1:5173/pre/
+http://127.0.0.1:5173/pre/index.html
+```
+
+To enter the slide-style PPT mode directly, open:
+
+```text
+http://127.0.0.1:5173/pre/index.html?ppt=1
 ```
 
 This page reads the same isolated `demo_showcase` bundle but arranges it as a
