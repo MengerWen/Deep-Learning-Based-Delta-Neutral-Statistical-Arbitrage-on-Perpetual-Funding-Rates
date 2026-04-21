@@ -439,22 +439,22 @@
     {
       label: "1. Deploy local demo contracts",
       detail:
-        "Use `DeployLocal.s.sol` to deploy `MockStablecoin` and `DeltaNeutralVault` into a local/test network environment.",
+        "Use <code>DeployLocal.s.sol</code> to deploy <code>MockStablecoin</code> and <code>DeltaNeutralVault</code> into a local/test network environment.",
     },
     {
       label: "2. Fund and approve",
       detail:
-        "Mint `mUSDC` to demo users, approve the vault, and show how assets become shares through the deposit function.",
+        "Mint <code>mUSDC</code> to demo users, approve the vault, and show how assets become shares through the deposit function.",
     },
     {
       label: "3. Activate strategy state",
       detail:
-        "Call `updateStrategyState` as owner/operator and explain the strategy-state enum plus signal and metadata hashes.",
+        "Call <code>updateStrategyState</code> as owner/operator and explain the strategy-state enum plus signal and metadata hashes.",
     },
     {
       label: "4. Sync NAV or PnL",
       detail:
-        "Run `UpdateVaultState.s.sol` with explicit toggles for `UPDATE_NAV` and `UPDATE_PNL`, together with a report hash.",
+        "Run <code>UpdateVaultState.s.sol</code> with explicit toggles for <code>UPDATE_NAV</code> and <code>UPDATE_PNL</code>, together with a report hash.",
     },
     {
       label: "5. Withdraw and inspect accounting",
