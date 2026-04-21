@@ -127,29 +127,29 @@
 
   const contractCapabilityRows = [
     {
-      capability: "Deposit / withdraw",
+      capability: "Deposit / Withdraw",
       purpose: "Let users enter and exit the vault against internal shares.",
-      evidence: "Tested with first-deposit minting, proportional second deposit, and ceil-rounded withdrawals.",
+      evidence: "Validated via <code>Deposit/Withdraw</code> events. Uses <code>_ceilDiv</code> math to protect share price against rounding exploits.",
     },
     {
-      capability: "Owner / operator split",
+      capability: "Owner / Operator split",
       purpose: "Separate governance authority from routine update authority.",
-      evidence: "Only owner can set operator; owner or operator can update strategy state and NAV/PnL.",
+      evidence: "Enforced by <code>onlyOwnerOrOperator</code> modifier, utilizing <code>Ownable2StepLite</code> for secure governance handoff.",
     },
     {
       capability: "Strategy-state updates",
       purpose: "Record whether the system is Idle, Active, Emergency, or Settled.",
-      evidence: "State changes also store signal and metadata hashes for traceability.",
+      evidence: "Anchors off-chain intent by emitting <code>StrategyStateUpdated</code> with explicit <code>bytes32</code> signal and metadata hashes.",
     },
     {
       capability: "NAV / PnL synchronization",
       purpose: "Mirror off-chain valuation and strategy outcome into contract state.",
-      evidence: "Update functions record report hashes and maintain cumulative PnL plus timestamps.",
+      evidence: "Mirrors valuation on-chain by emitting <code>NavUpdated</code>, permanently anchoring the backtest <code>reportHash</code>.",
     },
     {
       capability: "Pause + ownership transfer",
       purpose: "Provide emergency controls and cleaner admin handoff.",
-      evidence: "Pause blocks deposit and withdraw; ownership transfer uses a two-step acceptance flow.",
+      evidence: "Uses <code>whenNotPaused</code> modifier to halt user flows during emergencies, protecting the vault from extreme basis dislocations.",
     },
   ];
 
@@ -600,13 +600,16 @@
       )
       .join("");
 
+    const decimals = snapshot.simulation.asset_decimals || 6;
+    const realNav = snapshot.vault.reported_nav_assets / Math.pow(10, decimals);
     vaultNode.innerHTML = [
       createDetailRow("Chain label", snapshot.vault.chain_name),
-      createDetailRow("Vault asset", snapshot.simulation.asset_symbol),
+      createDetailRow("Vault Contract", "<code style='color:var(--teal)'>DeltaNeutralVault.sol</code>"),
+      createDetailRow("Vault Asset", `${snapshot.simulation.asset_symbol} (Decimals: ${decimals})`),
       createDetailRow("Share model", "internal non-transferable shares"),
-      createDetailRow("Strategy state", snapshot.vault.strategy_state),
+      createDetailRow("Strategy State", `<span class="status-pill" style="margin:0; padding:2px 8px;">${snapshot.vault.strategy_state.toUpperCase()}</span>`),
       createDetailRow("Selected strategy", snapshot.vault.selected_strategy),
-      createDetailRow("Reported NAV", formatNumber(snapshot.vault.reported_nav_assets, 0)),
+      createDetailRow("Reported NAV", formatUsd(realNav)),
       createDetailRow("Summary PnL", formatUsd(snapshot.vault.summary_pnl_usd)),
       createDetailRow("Prepared calls", formatNumber(snapshot.vault.call_count, 0)),
     ].join("");
