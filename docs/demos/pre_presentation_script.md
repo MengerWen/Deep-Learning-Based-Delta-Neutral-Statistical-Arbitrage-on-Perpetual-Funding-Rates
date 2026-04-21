@@ -21,8 +21,8 @@ http://127.0.0.1:5174/?mode=demo_showcase
 | Speaker | Time | PPT Sections | Main Responsibility |
 | --- | ---: | --- | --- |
 | Jie Wen | 2:00 | Hero, Executive Outline, Blockchain Scope | Opening, project framing, high-level architecture |
-| Qihang Han | 6:30 | Problem, System Boundary, Off-Chain Deep Dive, Off-Chain Intelligence | Motivation, off-chain analytics, modeling, arbitrage evidence |
-| Hongrui Pan | 6:30 | On-Chain Deep Dive, Boundary Handoff, Implementation Status, Blockchain Evidence, Live Vault Console, Chain Demo Flow, Caveats, Next Steps | Vault design, chain-facing implementation, live demo, closing |
+| Hongrui Pan | 6:30 | Problem, System Boundary, Off-Chain Deep Dive, Off-Chain Intelligence | Motivation, off-chain analytics, modeling, arbitrage evidence |
+| Qihang Han | 6:30 | On-Chain Deep Dive, Boundary Handoff, Implementation Status, Blockchain Evidence, Live Vault Console, Chain Demo Flow, Caveats, Next Steps | Vault design, chain-facing implementation, live demo, closing |
 
 ## Important Presentation Rule
 
@@ -62,9 +62,9 @@ The most important framing is this: the blockchain contribution is not that we r
 
 Instead, the blockchain contribution is the vault boundary. The smart contract records pooled capital, internal shares, strategy state, NAV, PnL updates, and event history. The heavy analytics happen off-chain, and the compact result is synchronized to the vault.
 
-I will now pass to Qihang, who will explain the problem and the off-chain strategy pipeline.
+I will now pass to Hongrui, who will explain the problem and the off-chain strategy pipeline.
 
-## Part 2: Qihang Han - Problem, Architecture Boundary, And Off-Chain Analytics
+## Part 2: Hongrui Pan - Problem, Architecture Boundary, And Off-Chain Analytics
 
 ### Slide: Problem And Motivation
 
@@ -118,7 +118,7 @@ The model comparison chart shows how different signal families behave in the dem
 
 The equity and drawdown charts are important because we care about post-cost strategy behavior, not just raw prediction accuracy. A signal should be evaluated through trading outcomes, risk, and drawdown.
 
-### Transition To Hongrui
+### Transition To Qihang
 
 **Time: 7:25 - 8:30**
 
@@ -126,9 +126,9 @@ So the off-chain side creates a strategy view: what model is selected, what dire
 
 But the user does not interact directly with a Python notebook. The user interacts with a vault. That vault is the chain-facing part of our system.
 
-Hongrui will now explain what the Solidity layer stores and how the off-chain result becomes on-chain state.
+Qihang will now explain what the Solidity layer stores and how the off-chain result becomes on-chain state.
 
-## Part 3: Hongrui Pan - On-Chain Vault, Live Demo, And Closing
+## Part 3: Qihang Han - On-Chain Vault, Live Demo, And Closing
 
 ### Slide: On-Chain Deep Dive
 
@@ -249,8 +249,8 @@ Thank you. We are happy to take questions.
 If the team is behind schedule by more than one minute, shorten as follows:
 
 - Jie Wen: keep the opening, skip detailed outline bullets.
-- Qihang Han: shorten model explanation to one sentence: "We compare rule-based, baseline ML, and deep-learning signals using post-cost backtesting."
-- Hongrui Pan: keep the live vault console, but skip the final withdrawal click if necessary.
+- Hongrui Pan: shorten model explanation to one sentence: "We compare rule-based, baseline ML, and deep-learning signals using post-cost backtesting."
+- Qihang Han: keep the live vault console, but skip the final withdrawal click if necessary.
 
 ## Suggested Q&A Answers
 
