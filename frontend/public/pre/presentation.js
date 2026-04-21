@@ -4,87 +4,225 @@
   const reportSummaryUrl = "/demo_showcase/report/summary.json";
 
   const chartOrder = [
-    "DEMO ONLY | Synthetic funding-rate regime map",
-    "DEMO ONLY | Synthetic perpetual-vs-spot spread",
     "DEMO ONLY | DL test metric comparison",
+    "DEMO ONLY | Strict strategy comparison",
+    "DEMO ONLY | Family comparison",
     "DEMO ONLY | Strict equity curves",
     "DEMO ONLY | Strict drawdown comparison",
-    "DEMO ONLY | Family comparison",
-    "DEMO ONLY | Exploratory cumulative PnL",
+    "DEMO ONLY | Synthetic funding-rate regime map",
+    "DEMO ONLY | Synthetic perpetual-vs-spot spread",
   ];
+
+  const CONTRACT_TEST_COUNT = 15;
+  const CONTRACT_SCRIPT_COUNT = 2;
+  const VAULT_STATE_COUNT = 4;
 
   const rubricItems = [
     {
       title: "Project idea",
       detail:
-        "Explain why funding-rate dislocations are interesting only when they survive execution frictions and basis convergence risk.",
+        "Frame the project as a blockchain vault problem: how to represent strategy participation, accounting, and updates transparently on-chain.",
     },
     {
       title: "Technical design",
       detail:
-        "Show the hybrid architecture: off-chain data and modeling, on-chain vault accounting, and a lightweight frontend.",
+        "Show the hybrid architecture: off-chain analytics produce strategy outputs, while a Solidity vault stores the actionable state and accounting.",
     },
     {
       title: "Implementation",
       detail:
-        "Walk through data context, features and labels, model zoo comparison, cost-aware backtest, and vault-state mirroring.",
+        "Walk through the vault contract, role model, update scripts, Foundry tests, and the frontend bridge to the demo snapshot.",
     },
     {
       title: "System demo",
       detail:
-        "Use this presentation page first, then switch to the interactive dashboard and final report for live evidence.",
-    },
+        "Use this presentation page first, then move into the dashboard and report only when you need supporting research evidence.",
+      },
   ];
 
   const problemCards = [
     {
-      title: "Funding-rate mispricing is not automatic alpha",
+      title: "Pooled strategy capital needs transparent accounting",
       detail:
-        "A high funding rate does not guarantee profit. We still need basis convergence, disciplined entry timing, and post-cost validation.",
+        "Even if the strategy logic is off-chain, user deposits, share balances, NAV, and withdrawals benefit from deterministic on-chain bookkeeping.",
     },
     {
-      title: "Execution frictions matter",
+      title: "Smart contracts cannot natively see market data or ML outputs",
       detail:
-        "Fees, slippage, holding horizon, and spread reversion speed can erase a strategy that looks profitable before costs.",
+        "This creates the oracle-style boundary in our system: signals and reports are computed off-chain, then synchronized to the vault through an explicit updater path.",
     },
     {
-      title: "Prediction is only one layer",
+      title: "Role separation matters for safety and operability",
       detail:
-        "A useful system must connect data, signals, trade logic, risk metrics, and reporting instead of stopping at a model score.",
+        "The vault must distinguish owner privileges, operator privileges, and user actions, rather than treating every state change like a single admin shortcut.",
     },
     {
-      title: "Smart contracts cannot run the full pipeline alone",
+      title: "A blockchain course project should demonstrate more than charts",
       detail:
-        "The vault is the on-chain accounting layer, while market data processing and model inference remain off-chain.",
+        "The most defensible demo is an end-to-end flow where research outputs become explicit contract updates, events, and user-facing state.",
     },
   ];
 
   const implementationBlueprint = [
     {
-      title: "Market context build",
+      title: "MockStablecoin asset layer",
       detail:
-        "We construct hourly funding, spread, and volatility context so the presentation still mirrors a realistic BTCUSDT pipeline.",
-      metric: (snapshot) => `${formatNumber(snapshot.research.canonical_rows, 0)} hourly rows`,
+        "A simple mock stablecoin lets us demonstrate minting, approval, deposit, and withdrawal flows without depending on an external live token.",
+      metric: (snapshot) => `${snapshot.simulation.asset_symbol} | ${snapshot.simulation.asset_decimals} decimals`,
     },
     {
-      title: "Model comparison layer",
+      title: "DeltaNeutralVault core contract",
       detail:
-        "Rule-based baselines, simple ML, and multiple deep-learning families are compared under one standardized scoring story.",
-      metric: (_, reportSummary) =>
-        `${formatNumber(reportSummary.models.deep_learning_comparison.run_count, 0)} DL runs`,
+        "The Solidity vault handles deposits, withdrawals, internal share accounting, strategy-state updates, NAV sync, PnL sync, pause controls, and event emission.",
+      metric: () => `${VAULT_STATE_COUNT} strategy states`,
     },
     {
-      title: "Cost-aware backtest",
+      title: "Foundry scripts",
       detail:
-        "Strategy outputs are evaluated with return, Sharpe, drawdown, trade count, and path behavior rather than raw prediction only.",
-      metric: (snapshot) => `${formatNumber(snapshot.backtest.summary.strategy_count, 0)} strict strategies`,
+        "Local scripts deploy the mock stablecoin plus vault, then apply explicit strategy-state, NAV, and PnL updates through readable environment toggles.",
+      metric: () => `${CONTRACT_SCRIPT_COUNT} local scripts`,
     },
     {
-      title: "Vault-state mirroring",
+      title: "Foundry tests",
       detail:
-        "The prototype ends with a vault update payload so the demo can show how off-chain intelligence maps into on-chain state.",
-      metric: (snapshot) => `${formatNumber(snapshot.vault.call_count, 0)} prepared calls`,
+        "The contract is validated locally for share pricing, withdrawals, pause behavior, role restrictions, NAV and PnL updates, and ownership transfer.",
+      metric: () => `${CONTRACT_TEST_COUNT} test cases`,
     },
+  ];
+
+  const chainStoryPoints = [
+    "The blockchain contribution is the vault accounting boundary, not on-chain execution of the whole strategy.",
+    "Off-chain model outputs are packaged into explicit strategy-state, NAV, and PnL updates rather than hidden inside the frontend.",
+    "Owner and operator roles are separated so the demo can talk about governance and operational trust assumptions.",
+    "Foundry scripts and tests make the chain-facing workflow reproducible for local demonstration.",
+  ];
+
+  const architectureSteps = [
+    {
+      label: "Off-chain research engine",
+      detail:
+        "Historical market data, features, labels, and model outputs remain off-chain where data-heavy analytics are practical.",
+    },
+    {
+      label: "Signal and report packaging",
+      detail:
+        "Selected strategy outputs are converted into a digestible update bundle with signal, metadata, and report references.",
+    },
+    {
+      label: "Owner/operator update path",
+      detail:
+        "A trusted updater calls the vault through explicit methods instead of hiding state changes behind a monolithic admin function.",
+    },
+    {
+      label: "DeltaNeutralVault",
+      detail:
+        "The vault stores user balances, internal shares, strategy state, reported NAV, cumulative PnL, and last update hashes.",
+    },
+    {
+      label: "Frontend and report layer",
+      detail:
+        "The demo page and report surface contract state and research evidence together so the audience can see the full hybrid workflow.",
+    },
+  ];
+
+  const contractCapabilityRows = [
+    {
+      capability: "Deposit / withdraw",
+      purpose: "Let users enter and exit the vault against internal shares.",
+      evidence: "Tested with first-deposit minting, proportional second deposit, and ceil-rounded withdrawals.",
+    },
+    {
+      capability: "Owner / operator split",
+      purpose: "Separate governance authority from routine update authority.",
+      evidence: "Only owner can set operator; owner or operator can update strategy state and NAV/PnL.",
+    },
+    {
+      capability: "Strategy-state updates",
+      purpose: "Record whether the system is Idle, Active, Emergency, or Settled.",
+      evidence: "State changes also store signal and metadata hashes for traceability.",
+    },
+    {
+      capability: "NAV / PnL synchronization",
+      purpose: "Mirror off-chain valuation and strategy outcome into contract state.",
+      evidence: "Update functions record report hashes and maintain cumulative PnL plus timestamps.",
+    },
+    {
+      capability: "Pause + ownership transfer",
+      purpose: "Provide emergency controls and cleaner admin handoff.",
+      evidence: "Pause blocks deposit and withdraw; ownership transfer uses a two-step acceptance flow.",
+    },
+  ];
+
+  const assurancePoints = [
+    {
+      title: "Contract tests",
+      value: `${CONTRACT_TEST_COUNT}`,
+      note: "Foundry tests cover share accounting, pause controls, update authorization, and ownership flow.",
+    },
+    {
+      title: "Prepared calls",
+      value: null,
+      note: "The frontend demo bundle already includes a prepared contract-call summary for vault updates.",
+    },
+    {
+      title: "Hash-anchored fields",
+      value: "3",
+      note: "Signal, metadata, and report hashes help explain how off-chain evidence is referenced on-chain.",
+    },
+    {
+      title: "Role model",
+      value: "owner + operator",
+      note: "The demo can discuss governance trust assumptions instead of pretending everything is trustless.",
+    },
+  ];
+
+  const demoFlowSteps = [
+    {
+      label: "1. Deploy local demo contracts",
+      detail:
+        "Use `DeployLocal.s.sol` to deploy `MockStablecoin` and `DeltaNeutralVault` into a local/test network environment.",
+    },
+    {
+      label: "2. Fund and approve",
+      detail:
+        "Mint `mUSDC` to demo users, approve the vault, and show how assets become shares through the deposit function.",
+    },
+    {
+      label: "3. Activate strategy state",
+      detail:
+        "Call `updateStrategyState` as owner/operator and explain the strategy-state enum plus signal and metadata hashes.",
+    },
+    {
+      label: "4. Sync NAV or PnL",
+      detail:
+        "Run `UpdateVaultState.s.sol` with explicit toggles for `UPDATE_NAV` and `UPDATE_PNL`, together with a report hash.",
+    },
+    {
+      label: "5. Withdraw and inspect accounting",
+      detail:
+        "Show how withdrawals depend on shares, reported NAV, and actual token liquidity instead of a naive balance subtraction.",
+    },
+  ];
+
+  const chainContributions = [
+    "A readable Solidity vault that models deposit, withdrawal, internal share accounting, and strategy state for a quant strategy prototype.",
+    "A role-based bridge from off-chain signals to on-chain state using owner/operator updates plus signal, metadata, and report hashes.",
+    "A lightweight local blockchain workflow built with Foundry scripts and tests rather than a purely static DeFi mockup.",
+    "A frontend demo that connects research outputs and contract-facing state so the system can be presented end to end.",
+  ];
+
+  const chainLimitations = [
+    "The vault relies on a trusted owner/operator path; it does not yet verify oracle data or signatures on-chain.",
+    "Execution remains off-chain, so the contract mirrors strategy state and accounting rather than performing live multi-venue trading.",
+    "The demo uses a single mock stablecoin and a simplified local/testnet flow rather than production-grade token, oracle, and fee infrastructure.",
+    "This is a course-project prototype and not an audited DeFi system.",
+  ];
+
+  const chainFutureWork = [
+    "Add signed or oracle-mediated update verification so NAV and signal updates are less trust-heavy.",
+    "Introduce fee accounting, withdrawal queue logic, and richer role controls for a more realistic vault lifecycle.",
+    "Extend from a single mock asset to multi-asset collateral and more realistic on-chain accounting around execution costs.",
+    "Connect local update scripts to a cleaner operator dashboard for repeatable demo and governance workflows.",
   ];
 
   async function readJson(url) {
@@ -193,13 +331,10 @@
 
     verdictNode.textContent = reportSummary.verdict;
     metricsNode.innerHTML = [
-      createSummaryBadge("Best strict return", formatPercent(best.cumulative_return)),
-      createSummaryBadge("Strict Sharpe", formatNumber(best.sharpe_ratio, 3)),
-      createSummaryBadge(
-        "Exploratory return",
-        formatPercent(exploratoryBest?.cumulative_return ?? null),
-      ),
-      createSummaryBadge("Funding events", formatNumber(snapshot.research.funding_events, 0)),
+      createSummaryBadge("Prepared contract calls", formatNumber(snapshot.vault.call_count, 0)),
+      createSummaryBadge("Contract tests", `${CONTRACT_TEST_COUNT}`),
+      createSummaryBadge("Vault states", `${VAULT_STATE_COUNT}`),
+      createSummaryBadge("Strict strategy return", formatPercent(best.cumulative_return)),
     ].join("");
     artifactNode.textContent = `${snapshot.meta.artifact_label}: isolated synthetic showcase bundle for presentation use`;
   }
@@ -223,20 +358,15 @@
 
     if (scopeNode) {
       scopeNode.innerHTML = [
-        createDetailRow("Market", `${snapshot.meta.symbol} on ${snapshot.meta.venue}`),
-        createDetailRow("Frequency", snapshot.meta.frequency),
-        createDetailRow(
-          "Time window",
-          `${formatDate(snapshot.meta.date_range.start)} - ${formatDate(
-            snapshot.meta.date_range.end_exclusive,
-          )}`,
-        ),
+        createDetailRow("Vault asset", snapshot.simulation.asset_symbol),
+        createDetailRow("Asset decimals", `${snapshot.simulation.asset_decimals}`),
+        createDetailRow("Chain label", snapshot.vault.chain_name),
+        createDetailRow("Role model", "owner + operator"),
         createDetailRow("Generated", formatDateTime(snapshot.meta.generated_at)),
-        createDetailRow("Bundle", snapshot.meta.bundle_name || "demo_showcase"),
       ].join("");
     }
 
-    setList("story-points", snapshot.overview.story_points || []);
+    setList("story-points", chainStoryPoints);
   }
 
   function renderProblemCards() {
@@ -262,10 +392,7 @@
     if (!node) {
       return;
     }
-    const layers = snapshot.overview.layers?.length
-      ? snapshot.overview.layers
-      : (reportSummary.layers || []).map((label) => ({ label, detail: "" }));
-    node.innerHTML = layers
+    node.innerHTML = architectureSteps
       .map(
         (layer, index) => `
           <article class="architecture-step">
@@ -308,87 +435,69 @@
     }
 
     const best = snapshot.backtest.best_strategy;
-    const exploratoryBest = exploratory.exploratory_summary?.best_showcase_row;
     const robustness = reportSummary.robustness;
-    const costLow = robustness.cost_sensitivity?.[0];
-    const costHigh = robustness.cost_sensitivity?.[robustness.cost_sensitivity.length - 1];
-    const bestHolding = [...(robustness.holding_window_sensitivity || [])].sort(
-      (left, right) => (right.cumulative_return || 0) - (left.cumulative_return || 0),
-    )[0];
-    const baseThreshold = (robustness.threshold_sensitivity || []).find(
-      (item) => item.threshold_label === "base",
-    );
 
     resultsNode.innerHTML = `
-      <p class="section-kicker">Main takeaway</p>
-      <h3>Strict track remains the primary claim</h3>
-      <p class="panel-text">${reportSummary.verdict}</p>
+      <p class="section-kicker">Blockchain-centered takeaway</p>
+      <h3>The vault is the core system artifact</h3>
+      <p class="panel-text">
+        The research pipeline still matters, but the blockchain value of this project is the contract
+        layer that turns off-chain output into explicit deposits, shares, state transitions, and NAV or
+        PnL updates.
+      </p>
       <div class="micro-grid">
         <article class="micro-card">
-          <p class="metric-label">Best strategy</p>
-          <strong>${best.display_name}</strong>
+          <p class="metric-label">Strategy state</p>
+          <strong>${snapshot.vault.strategy_state}</strong>
         </article>
         <article class="micro-card">
-          <p class="metric-label">Net PnL</p>
-          <strong>${formatUsd(best.total_net_pnl_usd)}</strong>
+          <p class="metric-label">Reported NAV</p>
+          <strong>${formatNumber(snapshot.vault.reported_nav_assets, 0)}</strong>
         </article>
         <article class="micro-card">
-          <p class="metric-label">Trade count</p>
-          <strong>${formatNumber(best.trade_count, 0)}</strong>
+          <p class="metric-label">Prepared calls</p>
+          <strong>${formatNumber(snapshot.vault.call_count, 0)}</strong>
         </article>
         <article class="micro-card">
-          <p class="metric-label">Max drawdown</p>
-          <strong>${formatPercent(best.mark_to_market_max_drawdown)}</strong>
+          <p class="metric-label">Strict return</p>
+          <strong>${formatPercent(best.cumulative_return)}</strong>
         </article>
       </div>
       <ul class="story-list">
-        <li>TransformerEncoder leads the strict track, but the path is still visibly noisy.</li>
-        <li>The exploratory branch is richer in opportunity count, not a replacement for the strict conclusion.</li>
-        <li>We should present the exploratory metrics as supplementary behavior evidence.</li>
+        <li>The chain-facing demo is about accountability and update flow, not pretending the whole strategy is fully on-chain.</li>
+        <li>Owner/operator updates, pause controls, and explicit share accounting are the most important blockchain mechanisms to highlight.</li>
+        <li>The strategy metrics remain supporting evidence that the off-chain engine is meaningful enough to justify a vault layer.</li>
       </ul>
       <div class="subsection">
-        <h3>Exploratory support</h3>
+        <h3>Research support in one line</h3>
         <div class="detail-stack">
-          ${createDetailRow(
-            "Exploratory best",
-            exploratoryBest?.display_name || exploratoryBest?.model_name || "n/a",
-          )}
-          ${createDetailRow(
-            "Exploratory return",
-            formatPercent(exploratoryBest?.cumulative_return ?? null),
-          )}
-          ${createDetailRow(
-            "Exploratory drawdown",
-            formatPercent(exploratoryBest?.mark_to_market_max_drawdown ?? null),
-          )}
+          ${createDetailRow("Best strict model", best.display_name)}
+          ${createDetailRow("Strict Sharpe", formatNumber(best.sharpe_ratio, 3))}
+          ${createDetailRow("Strict net PnL", formatUsd(best.total_net_pnl_usd))}
         </div>
       </div>
     `;
 
     leaderboardNode.innerHTML = `
-      <p class="section-kicker">Strict leaderboard</p>
-      <h3>Strategy ranking for the presentation</h3>
+      <p class="section-kicker">Contract capabilities</p>
+      <h3>What the Solidity layer actually implements</h3>
       <div class="table-shell">
         <table>
           <thead>
             <tr>
-              <th>Strategy</th>
-              <th>Trades</th>
-              <th>Return</th>
-              <th>Sharpe</th>
-              <th>Drawdown</th>
+              <th>Capability</th>
+              <th>Purpose</th>
+              <th>Evidence</th>
             </tr>
           </thead>
           <tbody>
-            ${snapshot.backtest.top_strategies
+            ${contractCapabilityRows
               .map(
                 (row) => `
                   <tr>
-                    <td>${row.display_name}</td>
-                    <td>${formatNumber(row.trade_count, 0)}</td>
-                    <td>${formatPercent(row.cumulative_return)}</td>
-                    <td>${formatNumber(row.sharpe_ratio, 3)}</td>
-                    <td>${formatPercent(row.mark_to_market_max_drawdown)}</td>
+                    <td>${row.capability}</td>
+                    <td>${row.purpose}</td>
+                    <td>${row.evidence}</td>
                   </tr>
                 `,
               )
@@ -399,25 +508,20 @@
     `;
 
     robustnessNode.innerHTML = `
-      <p class="section-kicker">Robustness snapshots</p>
-      <h3>How the strict winner behaves under perturbations</h3>
+      <p class="section-kicker">Validation and assurance</p>
+      <h3>Why the chain-facing demo is credible</h3>
       <div class="micro-grid">
-        <article class="micro-card">
-          <p class="metric-label">Low cost case</p>
-          <strong>${formatPercent(costLow?.cumulative_return ?? null)}</strong>
-        </article>
-        <article class="micro-card">
-          <p class="metric-label">High cost case</p>
-          <strong>${formatPercent(costHigh?.cumulative_return ?? null)}</strong>
-        </article>
-        <article class="micro-card">
-          <p class="metric-label">Best holding window</p>
-          <strong>${bestHolding ? `${bestHolding.holding_window_hours}h` : "n/a"}</strong>
-        </article>
-        <article class="micro-card">
-          <p class="metric-label">Base threshold trades</p>
-          <strong>${formatNumber(baseThreshold?.trade_count ?? null, 0)}</strong>
-        </article>
+        ${assurancePoints
+          .map(
+            (item) => `
+              <article class="micro-card">
+                <p class="metric-label">${item.title}</p>
+                <strong>${item.value ?? formatNumber(snapshot.vault.call_count, 0)}</strong>
+                <p>${item.note}</p>
+              </article>
+            `,
+          )
+          .join("")}
       </div>
       <div class="family-list">
         ${(robustness.family_comparison || [])
@@ -430,7 +534,7 @@
                 </div>
                 <div>
                   <strong>${formatPercent(item.cumulative_return)}</strong>
-                  <span>Sharpe ${formatNumber(item.sharpe_ratio, 3)}</span>
+                  <span>supporting research context</span>
                 </div>
               </div>
             `,
@@ -450,7 +554,7 @@
     const chartRank = new Map(chartOrder.map((title, index) => [title, index]));
     const charts = [...snapshot.charts]
       .sort((left, right) => (chartRank.get(left.title) ?? 99) - (chartRank.get(right.title) ?? 99))
-      .slice(0, 6);
+      .slice(0, 4);
 
     node.innerHTML = charts
       .map((chart) => {
@@ -482,13 +586,13 @@
       return;
     }
 
-    timelineNode.innerHTML = (snapshot.activity_log || [])
+    timelineNode.innerHTML = demoFlowSteps
       .map(
         (item) => `
           <article class="timeline-item">
-            <div class="timeline-time">${formatDate(item.timestamp)}</div>
+            <div class="timeline-time">${item.label}</div>
             <div>
-              <strong>${item.title}</strong>
+              <strong>${item.label}</strong>
               <p>${item.detail}</p>
             </div>
           </article>
@@ -497,23 +601,29 @@
       .join("");
 
     vaultNode.innerHTML = [
-      createDetailRow("Chain", snapshot.vault.chain_name),
-      createDetailRow("Selected strategy", snapshot.vault.selected_strategy),
+      createDetailRow("Chain label", snapshot.vault.chain_name),
+      createDetailRow("Vault asset", snapshot.simulation.asset_symbol),
+      createDetailRow("Share model", "internal non-transferable shares"),
       createDetailRow("Strategy state", snapshot.vault.strategy_state),
-      createDetailRow("Suggested direction", snapshot.vault.suggested_direction),
+      createDetailRow("Selected strategy", snapshot.vault.selected_strategy),
       createDetailRow("Reported NAV", formatNumber(snapshot.vault.reported_nav_assets, 0)),
       createDetailRow("Summary PnL", formatUsd(snapshot.vault.summary_pnl_usd)),
       createDetailRow("Prepared calls", formatNumber(snapshot.vault.call_count, 0)),
     ].join("");
 
-    vaultCalloutNode.textContent = snapshot.vault.execution_summary.status;
+    vaultCalloutNode.textContent =
+      "The key demo message is that state changes are explicit and parameterized: the update script toggles strategy-state, NAV, and PnL updates separately and can carry signal, metadata, and report hashes into the contract-facing flow.";
   }
 
   function renderClosingPanels(reportSummary) {
-    setList("executive-summary", reportSummary.executive_summary || []);
-    setList("limitations", reportSummary.limitations || []);
-    setList("contributions", reportSummary.contributions || []);
-    setList("future-work", reportSummary.future_work || []);
+    setList("executive-summary", [
+      "This presentation treats the vault and updater flow as the center of the project, with the research pipeline as the off-chain engine behind it.",
+      "The strategy is not fully executed on-chain; instead, the contract provides transparent accounting, role-based updates, and user-facing state.",
+      "Supporting research figures remain available, but the strongest blockchain contribution is the Solidity vault prototype and its local validation workflow.",
+    ]);
+    setList("limitations", chainLimitations);
+    setList("contributions", chainContributions);
+    setList("future-work", chainFutureWork);
   }
 
   function renderError(message) {
