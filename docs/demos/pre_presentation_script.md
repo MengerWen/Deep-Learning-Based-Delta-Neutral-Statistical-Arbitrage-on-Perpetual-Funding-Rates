@@ -34,7 +34,7 @@ Only discuss the **demo showcase** results in class. Do not compare against the 
 
 **Time: 0:00 - 0:45**
 
-Good morning everyone. We are presenting our FTE 4312 course project, **Deep Learning-Based Delta-Neutral Statistical Arbitrage on Perpetual Funding Rates**.
+Hello everyone. We are presenting our FTE 4312 course project, **Deep Learning-Based Delta-Neutral Statistical Arbitrage on Perpetual Funding Rates**.
 
 The key idea is to combine two worlds. On one side, we use off-chain quantitative research to analyze perpetual funding-rate opportunities. On the other side, we use an on-chain vault to represent user deposits, share accounting, strategy state, and NAV or PnL synchronization.
 
