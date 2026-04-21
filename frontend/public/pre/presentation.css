@@ -523,6 +523,249 @@ h3 {
   grid-template-columns: 0.95fr 1.2fr 1fr;
 }
 
+.vault-console-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.82fr);
+  gap: 18px;
+}
+
+.vault-live-panel {
+  color: #f7f2e8;
+  background:
+    linear-gradient(135deg, rgba(16, 24, 28, 0.98), rgba(20, 42, 43, 0.96));
+  border-color: rgba(13, 110, 102, 0.32);
+}
+
+.vault-live-panel .section-kicker,
+.vault-event-panel .section-kicker {
+  color: #72c8ba;
+}
+
+.vault-console-topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.vault-mode-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(114, 200, 186, 0.3);
+  background: rgba(114, 200, 186, 0.12);
+  color: #bfe8df;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.vault-console-copy {
+  max-width: 74ch;
+  margin: 16px 0 0;
+  color: rgba(247, 242, 232, 0.74);
+  line-height: 1.72;
+}
+
+.vault-command-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.vault-command {
+  min-height: 82px;
+  padding: 14px;
+  border: 1px solid rgba(114, 200, 186, 0.22);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f7f2e8;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.vault-command:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(114, 200, 186, 0.62);
+  background: rgba(114, 200, 186, 0.14);
+}
+
+.vault-command:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.vault-command span,
+.vault-command small {
+  display: block;
+}
+
+.vault-command span {
+  font-weight: 800;
+}
+
+.vault-command small {
+  margin-top: 8px;
+  color: rgba(247, 242, 232, 0.62);
+}
+
+.vault-progress-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.vault-progress-step {
+  min-height: 94px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.vault-progress-step span {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(247, 242, 232, 0.38);
+}
+
+.vault-progress-step.done {
+  border-color: rgba(114, 200, 186, 0.44);
+  background: rgba(114, 200, 186, 0.12);
+}
+
+.vault-progress-step.done span {
+  border-color: #72c8ba;
+  background: #72c8ba;
+}
+
+.vault-progress-step strong,
+.vault-progress-step small {
+  display: block;
+}
+
+.vault-progress-step strong {
+  margin-top: 10px;
+  font-size: 0.94rem;
+}
+
+.vault-progress-step small {
+  margin-top: 5px;
+  color: rgba(247, 242, 232, 0.58);
+}
+
+.vault-terminal {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(114, 200, 186, 0.22);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.vault-terminal-label {
+  display: block;
+  color: rgba(247, 242, 232, 0.54);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.vault-terminal strong,
+.vault-terminal code {
+  display: block;
+  margin-top: 7px;
+  color: #f7f2e8;
+}
+
+.vault-terminal strong.success {
+  color: #72c8ba;
+}
+
+.vault-terminal strong.ready {
+  color: #e7bf74;
+}
+
+.vault-state-panel .status-pill {
+  margin-top: 0;
+}
+
+.vault-inline-pill {
+  padding: 3px 9px;
+}
+
+.vault-state-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.vault-event-panel {
+  grid-column: 1 / -1;
+  color: #f7f2e8;
+  background:
+    linear-gradient(135deg, rgba(30, 33, 37, 0.98), rgba(45, 53, 50, 0.96));
+  border-color: rgba(184, 132, 45, 0.28);
+}
+
+.vault-event-panel h3 {
+  color: #f7f2e8;
+}
+
+.vault-event-stream {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  max-height: 310px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.vault-event-row {
+  display: grid;
+  grid-template-columns: 1fr minmax(170px, auto);
+  gap: 14px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.vault-event-row p {
+  margin: 6px 0 0;
+  color: rgba(247, 242, 232, 0.66);
+  line-height: 1.55;
+}
+
+.vault-event-row span,
+.vault-event-row code {
+  display: block;
+  text-align: right;
+}
+
+.vault-event-row span {
+  color: #e7bf74;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.vault-event-row code {
+  margin-top: 6px;
+  color: #bfe8df;
+}
+
 .micro-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -696,9 +939,14 @@ th {
   .deep-dive-grid,
   .handoff-grid,
   .results-grid,
+  .vault-console-grid,
   .problem-grid,
   .chart-grid {
     grid-template-columns: 1fr;
+  }
+
+  .vault-event-panel {
+    grid-column: auto;
   }
 
   .implementation-grid {
@@ -709,17 +957,29 @@ th {
 @media (max-width: 920px) {
   .rubric-grid,
   .implementation-grid,
-  .micro-grid {
+  .micro-grid,
+  .vault-command-grid,
+  .vault-terminal {
     grid-template-columns: 1fr;
   }
 
   .summary-badge-row,
-  .problem-grid {
+  .problem-grid,
+  .vault-progress-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .timeline-item {
     grid-template-columns: 1fr;
+  }
+
+  .vault-event-row {
+    grid-template-columns: 1fr;
+  }
+
+  .vault-event-row span,
+  .vault-event-row code {
+    text-align: left;
   }
 }
 
@@ -816,6 +1076,21 @@ body.ppt-mode .chart-media {
 }
 body.ppt-mode .chart-media img {
   max-height: 300px !important;
+}
+body.ppt-mode .vault-console-grid {
+  grid-template-columns: 1fr 0.82fr !important;
+}
+body.ppt-mode .vault-command-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+body.ppt-mode .vault-event-panel {
+  display: none;
+}
+body.ppt-mode .vault-progress-step {
+  min-height: 76px;
+}
+body.ppt-mode .vault-console-copy {
+  line-height: 1.45;
 }
 .ppt-progress {
   position: fixed;

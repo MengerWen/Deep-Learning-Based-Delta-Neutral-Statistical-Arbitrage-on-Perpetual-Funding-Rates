@@ -488,6 +488,8 @@
     Wenjie: "Jie Wen",
   };
 
+  let vaultConsoleState = null;
+
   async function readJson(url) {
     const response = await fetch(url);
     if (!response.ok) {
@@ -578,6 +580,387 @@
 
   function createSummaryBadge(label, value) {
     return `<div class="summary-badge"><span>${label}</span><strong>${value}</strong></div>`;
+  }
+
+  function assetUnit(value, decimals, fallback = 0) {
+    if (value == null || Number.isNaN(Number(value))) {
+      return fallback;
+    }
+    return Number(value) / Math.pow(10, decimals);
+  }
+
+  function formatAsset(value, symbol) {
+    return `${formatNumber(value, 2)} ${symbol}`;
+  }
+
+  function formatCompactHash(value) {
+    if (!value || value === "pending") {
+      return "pending";
+    }
+    return `${value.slice(0, 8)}...${value.slice(-6)}`;
+  }
+
+  function stableHex(seed, length) {
+    let state = 0x811c9dc5;
+    const text = String(seed);
+    for (let index = 0; index < text.length; index += 1) {
+      state ^= text.charCodeAt(index);
+      state = Math.imul(state, 0x01000193) >>> 0;
+    }
+
+    let output = "";
+    while (output.length < length) {
+      state ^= state << 13;
+      state ^= state >>> 17;
+      state ^= state << 5;
+      output += (state >>> 0).toString(16).padStart(8, "0");
+    }
+    return output.slice(0, length);
+  }
+
+  function fakeAddress(label) {
+    return `0x${stableHex(label, 40)}`;
+  }
+
+  function fakeBytes32(label) {
+    return `0x${stableHex(label, 64)}`;
+  }
+
+  function buildInitialVaultConsoleState(snapshot) {
+    const decimals = snapshot.simulation?.asset_decimals || 6;
+    const plan = snapshot.simulation?.operator_plan || snapshot.vault || {};
+    const assetSymbol = snapshot.simulation?.asset_symbol || "mUSDC";
+    const baseNav = assetUnit(snapshot.simulation?.base_reported_nav_assets, decimals, 100000);
+    const baseCash = assetUnit(snapshot.simulation?.base_vault_cash_assets, decimals, baseNav);
+    const baseShares = assetUnit(snapshot.simulation?.base_total_shares, decimals, baseNav);
+    const walletCash = assetUnit(snapshot.simulation?.wallet_cash_assets, decimals, 25000);
+    const plannedPnlUsd = Number(plan.summary_pnl_usd ?? snapshot.vault?.summary_pnl_usd ?? 0);
+
+    return {
+      assetSymbol,
+      decimals,
+      deployed: false,
+      vaultAddress: "pending",
+      stablecoinAddress: "pending",
+      userAddress: fakeAddress("presentation-demo-user"),
+      operatorAddress: fakeAddress("presentation-demo-operator"),
+      walletCash,
+      vaultCash: baseCash,
+      reportedNav: baseNav,
+      totalShares: baseShares,
+      userShares: assetUnit(snapshot.simulation?.user_shares, decimals, 0),
+      strategyState: snapshot.simulation?.strategy_state || "idle",
+      selectedStrategy: "not selected",
+      suggestedDirection: "flat",
+      cumulativePnl: 0,
+      depositCount: 0,
+      withdrawCount: 0,
+      navUpdateCount: 0,
+      txCount: 0,
+      lastTxHash: "pending",
+      lastStatus: "Ready. Start with local deployment.",
+      depositAmount: Math.min(10000, Math.max(walletCash * 0.4, 5000)),
+      withdrawAmount: 2500,
+      plan: {
+        selectedStrategy: plan.selected_strategy || snapshot.vault?.selected_strategy || "transformer_encoder",
+        strategyState: plan.strategy_state || snapshot.vault?.strategy_state || "active",
+        suggestedDirection: plan.suggested_direction || snapshot.vault?.suggested_direction || "short_perp_long_spot",
+        summaryPnlUsd: plannedPnlUsd,
+        signalHash: fakeBytes32("signal-hash-presentation-demo"),
+        metadataHash: fakeBytes32("metadata-hash-presentation-demo"),
+        reportHash: fakeBytes32("report-hash-presentation-demo"),
+      },
+      events: [
+        {
+          name: "ConsoleReady",
+          detail: "Local vault simulator loaded from the presentation demo snapshot.",
+          hash: "pending",
+          block: "pending",
+        },
+      ],
+    };
+  }
+
+  function pushVaultEvent(state, name, detail) {
+    state.txCount += 1;
+    const txHash = fakeBytes32(`${name}-${state.txCount}-${state.reportedNav}-${state.totalShares}`);
+    state.lastTxHash = txHash;
+    state.lastStatus = `Success: ${name}`;
+    state.events = [
+      {
+        name,
+        detail,
+        hash: txHash,
+        block: 431200 + state.txCount,
+      },
+      ...state.events,
+    ].slice(0, 7);
+  }
+
+  function getVaultConsoleSteps(state) {
+    return [
+      { label: "Deploy", done: state.deployed, detail: "contracts ready" },
+      { label: "Deposit", done: state.depositCount > 0, detail: "shares minted" },
+      { label: "Strategy", done: state.strategyState !== "idle", detail: "state synced" },
+      { label: "NAV", done: state.navUpdateCount > 0, detail: "PnL reflected" },
+      { label: "Withdraw", done: state.withdrawCount > 0, detail: "shares burned" },
+    ];
+  }
+
+  function getVaultConsoleActions(state) {
+    return [
+      {
+        action: "deploy",
+        label: "Deploy local vault",
+        detail: "DeployLocal.s.sol",
+        disabled: state.deployed,
+      },
+      {
+        action: "deposit",
+        label: `Deposit ${formatAsset(state.depositAmount, state.assetSymbol)}`,
+        detail: "approve + deposit",
+        disabled: !state.deployed || state.depositCount > 0,
+      },
+      {
+        action: "strategy",
+        label: "Sync strategy state",
+        detail: "updateStrategyState",
+        disabled: !state.deployed || state.strategyState !== "idle",
+      },
+      {
+        action: "nav",
+        label: "Sync NAV / PnL",
+        detail: "updateNav",
+        disabled: !state.deployed || state.strategyState === "idle" || state.navUpdateCount > 0,
+      },
+      {
+        action: "withdraw",
+        label: `Withdraw ${formatAsset(state.withdrawAmount, state.assetSymbol)}`,
+        detail: "withdraw",
+        disabled: !state.deployed || state.userShares <= 0 || state.withdrawCount > 0,
+      },
+      {
+        action: "reset",
+        label: "Reset",
+        detail: "start over",
+        disabled: false,
+      },
+    ];
+  }
+
+  function handleVaultConsoleAction(action) {
+    const state = vaultConsoleState;
+    if (!state) {
+      return;
+    }
+
+    if (action === "reset") {
+      vaultConsoleState = buildInitialVaultConsoleState(window.__vaultConsoleSnapshot);
+      paintVaultConsole();
+      return;
+    }
+
+    if (action === "deploy" && !state.deployed) {
+      state.deployed = true;
+      state.vaultAddress = fakeAddress("DeltaNeutralVault-presentation");
+      state.stablecoinAddress = fakeAddress("MockStablecoin-presentation");
+      pushVaultEvent(
+        state,
+        "DeployLocal",
+        `MockStablecoin and DeltaNeutralVault deployed. Operator set to ${formatCompactHash(state.operatorAddress)}.`,
+      );
+    }
+
+    if (action === "deposit" && state.deployed && state.depositCount === 0) {
+      const assets = state.depositAmount;
+      const sharePrice = state.totalShares > 0 ? state.reportedNav / state.totalShares : 1;
+      const mintedShares = assets / sharePrice;
+      state.walletCash -= assets;
+      state.vaultCash += assets;
+      state.reportedNav += assets;
+      state.totalShares += mintedShares;
+      state.userShares += mintedShares;
+      state.depositCount += 1;
+      pushVaultEvent(
+        state,
+        "Deposit",
+        `User deposited ${formatAsset(assets, state.assetSymbol)} and received ${formatNumber(mintedShares, 2)} vault shares.`,
+      );
+    }
+
+    if (action === "strategy" && state.deployed && state.strategyState === "idle") {
+      const previousState = state.strategyState;
+      state.strategyState = state.plan.strategyState;
+      state.selectedStrategy = state.plan.selectedStrategy;
+      state.suggestedDirection = state.plan.suggestedDirection;
+      pushVaultEvent(
+        state,
+        "StrategyStateUpdated",
+        `${previousState} -> ${state.strategyState}; signalHash ${formatCompactHash(state.plan.signalHash)} anchored.`,
+      );
+    }
+
+    if (action === "nav" && state.deployed && state.strategyState !== "idle" && state.navUpdateCount === 0) {
+      const previousNav = state.reportedNav;
+      state.reportedNav += state.plan.summaryPnlUsd;
+      state.cumulativePnl += state.plan.summaryPnlUsd;
+      state.navUpdateCount += 1;
+      pushVaultEvent(
+        state,
+        "NavUpdated",
+        `${formatUsd(previousNav)} -> ${formatUsd(state.reportedNav)} using reportHash ${formatCompactHash(state.plan.reportHash)}.`,
+      );
+    }
+
+    if (action === "withdraw" && state.deployed && state.userShares > 0 && state.withdrawCount === 0) {
+      const assets = Math.min(state.withdrawAmount, state.vaultCash, state.reportedNav);
+      const sharesBurned = Math.ceil(((assets * state.totalShares) / state.reportedNav) * 1000000) / 1000000;
+      state.walletCash += assets;
+      state.vaultCash -= assets;
+      state.reportedNav -= assets;
+      state.userShares = Math.max(0, state.userShares - sharesBurned);
+      state.totalShares = Math.max(0, state.totalShares - sharesBurned);
+      state.withdrawCount += 1;
+      pushVaultEvent(
+        state,
+        "Withdraw",
+        `User withdrew ${formatAsset(assets, state.assetSymbol)} and burned ${formatNumber(sharesBurned, 2)} shares.`,
+      );
+    }
+
+    paintVaultConsole();
+  }
+
+  function paintVaultConsole() {
+    const node = document.getElementById("vault-live-console");
+    const state = vaultConsoleState;
+    if (!node || !state) {
+      return;
+    }
+
+    const sharePrice = state.totalShares > 0 ? state.reportedNav / state.totalShares : 1;
+    const actions = getVaultConsoleActions(state);
+    const steps = getVaultConsoleSteps(state);
+    const statusClass = state.lastTxHash === "pending" ? "ready" : "success";
+
+    node.innerHTML = `
+      <div class="vault-console-grid">
+        <article class="panel vault-live-panel">
+          <div class="vault-console-topline">
+            <div>
+              <p class="section-kicker">Presentation operator</p>
+              <h3>Local chain-style vault operations</h3>
+            </div>
+            <span class="vault-mode-pill">local simulator</span>
+          </div>
+          <p class="vault-console-copy">
+            Click these in order during the presentation. Each action mutates the visible vault state,
+            creates a transaction hash, and appends an event just like the contract-facing flow you
+            would inspect after a local Foundry run.
+          </p>
+          <div class="vault-command-grid">
+            ${actions
+              .map(
+                (item) => `
+                  <button class="vault-command" type="button" data-vault-action="${item.action}" ${item.disabled ? "disabled" : ""}>
+                    <span>${item.label}</span>
+                    <small>${item.detail}</small>
+                  </button>
+                `,
+              )
+              .join("")}
+          </div>
+          <div class="vault-progress-strip">
+            ${steps
+              .map(
+                (step) => `
+                  <div class="vault-progress-step ${step.done ? "done" : ""}">
+                    <span></span>
+                    <strong>${step.label}</strong>
+                    <small>${step.detail}</small>
+                  </div>
+                `,
+              )
+              .join("")}
+          </div>
+          <div class="vault-terminal" aria-live="polite">
+            <div>
+              <span class="vault-terminal-label">Result</span>
+              <strong class="${statusClass}">${state.lastStatus}</strong>
+            </div>
+            <div>
+              <span class="vault-terminal-label">Last tx</span>
+              <code>${formatCompactHash(state.lastTxHash)}</code>
+            </div>
+            <div>
+              <span class="vault-terminal-label">Vault</span>
+              <code>${formatCompactHash(state.vaultAddress)}</code>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel accent-panel vault-state-panel">
+          <p class="section-kicker">On-chain readable state</p>
+          <h3>Vault state after each click</h3>
+          <div class="vault-state-grid">
+            ${createDetailRow("Strategy state", `<span class="status-pill vault-inline-pill">${state.strategyState}</span>`)}
+            ${createDetailRow("Selected strategy", state.selectedStrategy)}
+            ${createDetailRow("Direction", state.suggestedDirection)}
+            ${createDetailRow("Reported NAV", formatUsd(state.reportedNav))}
+            ${createDetailRow("Vault cash", formatAsset(state.vaultCash, state.assetSymbol))}
+            ${createDetailRow("User wallet", formatAsset(state.walletCash, state.assetSymbol))}
+            ${createDetailRow("User shares", formatNumber(state.userShares, 2))}
+            ${createDetailRow("Total shares", formatNumber(state.totalShares, 2))}
+            ${createDetailRow("Share price", formatUsd(sharePrice))}
+            ${createDetailRow("Cumulative PnL", formatUsd(state.cumulativePnl))}
+          </div>
+        </article>
+
+        <article class="panel vault-event-panel">
+          <p class="section-kicker">Event stream</p>
+          <h3>What the audience can verify</h3>
+          <div class="vault-event-stream">
+            ${state.events
+              .map(
+                (event) => `
+                  <div class="vault-event-row">
+                    <div>
+                      <strong>${event.name}</strong>
+                      <p>${event.detail}</p>
+                    </div>
+                    <div>
+                      <span>block ${event.block}</span>
+                      <code>${formatCompactHash(event.hash)}</code>
+                    </div>
+                  </div>
+                `,
+              )
+              .join("")}
+          </div>
+        </article>
+      </div>
+    `;
+  }
+
+  function renderVaultConsole(snapshot) {
+    const node = document.getElementById("vault-live-console");
+    if (!node) {
+      return;
+    }
+    window.__vaultConsoleSnapshot = snapshot;
+    vaultConsoleState = buildInitialVaultConsoleState(snapshot);
+    if (!node.dataset.bound) {
+      node.addEventListener("click", (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        const button = target?.closest("[data-vault-action]");
+        if (!button || button.disabled) {
+          return;
+        }
+        handleVaultConsoleAction(button.dataset.vaultAction);
+      });
+      node.dataset.bound = "true";
+    }
+    paintVaultConsole();
   }
 
   function renderHero(snapshot, exploratory, reportSummary) {
@@ -1137,6 +1520,7 @@
       renderDeepDivePages();
       renderImplementationStatus();
       renderResults(snapshot, exploratory, reportSummary);
+      renderVaultConsole(snapshot);
       renderCharts(snapshot);
       renderDemoAndVault(snapshot);
       renderClosingPanels(reportSummary);
