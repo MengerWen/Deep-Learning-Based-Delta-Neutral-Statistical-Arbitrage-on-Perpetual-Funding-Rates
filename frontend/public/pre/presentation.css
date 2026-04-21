@@ -229,6 +229,9 @@ h3 {
 .rubric-grid,
 .problem-grid,
 .implementation-grid,
+.implementation-status-grid,
+.deep-dive-grid,
+.handoff-grid,
 .results-grid,
 .chart-grid,
 .spotlight-grid,
@@ -406,6 +409,103 @@ h3 {
 
 .implementation-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.implementation-status-grid {
+  grid-template-columns: 0.95fr 1fr 1fr;
+}
+
+.deep-dive-grid {
+  grid-template-columns: 1.1fr 0.9fr;
+}
+
+.handoff-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.responsibility-list,
+.implementation-list,
+.lifecycle-list,
+.payload-list {
+  display: grid;
+  gap: 14px;
+}
+
+.responsibility-card,
+.status-row,
+.lifecycle-card,
+.payload-card {
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(24, 25, 34, 0.08);
+  background: rgba(255, 255, 255, 0.56);
+}
+
+.responsibility-card strong,
+.status-row strong,
+.lifecycle-card strong,
+.payload-card strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.04rem;
+}
+
+.status-row p,
+.responsibility-card p,
+.lifecycle-card p,
+.payload-card p {
+  margin: 10px 0 0;
+}
+
+.payload-card code,
+.lifecycle-card code {
+  font-size: 0.9rem;
+}
+
+.status-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.status-badge.implemented {
+  background: rgba(13, 110, 102, 0.12);
+  color: var(--teal);
+}
+
+.status-badge.prototype {
+  background: rgba(184, 132, 45, 0.14);
+  color: #966a16;
+}
+
+.status-badge.future {
+  background: rgba(162, 77, 51, 0.12);
+  color: var(--rust);
+}
+
+.status-metric {
+  display: inline-flex;
+  margin-top: 10px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(24, 25, 34, 0.05);
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 .module-card .module-metric {
@@ -592,6 +692,9 @@ th {
   .hero,
   .spotlight-grid,
   .split-section,
+  .implementation-status-grid,
+  .deep-dive-grid,
+  .handoff-grid,
   .results-grid,
   .problem-grid,
   .chart-grid {

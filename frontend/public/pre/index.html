@@ -8,7 +8,7 @@
       content="Presentation page for the funding-rate arbitrage course project."
     />
     <title>Funding-Rate Arbitrage Presentation</title>
-    <link rel="stylesheet" href="/pre/presentation.css?v=5" />
+    <link rel="stylesheet" href="/pre/presentation.css?v=7" />
   </head>
   <body>
     <div class="page-shell">
@@ -82,18 +82,80 @@
         <section class="section split-section">
           <article class="panel">
             <div class="section-head compact-head">
-              <p class="section-kicker">System Architecture</p>
-              <h2>Research pipeline feeding a Solidity vault</h2>
+              <p class="section-kicker">System Boundary</p>
+              <h2>What stays off-chain</h2>
             </div>
-            <div class="architecture-rail" id="architecture-rail"></div>
+            <div class="responsibility-list" id="offchain-boundary"></div>
           </article>
-          <article class="panel">
+          <article class="panel accent-panel">
             <div class="section-head compact-head">
-              <p class="section-kicker">Implementation Details</p>
-              <h2>Contract, scripts, tests, and frontend bridge</h2>
+              <p class="section-kicker">System Boundary</p>
+              <h2>What moves on-chain</h2>
             </div>
-            <div class="implementation-grid" id="implementation-grid"></div>
+            <div class="responsibility-list" id="onchain-boundary"></div>
           </article>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <p class="section-kicker">Off-Chain Deep Dive</p>
+            <h2>What happens before the contract is touched</h2>
+            <p class="section-intro">
+              This page is specifically about the part the chain does not do: data engineering,
+              modeling, evaluation, and packaging a vault update that is small enough to push on-chain.
+            </p>
+          </div>
+          <div class="deep-dive-grid">
+            <article class="panel" id="offchain-lifecycle"></article>
+            <article class="panel accent-panel" id="offchain-artifacts"></article>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <p class="section-kicker">On-Chain Deep Dive</p>
+            <h2>What the vault stores and enforces on-chain</h2>
+            <p class="section-intro">
+              This page focuses on the Solidity contract itself: user actions, updater permissions,
+              persisted state, and the safety controls that make it look like a real vault prototype.
+            </p>
+          </div>
+          <div class="deep-dive-grid">
+            <article class="panel" id="onchain-functions"></article>
+            <article class="panel accent-panel" id="onchain-state"></article>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <p class="section-kicker">Boundary Handoff</p>
+            <h2>What crosses from off-chain analytics into on-chain state</h2>
+            <p class="section-intro">
+              The most important boundary is not “everything stays off-chain” or “everything goes
+              on-chain”; it is the exact, explicit payload that crosses between them.
+            </p>
+          </div>
+          <div class="handoff-grid">
+            <article class="panel" id="handoff-fields"></article>
+            <article class="panel" id="handoff-sequence"></article>
+            <article class="panel accent-panel" id="handoff-why"></article>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <p class="section-kicker">Implementation Status</p>
+            <h2>How far the implementation has actually gone</h2>
+            <p class="section-intro">
+              This slide is meant to answer the practical question directly: which parts are already
+              implemented, which parts are prototype-level, and which parts are intentionally left out.
+            </p>
+          </div>
+          <div class="implementation-status-grid">
+            <article class="panel" id="implementation-extent"></article>
+            <article class="panel" id="implementation-offchain"></article>
+            <article class="panel" id="implementation-onchain"></article>
+          </div>
         </section>
 
         <section class="section">
@@ -185,6 +247,6 @@
       </main>
     </div>
 
-    <script src="/pre/presentation.js?v=5"></script>
+    <script src="/pre/presentation.js?v=7"></script>
   </body>
 </html>
