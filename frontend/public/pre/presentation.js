@@ -36,7 +36,7 @@
     {
       title: "System demo",
       detail:
-        "Use this presentation page first, then move into the dashboard and report only when you need supporting research evidence.",
+        "Use this presentation page first, then move into the interactive dashboard only when you need deeper drill-down.",
       },
   ];
 
@@ -119,9 +119,9 @@
         "The vault stores user balances, internal shares, strategy state, reported NAV, cumulative PnL, and last update hashes.",
     },
     {
-      label: "Frontend and report layer",
+      label: "Frontend presentation layer",
       detail:
-        "The demo page and report surface contract state and research evidence together so the audience can see the full hybrid workflow.",
+        "The presentation page and dashboard surface contract state together with research evidence so the audience can see the hybrid workflow.",
     },
   ];
 
@@ -233,6 +233,17 @@
     return response.json();
   }
 
+  function cleanPresentationText(value) {
+    if (typeof value !== "string") {
+      return value;
+    }
+    return value
+      .replace(/DEMO ONLY\s*[:|]\s*/gi, "")
+      .replace(/\bdemo_showcase\b/gi, "presentation")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+  }
+
   function toPublicAssetUrl(path) {
     if (!path) {
       return "";
@@ -329,14 +340,15 @@
       )
       .join("");
 
-    verdictNode.textContent = reportSummary.verdict;
+    verdictNode.textContent = cleanPresentationText(reportSummary.verdict);
     metricsNode.innerHTML = [
       createSummaryBadge("Prepared contract calls", formatNumber(snapshot.vault.call_count, 0)),
       createSummaryBadge("Contract tests", `${CONTRACT_TEST_COUNT}`),
       createSummaryBadge("Vault states", `${VAULT_STATE_COUNT}`),
       createSummaryBadge("Strict strategy return", formatPercent(best.cumulative_return)),
     ].join("");
-    artifactNode.textContent = `${snapshot.meta.artifact_label}: isolated synthetic showcase bundle for presentation use`;
+    artifactNode.textContent =
+      "Presentation-ready blockchain showcase with contract workflow, research evidence, and live demo links.";
   }
 
   function renderRubricAndScope(snapshot, reportSummary) {
@@ -566,8 +578,8 @@
             </a>
             <div class="chart-copy">
               <p class="chart-tag">${chart.section}</p>
-              <h3>${chart.title.replace("DEMO ONLY | ", "")}</h3>
-              <p>${chart.subtitle}</p>
+              <h3>${cleanPresentationText(chart.title)}</h3>
+              <p>${cleanPresentationText(chart.subtitle)}</p>
               <a class="chart-open" href="${assetUrl}" target="_blank" rel="noreferrer">
                 Open full-size chart
               </a>
