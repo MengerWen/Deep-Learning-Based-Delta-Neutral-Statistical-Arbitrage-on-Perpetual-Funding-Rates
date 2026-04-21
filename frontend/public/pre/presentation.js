@@ -600,7 +600,23 @@ function initPPTMode() {
       const nextBtn = document.getElementById('ppt-next');
       if (prevBtn) prevBtn.disabled = currentIndex === 0;
       if (nextBtn) nextBtn.disabled = currentIndex === slides.length - 1;
-      
+
+      let progressBar = document.getElementById('ppt-progress-bar');
+      if (!progressBar) {
+        progressBar = document.createElement('div');
+        progressBar.id = 'ppt-progress-bar';
+        progressBar.className = 'ppt-progress';
+        document.body.appendChild(progressBar);
+      }
+      progressBar.style.width = `${((currentIndex + 1) / slides.length) * 100}%`;
+      let pageCount = document.getElementById('ppt-page-count');
+      if (!pageCount) {
+        pageCount = document.createElement('div');
+        pageCount.id = 'ppt-page-count';
+        pageCount.className = 'ppt-page-count';
+        document.body.appendChild(pageCount);
+      }
+      pageCount.innerText = `${currentIndex + 1} / ${slides.length}`;
       window.scrollTo(0, 0); 
     }
     function enterPPTMode() {
@@ -633,6 +649,10 @@ function initPPTMode() {
       document.body.classList.remove('ppt-mode');
       slides.forEach(slide => slide.classList.remove('slide-active'));
       if (controlsDiv) controlsDiv.style.display = 'none';
+      const progressBar = document.getElementById('ppt-progress-bar');
+      if (progressBar) progressBar.remove();
+      const pageCount = document.getElementById('ppt-page-count');
+      if (pageCount) pageCount.remove();
     }
     startBtn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -653,3 +673,24 @@ function initPPTMode() {
   }
   setTimeout(initPPTMode, 800);
 })();
+function initImageLightbox() {
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.chart-media') || e.target.closest('.chart-open')) {
+      e.preventDefault();
+      const href = e.target.closest('a').href;
+
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100000; display: grid; place-items: center; cursor: zoom-out;';
+      
+      const img = document.createElement('img');
+      img.src = href;
+      img.style.cssText = 'max-width: 90vw; max-height: 90vh; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);';
+      
+      overlay.appendChild(img);
+      document.body.appendChild(overlay);
+
+      overlay.addEventListener('click', () => overlay.remove());
+    }
+  });
+}
+setTimeout(initImageLightbox, 800);
