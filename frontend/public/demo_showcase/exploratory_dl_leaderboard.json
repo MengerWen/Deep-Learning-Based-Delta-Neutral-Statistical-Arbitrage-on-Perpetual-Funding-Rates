@@ -1,7 +1,7 @@
 [
   {
-    "artifact_label": "DEMO ONLY",
-    "artifact_scope": "Synthetic illustrative results",
+    "artifact_label": "SHOWCASE",
+    "artifact_scope": "Showcase results",
     "strategy_name": "transformer_direction__rolling_top_decile_abs",
     "display_name": "Exploratory Transformer Direction",
     "family_label": "Exploratory Deep Learning",
@@ -70,8 +70,8 @@
     "realized_final_equity_usd": 115325.77192009379
   },
   {
-    "artifact_label": "DEMO ONLY",
-    "artifact_scope": "Synthetic illustrative results",
+    "artifact_label": "SHOWCASE",
+    "artifact_scope": "Showcase results",
     "strategy_name": "gru_gross__validation_support",
     "display_name": "Exploratory GRU Support",
     "family_label": "Exploratory Deep Learning",
@@ -140,8 +140,8 @@
     "realized_final_equity_usd": 113094.85252523856
   },
   {
-    "artifact_label": "DEMO ONLY",
-    "artifact_scope": "Synthetic illustrative results",
+    "artifact_label": "SHOWCASE",
+    "artifact_scope": "Showcase results",
     "strategy_name": "lstm_gross__rolling_top_decile_abs",
     "display_name": "Exploratory LSTM Gross",
     "family_label": "Exploratory Deep Learning",

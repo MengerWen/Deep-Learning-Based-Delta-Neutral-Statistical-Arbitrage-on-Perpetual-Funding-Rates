@@ -1,14 +1,14 @@
 {
-  "artifact_label": "DEMO ONLY",
-  "artifact_scope": "Synthetic illustrative results",
+  "artifact_label": "SHOWCASE",
+  "artifact_scope": "Showcase results",
   "demo_only": true,
   "strict_summary": null,
   "exploratory_summary": {
     "strategy_count": 3,
     "nonzero_trade_strategy_count": 3,
     "best_showcase_row": {
-      "artifact_label": "DEMO ONLY",
-      "artifact_scope": "Synthetic illustrative results",
+      "artifact_label": "SHOWCASE",
+      "artifact_scope": "Showcase results",
       "strategy_name": "transformer_direction__rolling_top_decile_abs",
       "display_name": "Exploratory Transformer Direction",
       "family_label": "Exploratory Deep Learning",
@@ -98,7 +98,7 @@
       }
     ]
   },
-  "disclaimer": "DEMO ONLY: exploratory results are a separate synthetic showcase track. They are more aggressive, more active, and intentionally accompanied by higher drawdown.",
+  "disclaimer": "SHOWCASE: exploratory results are a separate showcase track. They are more aggressive, more active, and intentionally accompanied by higher drawdown.",
   "figure_paths": [
     "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\data\\demo_artifacts\\showcase\\binance\\btcusdt\\1h\\exploratory_figures\\exploratory_prediction_distribution.png",
     "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\data\\demo_artifacts\\showcase\\binance\\btcusdt\\1h\\exploratory_figures\\exploratory_quantile_analysis.png",

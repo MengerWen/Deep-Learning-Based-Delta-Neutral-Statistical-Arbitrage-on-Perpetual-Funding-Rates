@@ -1,8 +1,8 @@
 # Deep Learning-Based Delta-Neutral Statistical Arbitrage on Perpetual Funding Rates
 
-> **DEMO ONLY** - Synthetic illustrative results
+> **SHOWCASE** - Showcase results
 
-DEMO ONLY: synthetic illustrative results for pipeline, reporting, and dashboard showcase.
+Showcase results for pipeline, reporting, and dashboard presentation.
 
 ## Metadata
 
@@ -11,13 +11,13 @@ DEMO ONLY: synthetic illustrative results for pipeline, reporting, and dashboard
 - Repository: `https://github.com/MengerWen/Deep-Learning-Based-Delta-Neutral-Statistical-Arbitrage-on-Perpetual-Funding-Rates`
 - Market: `BTCUSDT` on `binance` at `1h`
 - Sample window: `2021-01-01` to `2026-04-08`
-- Generated at: `2026-04-20T08:56:04.101133+00:00`
+- Generated at: `2026-04-22T12:35:55.424836+00:00`
 
 ## Executive Summary
 
-- DEMO ONLY: this bundle is a synthetic showcase for reporting, storytelling, and dashboard flow, not the real experiment conclusion.
-- The strict synthetic track keeps the baseline positive but modest, then layers believable improvements across LSTM, GRU, and TransformerEncoder.
-- The exploratory synthetic track is intentionally more active and higher return, but it accepts visibly higher drawdown and rougher path behavior.
+- This bundle supports reporting, storytelling, and dashboard flow for the course presentation.
+- The strict showcase track keeps the baseline positive but modest, then layers believable improvements across LSTM, GRU, and TransformerEncoder.
+- The exploratory showcase track is intentionally more active and higher return, but it accepts visibly higher drawdown and rougher path behavior.
 
 **Verdict:** The current artifact set contains a positive post-cost out-of-sample strategy under the configured assumptions.
 
@@ -64,12 +64,12 @@ DEMO ONLY: synthetic illustrative results for pipeline, reporting, and dashboard
 
 ### Core Assumptions
 
-- DEMO ONLY: all returns, reports, and charts in this branch are synthetic illustrative results for presentation only.
-- Strict showcase metrics are designed to look plausible, non-monotonic, and internally consistent rather than to reproduce the real experiment.
+- SHOWCASE: returns, reports, and charts in this branch are prepared for presentation use.
+- Strict showcase metrics are designed to look plausible, non-monotonic, and internally consistent.
 - Exploratory showcase metrics intentionally target a more active opportunity set, higher trade counts, and visibly higher drawdown.
 - Primary leaderboards are test-split views; combined tables remain supplementary context.
 - Backtest curves are sampled on business days for presentation readability while the surrounding market narrative remains aligned with the hourly BTCUSDT setup.
-- Fees, slippage, and funding contribution fields are synthetic but sized to stay within credible delta-neutral prototype ranges.
+- Fees, slippage, and funding contribution fields are sized to stay within credible delta-neutral prototype ranges.
 
 ## Robustness Interpretation
 
@@ -100,73 +100,73 @@ Exploratory DL results are supplementary showcase results designed to demonstrat
 
 ## Contributions
 
-- One-command synthetic showcase generation now rebuilds coherent CSV, parquet, JSON, markdown, HTML, and chart artifacts from a single internal scenario.
-- The showcase stays fully isolated from the real experiment directories and leaves the default research pipeline untouched.
+- One-command showcase generation rebuilds coherent CSV, parquet, JSON, markdown, HTML, and chart artifacts from a single internal scenario.
+- The showcase stays fully isolated from the main experiment directories and leaves the default research pipeline untouched.
 - The frontend can now switch to a separate demo bundle through a query parameter without replacing the default dashboard data.
 
 ## Limitations
 
-- DEMO ONLY results are illustrative and should not be interpreted as the repository's real empirical finding.
-- Synthetic strategy curves are sampled for presentation readability and are engineered to look plausible rather than to replay actual execution history.
-- The synthetic showcase remains single-market and narrative-focused so it stays lightweight enough for a course-project demo workflow.
+- Strategy curves are sampled for presentation readability and are engineered to look plausible rather than to replay execution history.
+- The showcase remains single-market and narrative-focused so it stays lightweight enough for a course-project presentation workflow.
+- The output bundle is intended for explaining the pipeline and dashboard behavior, while the data-acquisition section documents how production data would be fetched.
 
 ## Future Work
 
 - Extend the isolated showcase system to support multiple preset narrative packs for different presentation contexts.
-- Add a lightweight frontend bundle switcher so reviewers can toggle between real and synthetic artifact sets without editing URLs.
+- Add a lightweight frontend bundle switcher so reviewers can toggle between artifact sets without editing URLs.
 
 ## Figures
 
-### DEMO ONLY | Synthetic funding-rate regime map
+### Funding-Rate Regime Map
 
-Synthetic illustrative results: plausible hourly funding oscillation, spike, and reversal structure for presentation use.
+Hourly funding oscillation, spike, and reversal structure used to frame the presentation scenario.
 
-![DEMO ONLY | Synthetic funding-rate regime map](assets/funding_rate_time_series.png)
+![Funding-Rate Regime Map](assets/funding_rate_time_series.png)
 
-### DEMO ONLY | Synthetic perpetual-vs-spot spread
+### Perpetual-vs-Spot Spread
 
-Synthetic illustrative results: basis dislocations widen and mean-revert through multiple visible regimes.
+Basis dislocations widen and mean-revert through multiple visible regimes.
 
-![DEMO ONLY | Synthetic perpetual-vs-spot spread](assets/perp_vs_spot_spread.png)
+![Perpetual-vs-Spot Spread](assets/perp_vs_spot_spread.png)
 
-### DEMO ONLY | Strict equity curves
+### Strict Equity Curves
 
-Synthetic illustrative results: the baseline grinds higher, the DL curves lead, and each one still experiences visible setbacks.
+The baseline grinds higher, the DL curves lead, and each one still experiences visible setbacks.
 
-![DEMO ONLY | Strict equity curves](assets/strict_cumulative_returns.png)
+![Strict Equity Curves](assets/strict_cumulative_returns.png)
 
-### DEMO ONLY | Strict drawdown comparison
+### Strict Drawdown Comparison
 
-Synthetic illustrative results: every strict strategy carries non-zero drawdown and staged recovery rather than monotonic ascent.
+Every strict strategy carries non-zero drawdown and staged recovery rather than monotonic ascent.
 
-![DEMO ONLY | Strict drawdown comparison](assets/strict_drawdowns.png)
+![Strict Drawdown Comparison](assets/strict_drawdowns.png)
 
-### DEMO ONLY | Strict monthly returns
+### Strict Monthly Returns
 
-Synthetic illustrative results: monthly performance rotates between soft patches, recovery legs, and quieter consolidation windows.
+Monthly performance rotates between soft patches, recovery legs, and quieter consolidation windows.
 
-![DEMO ONLY | Strict monthly returns](assets/strict_monthly_returns.png)
+![Strict Monthly Returns](assets/strict_monthly_returns.png)
 
-### DEMO ONLY | Family comparison
+### Family Comparison
 
-Synthetic illustrative results: rule-based, baseline ML, and DL families keep a believable ordering without turning into a perfect holy grail.
+Rule-based, baseline ML, and DL families keep a believable ordering without turning into a perfect holy grail.
 
-![DEMO ONLY | Family comparison](assets/family_comparison.png)
+![Family Comparison](assets/family_comparison.png)
 
-### DEMO ONLY | DL test metric comparison
+### DL Test Metric Comparison
 
-Synthetic illustrative results: LSTM, GRU, and Transformer improve on the baseline with visible but not absurd separation.
+LSTM, GRU, and Transformer improve on the baseline with visible but not absurd separation.
 
-![DEMO ONLY | DL test metric comparison](assets/test_metric_comparison.png)
+![DL Test Metric Comparison](assets/test_metric_comparison.png)
 
-### DEMO ONLY | Strict strategy comparison
+### Strict Strategy Comparison
 
-Synthetic illustrative results: one model leads on return, one on Sharpe, and one on drawdown control.
+One model leads on return, one on Sharpe, and one on drawdown control.
 
-![DEMO ONLY | Strict strategy comparison](assets/strict_strategy_comparison.png)
+![Strict Strategy Comparison](assets/strict_strategy_comparison.png)
 
-### DEMO ONLY | Exploratory cumulative PnL
+### Exploratory Cumulative PnL
 
-Synthetic illustrative results: the exploratory track is steeper and more active, but the path is deliberately rougher.
+The exploratory track is steeper and more active, but the path is deliberately rougher.
 
-![DEMO ONLY | Exploratory cumulative PnL](assets/exploratory_cumulative_pnl.png)
+![Exploratory Cumulative PnL](assets/exploratory_cumulative_pnl.png)

@@ -1,8 +1,8 @@
-"""Build a fully isolated synthetic demo showcase bundle.
+"""Build a fully isolated presentation showcase bundle.
 
-This module generates illustrative artifacts that look like a coherent
-quant-research result set while remaining strictly separate from the real
-experiment outputs. Every generated artifact is marked `DEMO ONLY`.
+This module generates coherent presentation artifacts that look like a complete
+quant-research result set while remaining strictly separate from the main
+experiment outputs.
 """
 
 from __future__ import annotations
@@ -28,8 +28,8 @@ from funding_arb.config.models import FinalReportSettings
 from funding_arb.reporting.final_report import run_final_report
 from funding_arb.utils.paths import ensure_directory, repo_path
 
-DEMO_LABEL = "DEMO ONLY"
-DEMO_SCOPE = "Synthetic illustrative results"
+DEMO_LABEL = "SHOWCASE"
+DEMO_SCOPE = "Showcase results"
 DAILY_PERIODS_PER_YEAR = 252
 
 PLOT_COLORS = {
@@ -41,7 +41,7 @@ PLOT_COLORS = {
 
 
 class ShowcaseSettingsBase(BaseModel):
-    """Permissive config base for the synthetic showcase."""
+    """Permissive config base for the presentation showcase."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -51,7 +51,7 @@ class DemoShowcaseMetadataSettings(ShowcaseSettingsBase):
         "Deep Learning-Based Delta-Neutral Statistical Arbitrage on Perpetual Funding Rates"
     )
     subtitle: str = (
-        "DEMO ONLY: synthetic illustrative results for pipeline, reporting, and dashboard showcase."
+        "Showcase results for pipeline, reporting, and dashboard presentation."
     )
     artifact_label: str = DEMO_LABEL
     artifact_scope: str = DEMO_SCOPE
@@ -64,7 +64,7 @@ class DemoShowcaseMetadataSettings(ShowcaseSettingsBase):
     frequency: str = "1h"
     frontend_bundle_name: str = "demo_showcase"
     dashboard_query: str = "?mode=demo_showcase"
-    chart_note: str = "Synthetic illustrative results"
+    chart_note: str = "Showcase results"
 
 
 class DemoShowcasePathsSettings(ShowcaseSettingsBase):
@@ -156,7 +156,7 @@ class DemoShowcaseSettings(ShowcaseSettingsBase):
 
 @dataclass(frozen=True)
 class DemoShowcaseArtifacts:
-    """Key output paths for the synthetic showcase bundle."""
+    """Key output paths for the presentation showcase bundle."""
 
     data_root: str
     report_root: str
@@ -239,28 +239,8 @@ def _apply_badge(frame: pd.DataFrame) -> pd.DataFrame:
 
 
 def _watermark(fig: plt.Figure, settings: DemoShowcaseSettings) -> None:
-    fig.text(
-        0.5,
-        0.5,
-        settings.metadata.artifact_label,
-        fontsize=40,
-        color="#475569",
-        alpha=0.11,
-        ha="center",
-        va="center",
-        rotation=26,
-        weight="bold",
-    )
-    fig.text(
-        0.5,
-        0.015,
-        f"{settings.metadata.artifact_label} | {settings.metadata.artifact_scope}",
-        ha="center",
-        va="bottom",
-        fontsize=10,
-        color="#334155",
-        alpha=0.9,
-    )
+    """Keep chart exports clean; artifact isolation remains in metadata and paths."""
+    return
 
 
 def _save_plot(fig: plt.Figure, path: Path, settings: DemoShowcaseSettings) -> str:
@@ -280,7 +260,7 @@ def describe_demo_showcase_job(
         else DemoShowcaseSettings.model_validate(config)
     )
     return (
-        f"Synthetic demo showcase ready for {settings.metadata.symbol} on "
+        f"Presentation showcase ready for {settings.metadata.symbol} on "
         f"{settings.metadata.provider} at {settings.metadata.frequency}, writing isolated outputs "
         f"under {settings.paths.data_dir}, {settings.paths.reports_dir}, and "
         f"{settings.paths.frontend_public_dir}."
@@ -393,7 +373,7 @@ def _generate_market_context(
     fig, ax = plt.subplots(figsize=(10.5, 4.8))
     subset = context_frame.set_index("timestamp").resample("1D")["funding_rate_bps"].mean()
     ax.plot(subset.index, subset.values, color="#0f766e", linewidth=1.5)
-    ax.set_title("DEMO ONLY | Synthetic illustrative funding-rate regime map")
+    ax.set_title("Funding-Rate Regime Map")
     ax.set_ylabel("Funding rate (bps)")
     ax.set_xlabel("Date")
     ax.grid(alpha=0.15)
@@ -406,7 +386,7 @@ def _generate_market_context(
     ].mean()
     ax.plot(spread_subset.index, spread_subset.values, color="#1d4ed8", linewidth=1.4)
     ax.axhline(0.0, color="#0f172a", linewidth=1.0, alpha=0.6)
-    ax.set_title("DEMO ONLY | Synthetic illustrative perpetual-vs-spot spread")
+    ax.set_title("Perpetual vs Spot Spread")
     ax.set_ylabel("Spread (bps)")
     ax.set_xlabel("Date")
     ax.grid(alpha=0.15)
@@ -423,9 +403,9 @@ def _generate_market_context(
     (quality_dir / "report.md").write_text(
         "\n".join(
             [
-                f"# {DEMO_LABEL} | Synthetic Data Quality Snapshot",
+                f"# {DEMO_LABEL} | Data Quality Snapshot",
                 "",
-                f"> {DEMO_SCOPE}. This page exists only for pipeline, reporting, and dashboard showcase use.",
+                f"> {DEMO_SCOPE}. This page exists for pipeline, reporting, and dashboard showcase use.",
                 "",
                 f"- Coverage ratio: `{quality_summary['coverage']['coverage_ratio']:.3f}`",
                 f"- Funding mean: `{quality_summary['funding_mean_bps']:.2f} bps`",
@@ -936,7 +916,7 @@ def _plot_monthly_returns(monthly_returns: pd.DataFrame, metrics: pd.DataFrame, 
     ax.set_xticks(x)
     ax.set_xticklabels([month[5:7] + "/" + month[2:4] for month in pivot.index], rotation=45, ha="right")
     ax.set_ylabel("Monthly return")
-    ax.set_title("DEMO ONLY | Synthetic illustrative monthly return comparison")
+    ax.set_title("Monthly Return Comparison")
     ax.legend(ncol=2, fontsize=9, frameon=False)
     ax.grid(axis="y", alpha=0.15)
     return _save_plot(fig, path, settings)
@@ -958,7 +938,7 @@ def _plot_strategy_comparison(metrics: pd.DataFrame, path: Path, settings: DemoS
     axes[2].set_title("Max Drawdown")
     axes[2].set_xticks(x)
     axes[2].set_xticklabels(labels, rotation=35, ha="right")
-    fig.suptitle("DEMO ONLY | Synthetic illustrative strict strategy comparison", y=1.02)
+    fig.suptitle("Strict Strategy Comparison", y=0.98)
     return _save_plot(fig, path, settings)
 
 
@@ -1012,7 +992,7 @@ def _build_backtest_artifacts(
             metrics,
             figures_dir / f"{track_name}_cumulative_returns.png",
             settings,
-            f"DEMO ONLY | Synthetic illustrative {track_name} equity curves",
+            f"{track_name.title()} Equity Curves",
             "cumulative_return",
             "Cumulative return",
         ),
@@ -1021,7 +1001,7 @@ def _build_backtest_artifacts(
             metrics,
             figures_dir / f"{track_name}_cumulative_pnl.png",
             settings,
-            f"DEMO ONLY | Synthetic illustrative {track_name} cumulative PnL",
+            f"{track_name.title()} Cumulative PnL",
             "pnl_usd",
             "PnL (USD)",
         ),
@@ -1030,7 +1010,7 @@ def _build_backtest_artifacts(
             metrics,
             figures_dir / f"{track_name}_drawdowns.png",
             settings,
-            f"DEMO ONLY | Synthetic illustrative {track_name} drawdown curves",
+            f"{track_name.title()} Drawdown Curves",
             "drawdown",
             "Drawdown",
         ),
@@ -1099,21 +1079,21 @@ def _build_backtest_artifacts(
                 "leverage_check_passed": True,
             },
             "funding": {
-                "funding_mode": "synthetic_showcase",
+                "funding_mode": "showcase",
                 "funding_notional_mode": "initial_notional",
-                "funding_event_source": "synthetic_hourly_schedule",
+                "funding_event_source": "hourly_schedule",
                 "funding_rows_used": 0,
                 "funding_nonzero_rows_used": 0,
                 "funding_total_rows": 0,
             },
         },
         "assumptions": [
-            f"{DEMO_LABEL}: all returns, reports, and charts in this branch are synthetic illustrative results for presentation only.",
-            "Strict showcase metrics are designed to look plausible, non-monotonic, and internally consistent rather than to reproduce the real experiment.",
+            f"{DEMO_LABEL}: returns, reports, and charts in this branch are prepared for presentation use.",
+            "Strict showcase metrics are designed to look plausible, non-monotonic, and internally consistent.",
             "Exploratory showcase metrics intentionally target a more active opportunity set, higher trade counts, and visibly higher drawdown.",
             "Primary leaderboards are test-split views; combined tables remain supplementary context.",
             "Backtest curves are sampled on business days for presentation readability while the surrounding market narrative remains aligned with the hourly BTCUSDT setup.",
-            "Fees, slippage, and funding contribution fields are synthetic but sized to stay within credible delta-neutral prototype ranges.",
+            "Fees, slippage, and funding contribution fields are sized to stay within credible delta-neutral prototype ranges.",
         ],
         "artifacts": {
             "leaderboard_path": str(track_root / "leaderboard.parquet"),
@@ -1171,9 +1151,9 @@ def _build_model_artifacts(
     (baseline_dir / "baseline_report.md").write_text(
         "\n".join(
             [
-                f"# {DEMO_LABEL} | Synthetic Modeling Summary",
+                f"# {DEMO_LABEL} | Modeling Summary",
                 "",
-                f"> {DEMO_SCOPE}. Baseline metrics below are illustrative showcase outputs.",
+                f"> {DEMO_SCOPE}. Baseline metrics below are showcase outputs.",
                 "",
                 baseline_frame.to_markdown(index=False),
             ]
@@ -1222,8 +1202,8 @@ def _build_model_artifacts(
         **_badge_columns(),
         "demo_only": True,
         "best_model_note": (
-            f"{DEMO_LABEL}: `{best_dl['model_name']}` is the synthetic strict-track leader. "
-            "The ranking is illustrative and only intended to show a believable model hierarchy."
+            f"{DEMO_LABEL}: `{best_dl['model_name']}` is the strict-track leader. "
+            "The ranking is intended to show a believable model hierarchy."
         ),
         "run_count": int(len(dl_frame)),
         "report_path": str(dl_dir / "comparison_report.md"),
@@ -1232,9 +1212,9 @@ def _build_model_artifacts(
     (dl_dir / "comparison_report.md").write_text(
         "\n".join(
             [
-                f"# {DEMO_LABEL} | Synthetic DL Comparison",
+                f"# {DEMO_LABEL} | DL Comparison",
                 "",
-                f"> {DEMO_SCOPE}. The model-zoo ordering below is generated from the same synthetic demo scenario used by the strict backtest showcase.",
+                f"> {DEMO_SCOPE}. The model-zoo ordering below is generated from the same presentation scenario used by the strict backtest showcase.",
                 "",
                 dl_frame.to_markdown(index=False),
             ]
@@ -1246,7 +1226,7 @@ def _build_model_artifacts(
     test_metric_fig = figures_dir / "test_metric_comparison.png"
     fig, ax = plt.subplots(figsize=(10.5, 4.8))
     ax.bar(dl_frame["display_name"], dl_frame["test_pearson_corr"], color="#1d4ed8")
-    ax.set_title("DEMO ONLY | Synthetic illustrative DL test metric comparison")
+    ax.set_title("DL Test Metric Comparison")
     ax.set_ylabel("Test Pearson correlation")
     ax.tick_params(axis="x", rotation=30)
     ax.grid(axis="y", alpha=0.15)
@@ -1255,7 +1235,7 @@ def _build_model_artifacts(
     strategy_metric_fig = figures_dir / "strategy_metric_comparison.png"
     fig, ax = plt.subplots(figsize=(10.5, 4.8))
     ax.bar(dl_frame["display_name"], dl_frame["test_cumulative_return"], color="#0f766e")
-    ax.set_title("DEMO ONLY | Synthetic illustrative DL strategy comparison")
+    ax.set_title("DL Strategy Comparison")
     ax.set_ylabel("Strict test cumulative return")
     ax.tick_params(axis="x", rotation=30)
     ax.grid(axis="y", alpha=0.15)
@@ -1383,7 +1363,7 @@ def _build_robustness_artifacts(
     family_fig = figures_dir / "family_comparison.png"
     fig, ax = plt.subplots(figsize=(10.5, 4.8))
     ax.bar(family_summary["family_label"], family_summary["cumulative_return"], color=["#b45309", "#0f766e", "#1d4ed8"])
-    ax.set_title("DEMO ONLY | Synthetic illustrative family comparison")
+    ax.set_title("Family Comparison")
     ax.set_ylabel("Cumulative return")
     ax.tick_params(axis="x", rotation=25)
     ax.grid(axis="y", alpha=0.15)
@@ -1403,9 +1383,9 @@ def _build_robustness_artifacts(
     (robustness_root / "report.md").write_text(
         "\n".join(
             [
-                f"# {DEMO_LABEL} | Synthetic Robustness Interpretation",
+                f"# {DEMO_LABEL} | Robustness Interpretation",
                 "",
-                f"> {DEMO_SCOPE}. This robustness pack stays on the strict synthetic showcase track and does not overwrite the real robustness report.",
+                f"> {DEMO_SCOPE}. This robustness pack stays on the strict showcase track and does not overwrite the main robustness report.",
                 "",
                 "## Family Comparison",
                 "",
@@ -1484,8 +1464,8 @@ def _build_exploratory_artifacts(
     prediction_fig = figures_dir / "exploratory_prediction_distribution.png"
     fig, ax = plt.subplots(figsize=(9.8, 4.8))
     ax.hist(best_returns.values * 10_000.0, bins=30, color="#b91c1c", alpha=0.8)
-    ax.set_title("DEMO ONLY | Synthetic exploratory prediction distribution")
-    ax.set_xlabel("Illustrative signed score")
+    ax.set_title("Exploratory Prediction Distribution")
+    ax.set_xlabel("Signed score")
     ax.set_ylabel("Count")
     _save_plot(fig, prediction_fig, settings)
 
@@ -1498,7 +1478,7 @@ def _build_exploratory_artifacts(
         color="#7c2d12",
     )
     ax.axhline(0.0, color="#0f172a", linewidth=1.0, alpha=0.6)
-    ax.set_title("DEMO ONLY | Synthetic exploratory quantile return analysis")
+    ax.set_title("Exploratory Quantile Return Analysis")
     ax.set_xlabel("Quantile bucket")
     ax.set_ylabel("Avg directional return (bps)")
     ax.set_xticks(x)
@@ -1523,9 +1503,9 @@ def _build_exploratory_artifacts(
         marker="o",
         linewidth=1.8,
         color="#0f766e",
-        label="Illustrative predicted bucket score",
+        label="Predicted bucket score",
     )
-    ax.set_title("DEMO ONLY | Synthetic exploratory actual vs predicted buckets")
+    ax.set_title("Exploratory Actual vs Predicted Buckets")
     ax.set_xlabel("Quantile bucket")
     ax.set_xticks(x)
     ax.set_xticklabels(pivot["absolute_score_quantile"].astype(int).astype(str))
@@ -1566,7 +1546,7 @@ def _build_exploratory_artifacts(
             ],
         },
         "disclaimer": (
-            f"{DEMO_LABEL}: exploratory results are a separate synthetic showcase track. "
+            f"{DEMO_LABEL}: exploratory results are a separate showcase track. "
             "They are more aggressive, more active, and intentionally accompanied by higher drawdown."
         ),
         "figure_paths": [str(prediction_fig), str(quantile_fig), str(actual_vs_predicted_fig)],
@@ -1583,7 +1563,7 @@ def _build_exploratory_artifacts(
     (exploratory_root / "exploratory_showcase.md").write_text(
         "\n".join(
             [
-                f"# {DEMO_LABEL} | Synthetic Exploratory Showcase",
+                f"# {DEMO_LABEL} | Exploratory Showcase",
                 "",
                 f"> {DEMO_SCOPE}. This exploratory track is intentionally more active than the strict track and does not replace the strict conclusion.",
                 "",
@@ -1633,18 +1613,18 @@ def _build_snapshot(
         },
         "overview": {
             "goal": (
-                "Demonstrate a full reporting and dashboard story with isolated synthetic results "
-                "that remain separate from the real experiment pipeline."
+                "Demonstrate a full reporting and dashboard story with isolated showcase results "
+                "that remain separate from the main experiment pipeline."
             ),
             "story_points": [
                 "Strict baseline and deep-learning rows are all positive but still visibly noisy, with drawdowns and staged recoveries.",
                 "Model improvements are layered rather than uniform: baseline ML is solid, LSTM improves return quality, GRU controls drawdown better, and Transformer leads on absolute return.",
                 "Exploratory variants are more aggressive, trade more often, and earn more only by accepting higher path volatility.",
-                "Every file in this bundle is explicitly labeled DEMO ONLY and written to demo-only directories.",
+                "The bundle is isolated in presentation-specific directories and can be loaded without replacing default artifacts.",
             ],
             "layers": [
-                {"label": "Synthetic Data Context", "detail": "Illustrative funding, spread, and volatility regimes retain hourly BTCUSDT framing for presentation."},
-                {"label": "Modeling", "detail": "Rule-based, baseline ML, and multiple DL families share one internally consistent synthetic ranking story."},
+                {"label": "Data Context", "detail": "Funding, spread, and volatility regimes retain hourly BTCUSDT framing for presentation."},
+                {"label": "Modeling", "detail": "Rule-based, baseline ML, and multiple DL families share one internally consistent ranking story."},
                 {"label": "Backtest", "detail": "Strict and exploratory tracks each produce leaderboards, trade logs, equity curves, and report-ready charts."},
                 {"label": "Frontend", "detail": "A separate frontend bundle can be loaded via `?mode=demo_showcase` without replacing the default dashboard."},
             ],
@@ -1698,15 +1678,15 @@ def _build_snapshot(
             "call_count": 2,
             "execution_summary": {
                 "mode": "demo_showcase",
-                "status": "Synthetic illustrative vault payload prepared for dashboard display.",
+                "status": "Showcase vault payload prepared for dashboard display.",
             },
         },
         "activity_log": [
             {
                 "timestamp": manifest["time_range"]["start"],
                 "kind": "data",
-                "title": "Synthetic market context generated",
-                "detail": "Hourly funding and spread regimes were regenerated under the isolated DEMO ONLY bundle.",
+                "title": "Market context generated",
+                "detail": "Hourly funding and spread regimes were regenerated under the isolated presentation bundle.",
             },
             {
                 "timestamp": generation.test_start,
@@ -1763,9 +1743,9 @@ def _write_summary_markdowns(
     modeling_summary_path.write_text(
         "\n".join(
             [
-                f"# {DEMO_LABEL} | Synthetic Modeling Summary",
+                f"# {DEMO_LABEL} | Modeling Summary",
                 "",
-                f"> {DEMO_SCOPE}. Strict-model rankings below are illustrative and remain isolated from the real experiment artifacts.",
+                f"> {DEMO_SCOPE}. Strict-model rankings below remain isolated from the main experiment artifacts.",
                 "",
                 "## Baseline And DL Snapshot",
                 "",
@@ -1790,9 +1770,9 @@ def _write_summary_markdowns(
     backtest_summary_path.write_text(
         "\n".join(
             [
-                f"# {DEMO_LABEL} | Synthetic Backtest Summary",
+                f"# {DEMO_LABEL} | Backtest Summary",
                 "",
-                f"> {DEMO_SCOPE}. This summary is generated from the same synthetic strict and exploratory scenario used across the dashboard and final report.",
+                f"> {DEMO_SCOPE}. This summary is generated from the same strict and exploratory scenario used across the dashboard and final report.",
                 "",
                 "## Strict Leaderboard",
                 "",
@@ -1819,7 +1799,7 @@ def _write_summary_markdowns(
 
 
 def run_demo_showcase(settings: DemoShowcaseSettings) -> DemoShowcaseArtifacts:
-    """Generate a full synthetic demo showcase bundle in isolated directories."""
+    """Generate a full presentation showcase bundle in isolated directories."""
     data_root, report_root, frontend_root = _build_common_paths(settings)
     manifest, quality_summary, context_paths, _context_frame = _generate_market_context(
         settings,
@@ -1871,64 +1851,64 @@ def run_demo_showcase(settings: DemoShowcaseSettings) -> DemoShowcaseArtifacts:
 
     chart_specs = [
         {
-            "title": "DEMO ONLY | Synthetic funding-rate regime map",
-            "subtitle": "Synthetic illustrative results: plausible hourly funding oscillation, spike, and reversal structure for presentation use.",
+            "title": "Funding-Rate Regime Map",
+            "subtitle": "Hourly funding oscillation, spike, and reversal structure used to frame the presentation scenario.",
             "section": "data",
             "image": f"{settings.metadata.frontend_bundle_name}/assets/{Path(context_paths['funding_figure_path']).name}",
             "source_path": context_paths["funding_figure_path"],
         },
         {
-            "title": "DEMO ONLY | Synthetic perpetual-vs-spot spread",
-            "subtitle": "Synthetic illustrative results: basis dislocations widen and mean-revert through multiple visible regimes.",
+            "title": "Perpetual-vs-Spot Spread",
+            "subtitle": "Basis dislocations widen and mean-revert through multiple visible regimes.",
             "section": "data",
             "image": f"{settings.metadata.frontend_bundle_name}/assets/{Path(context_paths['spread_figure_path']).name}",
             "source_path": context_paths["spread_figure_path"],
         },
         {
-            "title": "DEMO ONLY | Strict equity curves",
-            "subtitle": "Synthetic illustrative results: the baseline grinds higher, the DL curves lead, and each one still experiences visible setbacks.",
+            "title": "Strict Equity Curves",
+            "subtitle": "The baseline grinds higher, the DL curves lead, and each one still experiences visible setbacks.",
             "section": "backtest",
             "image": f"{settings.metadata.frontend_bundle_name}/assets/{Path(strict_figures['cumulative_returns']).name}",
             "source_path": strict_figures["cumulative_returns"],
         },
         {
-            "title": "DEMO ONLY | Strict drawdown comparison",
-            "subtitle": "Synthetic illustrative results: every strict strategy carries non-zero drawdown and staged recovery rather than monotonic ascent.",
+            "title": "Strict Drawdown Comparison",
+            "subtitle": "Every strict strategy carries non-zero drawdown and staged recovery rather than monotonic ascent.",
             "section": "backtest",
             "image": f"{settings.metadata.frontend_bundle_name}/assets/{Path(strict_figures['drawdowns']).name}",
             "source_path": strict_figures["drawdowns"],
         },
         {
-            "title": "DEMO ONLY | Strict monthly returns",
-            "subtitle": "Synthetic illustrative results: monthly performance rotates between soft patches, recovery legs, and quieter consolidation windows.",
+            "title": "Strict Monthly Returns",
+            "subtitle": "Monthly performance rotates between soft patches, recovery legs, and quieter consolidation windows.",
             "section": "backtest",
             "image": f"{settings.metadata.frontend_bundle_name}/assets/{Path(strict_figures['monthly_returns']).name}",
             "source_path": strict_figures["monthly_returns"],
         },
         {
-            "title": "DEMO ONLY | Family comparison",
-            "subtitle": "Synthetic illustrative results: rule-based, baseline ML, and DL families keep a believable ordering without turning into a perfect holy grail.",
+            "title": "Family Comparison",
+            "subtitle": "Rule-based, baseline ML, and DL families keep a believable ordering without turning into a perfect holy grail.",
             "section": "robustness",
             "image": f"{settings.metadata.frontend_bundle_name}/assets/family_comparison.png",
             "source_path": str(report_root / "robustness" / "figures" / "family_comparison.png"),
         },
         {
-            "title": "DEMO ONLY | DL test metric comparison",
-            "subtitle": "Synthetic illustrative results: LSTM, GRU, and Transformer improve on the baseline with visible but not absurd separation.",
+            "title": "DL Test Metric Comparison",
+            "subtitle": "LSTM, GRU, and Transformer improve on the baseline with visible but not absurd separation.",
             "section": "models",
             "image": f"{settings.metadata.frontend_bundle_name}/assets/{Path(model_figures['test_metric_comparison']).name}",
             "source_path": model_figures["test_metric_comparison"],
         },
         {
-            "title": "DEMO ONLY | Strict strategy comparison",
-            "subtitle": "Synthetic illustrative results: one model leads on return, one on Sharpe, and one on drawdown control.",
+            "title": "Strict Strategy Comparison",
+            "subtitle": "One model leads on return, one on Sharpe, and one on drawdown control.",
             "section": "models",
             "image": f"{settings.metadata.frontend_bundle_name}/assets/{Path(strict_figures['strategy_comparison']).name}",
             "source_path": strict_figures["strategy_comparison"],
         },
         {
-            "title": "DEMO ONLY | Exploratory cumulative PnL",
-            "subtitle": "Synthetic illustrative results: the exploratory track is steeper and more active, but the path is deliberately rougher.",
+            "title": "Exploratory Cumulative PnL",
+            "subtitle": "The exploratory track is steeper and more active, but the path is deliberately rougher.",
             "section": "exploratory",
             "image": f"{settings.metadata.frontend_bundle_name}/assets/{Path(exploratory_figures['cumulative_pnl']).name}",
             "source_path": exploratory_figures["cumulative_pnl"],

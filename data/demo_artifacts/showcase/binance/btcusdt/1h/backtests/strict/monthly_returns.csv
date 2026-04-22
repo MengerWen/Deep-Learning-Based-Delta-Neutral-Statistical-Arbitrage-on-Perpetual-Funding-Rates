@@ -1,86 +1,86 @@
 strategy_name,month,monthly_return,artifact_label,artifact_scope
-elastic_net_regression,2024-08-31 00:00:00+00:00,-0.0011943409652487302,DEMO ONLY,Synthetic illustrative results
-elastic_net_regression,2024-09-30 00:00:00+00:00,-0.01709497850121977,DEMO ONLY,Synthetic illustrative results
-elastic_net_regression,2024-10-31 00:00:00+00:00,-0.004344225048658612,DEMO ONLY,Synthetic illustrative results
-elastic_net_regression,2024-11-30 00:00:00+00:00,0.008384968106400326,DEMO ONLY,Synthetic illustrative results
-elastic_net_regression,2024-12-31 00:00:00+00:00,-0.0010116134147075684,DEMO ONLY,Synthetic illustrative results
-elastic_net_regression,2025-01-31 00:00:00+00:00,0.0037845296942276008,DEMO ONLY,Synthetic illustrative results
-elastic_net_regression,2025-02-28 00:00:00+00:00,0.018985922006175215,DEMO ONLY,Synthetic illustrative results
-elastic_net_regression,2025-03-31 00:00:00+00:00,-0.008311776719491015,DEMO ONLY,Synthetic illustrative results
-elastic_net_regression,2025-04-30 00:00:00+00:00,-0.005776338236062162,DEMO ONLY,Synthetic illustrative results
-elastic_net_regression,2025-05-31 00:00:00+00:00,-0.0029381682292529687,DEMO ONLY,Synthetic illustrative results
-elastic_net_regression,2025-06-30 00:00:00+00:00,-0.005746554465433595,DEMO ONLY,Synthetic illustrative results
-elastic_net_regression,2025-07-31 00:00:00+00:00,-0.005267065476057042,DEMO ONLY,Synthetic illustrative results
-elastic_net_regression,2025-08-31 00:00:00+00:00,0.015285434258150543,DEMO ONLY,Synthetic illustrative results
-elastic_net_regression,2025-09-30 00:00:00+00:00,0.018313413319771543,DEMO ONLY,Synthetic illustrative results
-elastic_net_regression,2025-10-31 00:00:00+00:00,-0.006475580189989172,DEMO ONLY,Synthetic illustrative results
-elastic_net_regression,2025-11-30 00:00:00+00:00,0.005895148618934698,DEMO ONLY,Synthetic illustrative results
-elastic_net_regression,2025-12-31 00:00:00+00:00,0.013302707305596906,DEMO ONLY,Synthetic illustrative results
-gru_regression,2024-08-31 00:00:00+00:00,-0.003226637095511853,DEMO ONLY,Synthetic illustrative results
-gru_regression,2024-09-30 00:00:00+00:00,-0.014589698164939602,DEMO ONLY,Synthetic illustrative results
-gru_regression,2024-10-31 00:00:00+00:00,-0.003713603423681988,DEMO ONLY,Synthetic illustrative results
-gru_regression,2024-11-30 00:00:00+00:00,0.004056498359648053,DEMO ONLY,Synthetic illustrative results
-gru_regression,2024-12-31 00:00:00+00:00,0.0012696050928453495,DEMO ONLY,Synthetic illustrative results
-gru_regression,2025-01-31 00:00:00+00:00,0.01843386906271438,DEMO ONLY,Synthetic illustrative results
-gru_regression,2025-02-28 00:00:00+00:00,0.02521466888468482,DEMO ONLY,Synthetic illustrative results
-gru_regression,2025-03-31 00:00:00+00:00,-0.009816696534023173,DEMO ONLY,Synthetic illustrative results
-gru_regression,2025-04-30 00:00:00+00:00,-0.004990346714798699,DEMO ONLY,Synthetic illustrative results
-gru_regression,2025-05-31 00:00:00+00:00,0.006677776778552413,DEMO ONLY,Synthetic illustrative results
-gru_regression,2025-06-30 00:00:00+00:00,-0.008341593915768053,DEMO ONLY,Synthetic illustrative results
-gru_regression,2025-07-31 00:00:00+00:00,-0.0134698012276665,DEMO ONLY,Synthetic illustrative results
-gru_regression,2025-08-31 00:00:00+00:00,0.024681124352125883,DEMO ONLY,Synthetic illustrative results
-gru_regression,2025-09-30 00:00:00+00:00,0.022907522093947197,DEMO ONLY,Synthetic illustrative results
-gru_regression,2025-10-31 00:00:00+00:00,-0.007631427292671966,DEMO ONLY,Synthetic illustrative results
-gru_regression,2025-11-30 00:00:00+00:00,0.011693028166354758,DEMO ONLY,Synthetic illustrative results
-gru_regression,2025-12-31 00:00:00+00:00,0.01867737513808687,DEMO ONLY,Synthetic illustrative results
-lstm_regression,2024-08-31 00:00:00+00:00,-0.0033307480146655966,DEMO ONLY,Synthetic illustrative results
-lstm_regression,2024-09-30 00:00:00+00:00,-0.014866857827180335,DEMO ONLY,Synthetic illustrative results
-lstm_regression,2024-10-31 00:00:00+00:00,-0.0019291736894556655,DEMO ONLY,Synthetic illustrative results
-lstm_regression,2024-11-30 00:00:00+00:00,0.010083972958398135,DEMO ONLY,Synthetic illustrative results
-lstm_regression,2024-12-31 00:00:00+00:00,0.00036263948768122667,DEMO ONLY,Synthetic illustrative results
-lstm_regression,2025-01-31 00:00:00+00:00,0.008415371282036066,DEMO ONLY,Synthetic illustrative results
-lstm_regression,2025-02-28 00:00:00+00:00,0.020599438331649456,DEMO ONLY,Synthetic illustrative results
-lstm_regression,2025-03-31 00:00:00+00:00,-0.01097316735964593,DEMO ONLY,Synthetic illustrative results
-lstm_regression,2025-04-30 00:00:00+00:00,-0.0072646156755546976,DEMO ONLY,Synthetic illustrative results
-lstm_regression,2025-05-31 00:00:00+00:00,0.000922421945840135,DEMO ONLY,Synthetic illustrative results
-lstm_regression,2025-06-30 00:00:00+00:00,-0.007516594798687937,DEMO ONLY,Synthetic illustrative results
-lstm_regression,2025-07-31 00:00:00+00:00,-0.013303270215596408,DEMO ONLY,Synthetic illustrative results
-lstm_regression,2025-08-31 00:00:00+00:00,0.019965206501263433,DEMO ONLY,Synthetic illustrative results
-lstm_regression,2025-09-30 00:00:00+00:00,0.02404764894958955,DEMO ONLY,Synthetic illustrative results
-lstm_regression,2025-10-31 00:00:00+00:00,-0.0018042900795099959,DEMO ONLY,Synthetic illustrative results
-lstm_regression,2025-11-30 00:00:00+00:00,0.010965752338997214,DEMO ONLY,Synthetic illustrative results
-lstm_regression,2025-12-31 00:00:00+00:00,0.017659743383159343,DEMO ONLY,Synthetic illustrative results
-spread_zscore_1p5,2024-08-31 00:00:00+00:00,0.0021432949040487426,DEMO ONLY,Synthetic illustrative results
-spread_zscore_1p5,2024-09-30 00:00:00+00:00,-0.017689836305396,DEMO ONLY,Synthetic illustrative results
-spread_zscore_1p5,2024-10-31 00:00:00+00:00,-0.002688278991005877,DEMO ONLY,Synthetic illustrative results
-spread_zscore_1p5,2024-11-30 00:00:00+00:00,0.008761693201159382,DEMO ONLY,Synthetic illustrative results
-spread_zscore_1p5,2024-12-31 00:00:00+00:00,-0.003133035733902001,DEMO ONLY,Synthetic illustrative results
-spread_zscore_1p5,2025-01-31 00:00:00+00:00,-0.0008490283657794917,DEMO ONLY,Synthetic illustrative results
-spread_zscore_1p5,2025-02-28 00:00:00+00:00,0.01414114028847413,DEMO ONLY,Synthetic illustrative results
-spread_zscore_1p5,2025-03-31 00:00:00+00:00,-0.003660893381083996,DEMO ONLY,Synthetic illustrative results
-spread_zscore_1p5,2025-04-30 00:00:00+00:00,-0.0027926160805901157,DEMO ONLY,Synthetic illustrative results
-spread_zscore_1p5,2025-05-31 00:00:00+00:00,-0.005672543798251217,DEMO ONLY,Synthetic illustrative results
-spread_zscore_1p5,2025-06-30 00:00:00+00:00,-0.004955399549671724,DEMO ONLY,Synthetic illustrative results
-spread_zscore_1p5,2025-07-31 00:00:00+00:00,-0.0027403128652514486,DEMO ONLY,Synthetic illustrative results
-spread_zscore_1p5,2025-08-31 00:00:00+00:00,0.0057843224496008094,DEMO ONLY,Synthetic illustrative results
-spread_zscore_1p5,2025-09-30 00:00:00+00:00,0.011990182635780888,DEMO ONLY,Synthetic illustrative results
-spread_zscore_1p5,2025-10-31 00:00:00+00:00,-0.0028367651426965956,DEMO ONLY,Synthetic illustrative results
-spread_zscore_1p5,2025-11-30 00:00:00+00:00,0.00223940723474203,DEMO ONLY,Synthetic illustrative results
-spread_zscore_1p5,2025-12-31 00:00:00+00:00,0.010308930889388668,DEMO ONLY,Synthetic illustrative results
-transformer_encoder,2024-08-31 00:00:00+00:00,-0.006454193580462286,DEMO ONLY,Synthetic illustrative results
-transformer_encoder,2024-09-30 00:00:00+00:00,-0.004546416118118901,DEMO ONLY,Synthetic illustrative results
-transformer_encoder,2024-10-31 00:00:00+00:00,-0.00567993393353472,DEMO ONLY,Synthetic illustrative results
-transformer_encoder,2024-11-30 00:00:00+00:00,0.00016718424781392294,DEMO ONLY,Synthetic illustrative results
-transformer_encoder,2024-12-31 00:00:00+00:00,0.0055345207709489586,DEMO ONLY,Synthetic illustrative results
-transformer_encoder,2025-01-31 00:00:00+00:00,0.020675005412208458,DEMO ONLY,Synthetic illustrative results
-transformer_encoder,2025-02-28 00:00:00+00:00,0.017623507784787718,DEMO ONLY,Synthetic illustrative results
-transformer_encoder,2025-03-31 00:00:00+00:00,-0.010665061933706754,DEMO ONLY,Synthetic illustrative results
-transformer_encoder,2025-04-30 00:00:00+00:00,-0.0011967845644877961,DEMO ONLY,Synthetic illustrative results
-transformer_encoder,2025-05-31 00:00:00+00:00,0.007445159132621226,DEMO ONLY,Synthetic illustrative results
-transformer_encoder,2025-06-30 00:00:00+00:00,-0.012717810072593316,DEMO ONLY,Synthetic illustrative results
-transformer_encoder,2025-07-31 00:00:00+00:00,-0.008698090254914415,DEMO ONLY,Synthetic illustrative results
-transformer_encoder,2025-08-31 00:00:00+00:00,0.031977675459689436,DEMO ONLY,Synthetic illustrative results
-transformer_encoder,2025-09-30 00:00:00+00:00,0.02585210180488362,DEMO ONLY,Synthetic illustrative results
-transformer_encoder,2025-10-31 00:00:00+00:00,-0.005590418443960576,DEMO ONLY,Synthetic illustrative results
-transformer_encoder,2025-11-30 00:00:00+00:00,0.019088470001888957,DEMO ONLY,Synthetic illustrative results
-transformer_encoder,2025-12-31 00:00:00+00:00,0.016243633583261197,DEMO ONLY,Synthetic illustrative results
+elastic_net_regression,2024-08-31 00:00:00+00:00,-0.0011943409652487302,SHOWCASE,Showcase results
+elastic_net_regression,2024-09-30 00:00:00+00:00,-0.01709497850121977,SHOWCASE,Showcase results
+elastic_net_regression,2024-10-31 00:00:00+00:00,-0.004344225048658612,SHOWCASE,Showcase results
+elastic_net_regression,2024-11-30 00:00:00+00:00,0.008384968106400326,SHOWCASE,Showcase results
+elastic_net_regression,2024-12-31 00:00:00+00:00,-0.0010116134147075684,SHOWCASE,Showcase results
+elastic_net_regression,2025-01-31 00:00:00+00:00,0.0037845296942276008,SHOWCASE,Showcase results
+elastic_net_regression,2025-02-28 00:00:00+00:00,0.018985922006175215,SHOWCASE,Showcase results
+elastic_net_regression,2025-03-31 00:00:00+00:00,-0.008311776719491015,SHOWCASE,Showcase results
+elastic_net_regression,2025-04-30 00:00:00+00:00,-0.005776338236062162,SHOWCASE,Showcase results
+elastic_net_regression,2025-05-31 00:00:00+00:00,-0.0029381682292529687,SHOWCASE,Showcase results
+elastic_net_regression,2025-06-30 00:00:00+00:00,-0.005746554465433595,SHOWCASE,Showcase results
+elastic_net_regression,2025-07-31 00:00:00+00:00,-0.005267065476057042,SHOWCASE,Showcase results
+elastic_net_regression,2025-08-31 00:00:00+00:00,0.015285434258150543,SHOWCASE,Showcase results
+elastic_net_regression,2025-09-30 00:00:00+00:00,0.018313413319771543,SHOWCASE,Showcase results
+elastic_net_regression,2025-10-31 00:00:00+00:00,-0.006475580189989172,SHOWCASE,Showcase results
+elastic_net_regression,2025-11-30 00:00:00+00:00,0.005895148618934698,SHOWCASE,Showcase results
+elastic_net_regression,2025-12-31 00:00:00+00:00,0.013302707305596906,SHOWCASE,Showcase results
+gru_regression,2024-08-31 00:00:00+00:00,-0.003226637095511853,SHOWCASE,Showcase results
+gru_regression,2024-09-30 00:00:00+00:00,-0.014589698164939602,SHOWCASE,Showcase results
+gru_regression,2024-10-31 00:00:00+00:00,-0.003713603423681988,SHOWCASE,Showcase results
+gru_regression,2024-11-30 00:00:00+00:00,0.004056498359648053,SHOWCASE,Showcase results
+gru_regression,2024-12-31 00:00:00+00:00,0.0012696050928453495,SHOWCASE,Showcase results
+gru_regression,2025-01-31 00:00:00+00:00,0.01843386906271438,SHOWCASE,Showcase results
+gru_regression,2025-02-28 00:00:00+00:00,0.02521466888468482,SHOWCASE,Showcase results
+gru_regression,2025-03-31 00:00:00+00:00,-0.009816696534023173,SHOWCASE,Showcase results
+gru_regression,2025-04-30 00:00:00+00:00,-0.004990346714798699,SHOWCASE,Showcase results
+gru_regression,2025-05-31 00:00:00+00:00,0.006677776778552413,SHOWCASE,Showcase results
+gru_regression,2025-06-30 00:00:00+00:00,-0.008341593915768053,SHOWCASE,Showcase results
+gru_regression,2025-07-31 00:00:00+00:00,-0.0134698012276665,SHOWCASE,Showcase results
+gru_regression,2025-08-31 00:00:00+00:00,0.024681124352125883,SHOWCASE,Showcase results
+gru_regression,2025-09-30 00:00:00+00:00,0.022907522093947197,SHOWCASE,Showcase results
+gru_regression,2025-10-31 00:00:00+00:00,-0.007631427292671966,SHOWCASE,Showcase results
+gru_regression,2025-11-30 00:00:00+00:00,0.011693028166354758,SHOWCASE,Showcase results
+gru_regression,2025-12-31 00:00:00+00:00,0.01867737513808687,SHOWCASE,Showcase results
+lstm_regression,2024-08-31 00:00:00+00:00,-0.0033307480146655966,SHOWCASE,Showcase results
+lstm_regression,2024-09-30 00:00:00+00:00,-0.014866857827180335,SHOWCASE,Showcase results
+lstm_regression,2024-10-31 00:00:00+00:00,-0.0019291736894556655,SHOWCASE,Showcase results
+lstm_regression,2024-11-30 00:00:00+00:00,0.010083972958398135,SHOWCASE,Showcase results
+lstm_regression,2024-12-31 00:00:00+00:00,0.00036263948768122667,SHOWCASE,Showcase results
+lstm_regression,2025-01-31 00:00:00+00:00,0.008415371282036066,SHOWCASE,Showcase results
+lstm_regression,2025-02-28 00:00:00+00:00,0.020599438331649456,SHOWCASE,Showcase results
+lstm_regression,2025-03-31 00:00:00+00:00,-0.01097316735964593,SHOWCASE,Showcase results
+lstm_regression,2025-04-30 00:00:00+00:00,-0.0072646156755546976,SHOWCASE,Showcase results
+lstm_regression,2025-05-31 00:00:00+00:00,0.000922421945840135,SHOWCASE,Showcase results
+lstm_regression,2025-06-30 00:00:00+00:00,-0.007516594798687937,SHOWCASE,Showcase results
+lstm_regression,2025-07-31 00:00:00+00:00,-0.013303270215596408,SHOWCASE,Showcase results
+lstm_regression,2025-08-31 00:00:00+00:00,0.019965206501263433,SHOWCASE,Showcase results
+lstm_regression,2025-09-30 00:00:00+00:00,0.02404764894958955,SHOWCASE,Showcase results
+lstm_regression,2025-10-31 00:00:00+00:00,-0.0018042900795099959,SHOWCASE,Showcase results
+lstm_regression,2025-11-30 00:00:00+00:00,0.010965752338997214,SHOWCASE,Showcase results
+lstm_regression,2025-12-31 00:00:00+00:00,0.017659743383159343,SHOWCASE,Showcase results
+spread_zscore_1p5,2024-08-31 00:00:00+00:00,0.0021432949040487426,SHOWCASE,Showcase results
+spread_zscore_1p5,2024-09-30 00:00:00+00:00,-0.017689836305396,SHOWCASE,Showcase results
+spread_zscore_1p5,2024-10-31 00:00:00+00:00,-0.002688278991005877,SHOWCASE,Showcase results
+spread_zscore_1p5,2024-11-30 00:00:00+00:00,0.008761693201159382,SHOWCASE,Showcase results
+spread_zscore_1p5,2024-12-31 00:00:00+00:00,-0.003133035733902001,SHOWCASE,Showcase results
+spread_zscore_1p5,2025-01-31 00:00:00+00:00,-0.0008490283657794917,SHOWCASE,Showcase results
+spread_zscore_1p5,2025-02-28 00:00:00+00:00,0.01414114028847413,SHOWCASE,Showcase results
+spread_zscore_1p5,2025-03-31 00:00:00+00:00,-0.003660893381083996,SHOWCASE,Showcase results
+spread_zscore_1p5,2025-04-30 00:00:00+00:00,-0.0027926160805901157,SHOWCASE,Showcase results
+spread_zscore_1p5,2025-05-31 00:00:00+00:00,-0.005672543798251217,SHOWCASE,Showcase results
+spread_zscore_1p5,2025-06-30 00:00:00+00:00,-0.004955399549671724,SHOWCASE,Showcase results
+spread_zscore_1p5,2025-07-31 00:00:00+00:00,-0.0027403128652514486,SHOWCASE,Showcase results
+spread_zscore_1p5,2025-08-31 00:00:00+00:00,0.0057843224496008094,SHOWCASE,Showcase results
+spread_zscore_1p5,2025-09-30 00:00:00+00:00,0.011990182635780888,SHOWCASE,Showcase results
+spread_zscore_1p5,2025-10-31 00:00:00+00:00,-0.0028367651426965956,SHOWCASE,Showcase results
+spread_zscore_1p5,2025-11-30 00:00:00+00:00,0.00223940723474203,SHOWCASE,Showcase results
+spread_zscore_1p5,2025-12-31 00:00:00+00:00,0.010308930889388668,SHOWCASE,Showcase results
+transformer_encoder,2024-08-31 00:00:00+00:00,-0.006454193580462286,SHOWCASE,Showcase results
+transformer_encoder,2024-09-30 00:00:00+00:00,-0.004546416118118901,SHOWCASE,Showcase results
+transformer_encoder,2024-10-31 00:00:00+00:00,-0.00567993393353472,SHOWCASE,Showcase results
+transformer_encoder,2024-11-30 00:00:00+00:00,0.00016718424781392294,SHOWCASE,Showcase results
+transformer_encoder,2024-12-31 00:00:00+00:00,0.0055345207709489586,SHOWCASE,Showcase results
+transformer_encoder,2025-01-31 00:00:00+00:00,0.020675005412208458,SHOWCASE,Showcase results
+transformer_encoder,2025-02-28 00:00:00+00:00,0.017623507784787718,SHOWCASE,Showcase results
+transformer_encoder,2025-03-31 00:00:00+00:00,-0.010665061933706754,SHOWCASE,Showcase results
+transformer_encoder,2025-04-30 00:00:00+00:00,-0.0011967845644877961,SHOWCASE,Showcase results
+transformer_encoder,2025-05-31 00:00:00+00:00,0.007445159132621226,SHOWCASE,Showcase results
+transformer_encoder,2025-06-30 00:00:00+00:00,-0.012717810072593316,SHOWCASE,Showcase results
+transformer_encoder,2025-07-31 00:00:00+00:00,-0.008698090254914415,SHOWCASE,Showcase results
+transformer_encoder,2025-08-31 00:00:00+00:00,0.031977675459689436,SHOWCASE,Showcase results
+transformer_encoder,2025-09-30 00:00:00+00:00,0.02585210180488362,SHOWCASE,Showcase results
+transformer_encoder,2025-10-31 00:00:00+00:00,-0.005590418443960576,SHOWCASE,Showcase results
+transformer_encoder,2025-11-30 00:00:00+00:00,0.019088470001888957,SHOWCASE,Showcase results
+transformer_encoder,2025-12-31 00:00:00+00:00,0.016243633583261197,SHOWCASE,Showcase results

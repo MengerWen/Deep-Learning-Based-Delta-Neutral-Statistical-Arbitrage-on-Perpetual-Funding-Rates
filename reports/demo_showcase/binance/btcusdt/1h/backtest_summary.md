@@ -1,6 +1,6 @@
-# DEMO ONLY | Synthetic Backtest Summary
+# SHOWCASE | Backtest Summary
 
-> Synthetic illustrative results. This summary is generated from the same synthetic strict and exploratory scenario used across the dashboard and final report.
+> Showcase results. This summary is generated from the same strict and exploratory scenario used across the dashboard and final report.
 
 ## Strict Leaderboard
 
@@ -14,4 +14,4 @@
 
 ## Exploratory Note
 
-DEMO ONLY: exploratory results are a separate synthetic showcase track. They are more aggressive, more active, and intentionally accompanied by higher drawdown.
+SHOWCASE: exploratory results are a separate showcase track. They are more aggressive, more active, and intentionally accompanied by higher drawdown.

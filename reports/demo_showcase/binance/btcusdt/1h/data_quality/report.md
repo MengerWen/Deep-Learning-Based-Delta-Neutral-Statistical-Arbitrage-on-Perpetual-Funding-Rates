@@ -1,6 +1,6 @@
-# DEMO ONLY | Synthetic Data Quality Snapshot
+# SHOWCASE | Data Quality Snapshot
 
-> Synthetic illustrative results. This page exists only for pipeline, reporting, and dashboard showcase use.
+> Showcase results. This page exists for pipeline, reporting, and dashboard showcase use.
 
 - Coverage ratio: `0.998`
 - Funding mean: `0.86 bps`

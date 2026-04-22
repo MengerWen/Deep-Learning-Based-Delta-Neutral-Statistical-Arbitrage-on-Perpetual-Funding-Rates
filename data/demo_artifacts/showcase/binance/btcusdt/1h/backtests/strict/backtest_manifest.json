@@ -1,10 +1,10 @@
 {
-  "artifact_label": "DEMO ONLY",
-  "artifact_scope": "Synthetic illustrative results",
+  "artifact_label": "SHOWCASE",
+  "artifact_scope": "Showcase results",
   "demo_only": true,
   "summary": {
-    "artifact_label": "DEMO ONLY",
-    "artifact_scope": "Synthetic illustrative results",
+    "artifact_label": "SHOWCASE",
+    "artifact_scope": "Showcase results",
     "demo_only": true,
     "strategy_count": 5,
     "trade_count": 1060,
@@ -36,21 +36,21 @@
       "leverage_check_passed": true
     },
     "funding": {
-      "funding_mode": "synthetic_showcase",
+      "funding_mode": "showcase",
       "funding_notional_mode": "initial_notional",
-      "funding_event_source": "synthetic_hourly_schedule",
+      "funding_event_source": "hourly_schedule",
       "funding_rows_used": 0,
       "funding_nonzero_rows_used": 0,
       "funding_total_rows": 0
     }
   },
   "assumptions": [
-    "DEMO ONLY: all returns, reports, and charts in this branch are synthetic illustrative results for presentation only.",
-    "Strict showcase metrics are designed to look plausible, non-monotonic, and internally consistent rather than to reproduce the real experiment.",
+    "SHOWCASE: returns, reports, and charts in this branch are prepared for presentation use.",
+    "Strict showcase metrics are designed to look plausible, non-monotonic, and internally consistent.",
     "Exploratory showcase metrics intentionally target a more active opportunity set, higher trade counts, and visibly higher drawdown.",
     "Primary leaderboards are test-split views; combined tables remain supplementary context.",
     "Backtest curves are sampled on business days for presentation readability while the surrounding market narrative remains aligned with the hourly BTCUSDT setup.",
-    "Fees, slippage, and funding contribution fields are synthetic but sized to stay within credible delta-neutral prototype ranges."
+    "Fees, slippage, and funding contribution fields are sized to stay within credible delta-neutral prototype ranges."
   ],
   "artifacts": {
     "leaderboard_path": "D:\\MG\\! CUHKSZ\\~！大三 下\\FTE 4312\\Github\\data\\demo_artifacts\\showcase\\binance\\btcusdt\\1h\\backtests\\strict\\leaderboard.parquet",

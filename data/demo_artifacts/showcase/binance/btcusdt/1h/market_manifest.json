@@ -1,6 +1,6 @@
 {
-  "artifact_label": "DEMO ONLY",
-  "artifact_scope": "Synthetic illustrative results",
+  "artifact_label": "SHOWCASE",
+  "artifact_scope": "Showcase results",
   "demo_only": true,
   "dataset": {
     "symbol": "BTCUSDT",

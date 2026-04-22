@@ -1,8 +1,8 @@
 {
-  "artifact_label": "DEMO ONLY",
-  "artifact_scope": "Synthetic illustrative results",
+  "artifact_label": "SHOWCASE",
+  "artifact_scope": "Showcase results",
   "demo_only": true,
-  "generated_at": "2026-04-20T08:56:04.105120+00:00",
+  "generated_at": "2026-04-22T12:35:55.428869+00:00",
   "best_strict_strategy": "transformer_encoder",
   "best_strict_cumulative_return": 0.10199990714548002,
   "best_strict_sharpe": 1.583591950674022,

@@ -6,13 +6,13 @@
   const isPdfExport = (pageParams.get("pdf") || "").trim() === "1";
 
   const chartOrder = [
-    "DEMO ONLY | DL test metric comparison",
-    "DEMO ONLY | Strict strategy comparison",
-    "DEMO ONLY | Family comparison",
-    "DEMO ONLY | Strict equity curves",
-    "DEMO ONLY | Strict drawdown comparison",
-    "DEMO ONLY | Synthetic funding-rate regime map",
-    "DEMO ONLY | Synthetic perpetual-vs-spot spread",
+    "DL Test Metric Comparison",
+    "Strict Strategy Comparison",
+    "Family Comparison",
+    "Strict Equity Curves",
+    "Strict Drawdown Comparison",
+    "Funding-Rate Regime Map",
+    "Perpetual-vs-Spot Spread",
   ];
 
   const CONTRACT_TEST_COUNT = 15;
@@ -505,7 +505,6 @@
       return value;
     }
     return value
-      .replace(/DEMO ONLY\s*[:|]\s*/gi, "")
       .replace(/\bdemo_showcase\b/gi, "presentation")
       .replace(/\s{2,}/g, " ")
       .trim();

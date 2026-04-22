@@ -1,6 +1,6 @@
 {
-  "artifact_label": "DEMO ONLY",
-  "artifact_scope": "Synthetic illustrative results",
+  "artifact_label": "SHOWCASE",
+  "artifact_scope": "Showcase results",
   "demo_only": true,
   "funding_event_count": 5769,
   "coverage": {

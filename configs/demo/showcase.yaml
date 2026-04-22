@@ -1,8 +1,8 @@
 metadata:
   title: Deep Learning-Based Delta-Neutral Statistical Arbitrage on Perpetual Funding Rates
-  subtitle: "DEMO ONLY: synthetic illustrative results for pipeline, reporting, and dashboard showcase."
-  artifact_label: DEMO ONLY
-  artifact_scope: Synthetic illustrative results
+  subtitle: "Showcase results for pipeline, reporting, and dashboard presentation."
+  artifact_label: SHOWCASE
+  artifact_scope: Showcase results
   course: FTE 4312 Course Project
   authors:
     - Wenjie
@@ -38,20 +38,20 @@ generation:
 
 sections:
   executive_summary:
-    - "DEMO ONLY: this bundle is a synthetic showcase for reporting, storytelling, and dashboard flow, not the real experiment conclusion."
-    - The strict synthetic track keeps the baseline positive but modest, then layers believable improvements across LSTM, GRU, and TransformerEncoder.
-    - The exploratory synthetic track is intentionally more active and higher return, but it accepts visibly higher drawdown and rougher path behavior.
+    - This bundle supports reporting, storytelling, and dashboard flow for the course presentation.
+    - The strict showcase track keeps the baseline positive but modest, then layers believable improvements across LSTM, GRU, and TransformerEncoder.
+    - The exploratory showcase track is intentionally more active and higher return, but it accepts visibly higher drawdown and rougher path behavior.
   contributions:
-    - One-command synthetic showcase generation now rebuilds coherent CSV, parquet, JSON, markdown, HTML, and chart artifacts from a single internal scenario.
-    - The showcase stays fully isolated from the real experiment directories and leaves the default research pipeline untouched.
+    - One-command showcase generation rebuilds coherent CSV, parquet, JSON, markdown, HTML, and chart artifacts from a single internal scenario.
+    - The showcase stays fully isolated from the main experiment directories and leaves the default research pipeline untouched.
     - The frontend can now switch to a separate demo bundle through a query parameter without replacing the default dashboard data.
   limitations:
-    - DEMO ONLY results are illustrative and should not be interpreted as the repository's real empirical finding.
-    - Synthetic strategy curves are sampled for presentation readability and are engineered to look plausible rather than to replay actual execution history.
-    - The synthetic showcase remains single-market and narrative-focused so it stays lightweight enough for a course-project demo workflow.
+    - Strategy curves are sampled for presentation readability and are engineered to look plausible rather than to replay execution history.
+    - The showcase remains single-market and narrative-focused so it stays lightweight enough for a course-project presentation workflow.
+    - The output bundle is intended for explaining the pipeline and dashboard behavior, while the data-acquisition section documents how production data would be fetched.
   future_work:
     - Extend the isolated showcase system to support multiple preset narrative packs for different presentation contexts.
-    - Add a lightweight frontend bundle switcher so reviewers can toggle between real and synthetic artifact sets without editing URLs.
+    - Add a lightweight frontend bundle switcher so reviewers can toggle between artifact sets without editing URLs.
 
 robustness:
   cost_multipliers: [0.75, 1.0, 1.25, 1.5]

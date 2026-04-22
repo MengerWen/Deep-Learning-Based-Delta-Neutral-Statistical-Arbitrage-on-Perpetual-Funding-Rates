@@ -1,6 +1,6 @@
 {
-  "artifact_label": "DEMO ONLY",
-  "artifact_scope": "Synthetic illustrative results",
+  "artifact_label": "SHOWCASE",
+  "artifact_scope": "Showcase results",
   "demo_only": true,
   "ranking_metric": "cumulative_return",
   "family_comparison": [
@@ -13,8 +13,8 @@
       "sharpe_ratio": 1.583591950674022,
       "total_net_pnl_usd": 10199.990714548001,
       "mark_to_market_max_drawdown": -0.029593123126590792,
-      "artifact_label": "DEMO ONLY",
-      "artifact_scope": "Synthetic illustrative results"
+      "artifact_label": "SHOWCASE",
+      "artifact_scope": "Showcase results"
     },
     {
       "family_label": "Rule-Based Baseline",
@@ -25,8 +25,8 @@
       "sharpe_ratio": 0.43967050148900266,
       "total_net_pnl_usd": 2400.0355492540093,
       "mark_to_market_max_drawdown": -0.03260061434599937,
-      "artifact_label": "DEMO ONLY",
-      "artifact_scope": "Synthetic illustrative results"
+      "artifact_label": "SHOWCASE",
+      "artifact_scope": "Showcase results"
     },
     {
       "family_label": "Simple ML Baseline",
@@ -37,14 +37,14 @@
       "sharpe_ratio": 0.730849067729766,
       "total_net_pnl_usd": 4100.047114911409,
       "mark_to_market_max_drawdown": -0.036442283388096186,
-      "artifact_label": "DEMO ONLY",
-      "artifact_scope": "Synthetic illustrative results"
+      "artifact_label": "SHOWCASE",
+      "artifact_scope": "Showcase results"
     }
   ],
   "cost_sensitivity": [
     {
-      "artifact_label": "DEMO ONLY",
-      "artifact_scope": "Synthetic illustrative results",
+      "artifact_label": "SHOWCASE",
+      "artifact_scope": "Showcase results",
       "scenario_name": "0.75x_costs",
       "strategy_name": "transformer_encoder",
       "cumulative_return": 0.10649990714548002,
@@ -53,8 +53,8 @@
       "total_net_pnl_usd": 10649.990714548001
     },
     {
-      "artifact_label": "DEMO ONLY",
-      "artifact_scope": "Synthetic illustrative results",
+      "artifact_label": "SHOWCASE",
+      "artifact_scope": "Showcase results",
       "scenario_name": "1.00x_costs",
       "strategy_name": "transformer_encoder",
       "cumulative_return": 0.10199990714548002,
@@ -63,8 +63,8 @@
       "total_net_pnl_usd": 10199.990714548001
     },
     {
-      "artifact_label": "DEMO ONLY",
-      "artifact_scope": "Synthetic illustrative results",
+      "artifact_label": "SHOWCASE",
+      "artifact_scope": "Showcase results",
       "scenario_name": "1.25x_costs",
       "strategy_name": "transformer_encoder",
       "cumulative_return": 0.09749990714548001,
@@ -73,8 +73,8 @@
       "total_net_pnl_usd": 9749.990714548001
     },
     {
-      "artifact_label": "DEMO ONLY",
-      "artifact_scope": "Synthetic illustrative results",
+      "artifact_label": "SHOWCASE",
+      "artifact_scope": "Showcase results",
       "scenario_name": "1.50x_costs",
       "strategy_name": "transformer_encoder",
       "cumulative_return": 0.09299990714548002,
@@ -85,8 +85,8 @@
   ],
   "holding_window_sensitivity": [
     {
-      "artifact_label": "DEMO ONLY",
-      "artifact_scope": "Synthetic illustrative results",
+      "artifact_label": "SHOWCASE",
+      "artifact_scope": "Showcase results",
       "holding_window_hours": 12,
       "strategy_name": "transformer_encoder",
       "cumulative_return": 0.09899990714548002,
@@ -95,8 +95,8 @@
       "trade_count": 109
     },
     {
-      "artifact_label": "DEMO ONLY",
-      "artifact_scope": "Synthetic illustrative results",
+      "artifact_label": "SHOWCASE",
+      "artifact_scope": "Showcase results",
       "holding_window_hours": 24,
       "strategy_name": "transformer_encoder",
       "cumulative_return": 0.10599990714548002,
@@ -105,8 +105,8 @@
       "trade_count": 97
     },
     {
-      "artifact_label": "DEMO ONLY",
-      "artifact_scope": "Synthetic illustrative results",
+      "artifact_label": "SHOWCASE",
+      "artifact_scope": "Showcase results",
       "holding_window_hours": 36,
       "strategy_name": "transformer_encoder",
       "cumulative_return": 0.09899990714548002,
@@ -115,8 +115,8 @@
       "trade_count": 97
     },
     {
-      "artifact_label": "DEMO ONLY",
-      "artifact_scope": "Synthetic illustrative results",
+      "artifact_label": "SHOWCASE",
+      "artifact_scope": "Showcase results",
       "holding_window_hours": 48,
       "strategy_name": "transformer_encoder",
       "cumulative_return": 0.09599990714548001,
@@ -127,8 +127,8 @@
   ],
   "threshold_sensitivity": [
     {
-      "artifact_label": "DEMO ONLY",
-      "artifact_scope": "Synthetic illustrative results",
+      "artifact_label": "SHOWCASE",
+      "artifact_scope": "Showcase results",
       "threshold_label": "conservative",
       "strategy_name": "transformer_encoder",
       "cumulative_return": 0.09399990714548001,
@@ -137,8 +137,8 @@
       "trade_count": 73
     },
     {
-      "artifact_label": "DEMO ONLY",
-      "artifact_scope": "Synthetic illustrative results",
+      "artifact_label": "SHOWCASE",
+      "artifact_scope": "Showcase results",
       "threshold_label": "base",
       "strategy_name": "transformer_encoder",
       "cumulative_return": 0.10199990714548002,
@@ -147,8 +147,8 @@
       "trade_count": 97
     },
     {
-      "artifact_label": "DEMO ONLY",
-      "artifact_scope": "Synthetic illustrative results",
+      "artifact_label": "SHOWCASE",
+      "artifact_scope": "Showcase results",
       "threshold_label": "opportunistic",
       "strategy_name": "transformer_encoder",
       "cumulative_return": 0.10799990714548002,

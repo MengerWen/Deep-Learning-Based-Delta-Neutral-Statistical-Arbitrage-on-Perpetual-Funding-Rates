@@ -20,14 +20,14 @@ def _make_temp_dir() -> Path:
     return path
 
 
-def test_run_demo_showcase_builds_isolated_demo_only_bundle() -> None:
+def test_run_demo_showcase_builds_isolated_showcase_bundle() -> None:
     tmp_path = _make_temp_dir()
     try:
         config = DemoShowcaseSettings.model_validate(
             {
                 "metadata": {
-                    "title": "Synthetic Demo Showcase",
-                    "subtitle": "DEMO ONLY synthetic showcase",
+                    "title": "Presentation Showcase",
+                    "subtitle": "Showcase bundle",
                     "provider": "binance",
                     "symbol": "BTCUSDT",
                     "venue": "binance",
@@ -51,10 +51,10 @@ def test_run_demo_showcase_builds_isolated_demo_only_bundle() -> None:
                     "position_notional_usd": 20000.0,
                 },
                 "sections": {
-                    "executive_summary": ["DEMO ONLY showcase summary."],
-                    "contributions": ["Synthetic artifact bundle."],
-                    "limitations": ["Illustrative only."],
-                    "future_work": ["Add more demo packs."],
+                    "executive_summary": ["Showcase summary."],
+                    "contributions": ["Presentation artifact bundle."],
+                    "limitations": ["Presentation-focused output."],
+                    "future_work": ["Add more preset packs."],
                 },
                 "strict_strategies": [
                     {
@@ -139,7 +139,7 @@ def test_run_demo_showcase_builds_isolated_demo_only_bundle() -> None:
         artifacts = run_demo_showcase(config)
 
         snapshot = json.loads(Path(artifacts.snapshot_path).read_text(encoding="utf-8"))
-        assert snapshot["meta"]["artifact_label"] == "DEMO ONLY"
+        assert snapshot["meta"]["artifact_label"] == "SHOWCASE"
         assert Path(artifacts.frontend_snapshot_path).exists()
         assert Path(artifacts.final_report_path or "").exists()
         assert Path(artifacts.final_report_html_path or "").exists()
@@ -152,16 +152,15 @@ def test_run_demo_showcase_builds_isolated_demo_only_bundle() -> None:
             Path(artifacts.data_root) / "backtests" / "strict" / "leaderboard.parquet"
         )
         assert "artifact_label" in strict_leaderboard.columns
-        assert strict_leaderboard["artifact_label"].eq("DEMO ONLY").all()
+        assert strict_leaderboard["artifact_label"].eq("SHOWCASE").all()
 
         final_report_markdown = Path(artifacts.final_report_path or "").read_text(
             encoding="utf-8"
         )
-        assert "DEMO ONLY" in final_report_markdown
+        assert "SHOWCASE" in final_report_markdown
 
         frontend_report_index = Path(artifacts.frontend_public_dir) / "report" / "index.html"
         assert frontend_report_index.exists()
         assert Path(artifacts.manifest_path).exists()
     finally:
         shutil.rmtree(tmp_path, ignore_errors=True)
-

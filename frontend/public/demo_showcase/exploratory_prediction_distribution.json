@@ -9,8 +9,8 @@
     "signed_score_min": -2.8,
     "signed_score_max": 3.1,
     "predicted_short_rate": 0.63,
-    "artifact_label": "DEMO ONLY",
-    "artifact_scope": "Synthetic illustrative results"
+    "artifact_label": "SHOWCASE",
+    "artifact_scope": "Showcase results"
   },
   {
     "run_name": "gru",
@@ -22,8 +22,8 @@
     "signed_score_min": -2.8,
     "signed_score_max": 3.1,
     "predicted_short_rate": 0.63,
-    "artifact_label": "DEMO ONLY",
-    "artifact_scope": "Synthetic illustrative results"
+    "artifact_label": "SHOWCASE",
+    "artifact_scope": "Showcase results"
   },
   {
     "run_name": "lstm",
@@ -35,7 +35,7 @@
     "signed_score_min": -2.8,
     "signed_score_max": 3.1,
     "predicted_short_rate": 0.63,
-    "artifact_label": "DEMO ONLY",
-    "artifact_scope": "Synthetic illustrative results"
+    "artifact_label": "SHOWCASE",
+    "artifact_scope": "Showcase results"
   }
 ]
