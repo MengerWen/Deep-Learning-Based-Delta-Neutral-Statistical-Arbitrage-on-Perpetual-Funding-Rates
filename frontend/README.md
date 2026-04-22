@@ -84,6 +84,22 @@ one-page presentation flow for the pre/final demo. It is aligned to the course
 presentation rubric and is intended to cover project idea, technical design,
 implementation, evaluation/results, and system demo in one page.
 
+For a fully portable copy that does not need Vite, `frontend/public/demo_showcase/`,
+or any local server, use:
+
+```text
+frontend/public/pre/standalone.html
+```
+
+This single HTML file embeds the same presentation CSS, JavaScript, JSON
+snapshots, and chart PNGs used by `pre/index.html`. It can be copied to another
+computer and opened directly in a browser. Rebuild it after changing the
+presentation page or demo artifacts with:
+
+```powershell
+& 'd:\MG\anaconda3\python.exe' scripts/demo/build_standalone_presentation.py
+```
+
 ## Production / static build
 
 To build the showcase as a static site:
