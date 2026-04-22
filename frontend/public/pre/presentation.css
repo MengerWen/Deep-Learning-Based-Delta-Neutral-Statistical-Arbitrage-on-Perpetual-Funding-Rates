@@ -1018,6 +1018,42 @@ th {
   }
 }
 
+body.pdf-export {
+  background: #f6f0e3;
+}
+
+body.pdf-export .page-shell {
+  max-width: none;
+  padding: 0;
+  gap: 0;
+}
+
+body.pdf-export .pdf-slide-shell {
+  width: 277mm;
+  min-height: 190mm;
+  height: 190mm;
+  margin: 0 auto 8mm;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+body.pdf-export .pdf-slide-shell:last-child {
+  margin-bottom: 0;
+}
+
+body.pdf-export .pdf-slide-content {
+  transform-origin: top left;
+  flex: 0 0 auto;
+}
+
+body.pdf-export .hero,
+body.pdf-export .section {
+  margin: 0;
+}
+
 @page {
   size: A4 landscape;
   margin: 10mm;
@@ -1056,6 +1092,125 @@ th {
   .section:last-child {
     break-after: auto;
     page-break-after: auto;
+  }
+
+  body.pdf-export .hero,
+  body.pdf-export .section {
+    break-after: auto;
+    page-break-after: auto;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  body.pdf-export .pdf-slide-shell {
+    width: 277mm;
+    min-height: 190mm;
+    height: 190mm;
+    padding: 0;
+    margin: 0 auto;
+    overflow: hidden;
+    break-after: page;
+    page-break-after: always;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+
+  body.pdf-export .pdf-slide-shell:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  body.pdf-export .pdf-slide-content {
+    transform-origin: top left;
+  }
+
+  body.pdf-export .hero,
+  body.pdf-export .section,
+  body.pdf-export .panel {
+    box-shadow: none !important;
+  }
+
+  body.pdf-export h1 {
+    font-size: 2.25rem !important;
+    max-width: 100% !important;
+  }
+
+  body.pdf-export h2 {
+    font-size: 1.7rem !important;
+  }
+
+  body.pdf-export h3 {
+    font-size: 1.02rem !important;
+  }
+
+  body.pdf-export .panel,
+  body.pdf-export .hero-copy,
+  body.pdf-export .hero-panel {
+    padding: 18px !important;
+  }
+
+  body.pdf-export .hero-lede,
+  body.pdf-export .panel-text,
+  body.pdf-export .section-intro,
+  body.pdf-export .bullet-list,
+  body.pdf-export .story-list,
+  body.pdf-export .rubric-item p,
+  body.pdf-export .problem-card p,
+  body.pdf-export .module-card p,
+  body.pdf-export .timeline-item p,
+  body.pdf-export .chart-copy p,
+  body.pdf-export .detail-row span:last-child,
+  body.pdf-export .callout,
+  body.pdf-export .table-shell td {
+    line-height: 1.38 !important;
+    font-size: 0.88rem !important;
+  }
+
+  body.pdf-export .summary-badge-row,
+  body.pdf-export .rubric-grid,
+  body.pdf-export .problem-grid,
+  body.pdf-export .implementation-status-grid,
+  body.pdf-export .deep-dive-grid,
+  body.pdf-export .handoff-grid,
+  body.pdf-export .results-grid,
+  body.pdf-export .chart-grid,
+  body.pdf-export .spotlight-grid,
+  body.pdf-export .split-section {
+    gap: 10px !important;
+  }
+
+  body.pdf-export .problem-card,
+  body.pdf-export .status-row,
+  body.pdf-export .responsibility-card,
+  body.pdf-export .lifecycle-card,
+  body.pdf-export .payload-card,
+  body.pdf-export .micro-card,
+  body.pdf-export .timeline-item,
+  body.pdf-export .family-item {
+    padding: 12px !important;
+  }
+
+  body.pdf-export .chart-media {
+    min-height: 0 !important;
+    padding: 10px !important;
+  }
+
+  body.pdf-export .chart-media img {
+    max-height: 108mm !important;
+  }
+
+  body.pdf-export .table-shell {
+    margin-top: 10px !important;
+  }
+
+  body.pdf-export th,
+  body.pdf-export td {
+    padding: 7px 8px !important;
+    font-size: 0.76rem !important;
+    line-height: 1.28 !important;
   }
 
   .hero-actions,

@@ -2,6 +2,8 @@
   const snapshotUrl = "/demo_showcase/demo_snapshot.json";
   const exploratoryUrl = "/demo_showcase/exploratory_dl_summary.json";
   const reportSummaryUrl = "/demo_showcase/report/summary.json";
+  const pageParams = new URLSearchParams(window.location.search);
+  const isPdfExport = (pageParams.get("pdf") || "").trim() === "1";
 
   const chartOrder = [
     "DEMO ONLY | DL test metric comparison",
@@ -1491,6 +1493,158 @@
     setList("future-work", chainFutureWork);
   }
 
+  function splitChartsIntoSlideSections() {
+    const chartGrid = document.getElementById("chart-grid");
+    if (!chartGrid || chartGrid.dataset.splitDone) {
+      return;
+    }
+
+    const charts = Array.from(chartGrid.children);
+    if (charts.length <= 2) {
+      return;
+    }
+
+    const originalSection = chartGrid.closest(".section");
+    if (!originalSection || !originalSection.parentNode) {
+      return;
+    }
+
+    chartGrid.innerHTML = "";
+    chartGrid.appendChild(charts[0]);
+    chartGrid.appendChild(charts[1]);
+    chartGrid.dataset.splitDone = "true";
+
+    let insertReference = originalSection;
+
+    for (let index = 2; index < charts.length; index += 2) {
+      const newSection = originalSection.cloneNode(true);
+      const title = newSection.querySelector("h2");
+      const intro = newSection.querySelector(".section-intro");
+      const newGrid = newSection.querySelector(".chart-grid");
+
+      if (!newGrid) {
+        continue;
+      }
+
+      newGrid.id = "";
+      newGrid.innerHTML = "";
+      newGrid.appendChild(charts[index]);
+
+      if (charts[index + 1]) {
+        newGrid.appendChild(charts[index + 1]);
+      }
+
+      if (title && !title.textContent.includes("(Cont.)")) {
+        title.textContent = `${title.textContent} (Cont.)`;
+      }
+
+      if (intro) {
+        intro.textContent =
+          "Supporting figures continued. Each export page keeps the chart borders intact and the annotations readable.";
+      }
+
+      insertReference.parentNode.insertBefore(newSection, insertReference.nextSibling);
+      insertReference = newSection;
+    }
+  }
+
+  function nextFrame() {
+    return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  }
+
+  function waitForPresentationImages() {
+    const images = Array.from(document.querySelectorAll("img"));
+
+    if (!images.length) {
+      return Promise.resolve();
+    }
+
+    return Promise.all(
+      images.map(
+        (image) =>
+          new Promise((resolve) => {
+            if (image.complete) {
+              resolve();
+              return;
+            }
+
+            const finish = () => resolve();
+            image.addEventListener("load", finish, { once: true });
+            image.addEventListener("error", finish, { once: true });
+            setTimeout(finish, 3000);
+          }),
+      ),
+    );
+  }
+
+  function scalePdfSlides() {
+    const slideShells = Array.from(document.querySelectorAll(".pdf-slide-shell"));
+
+    slideShells.forEach((shell) => {
+      const content = shell.querySelector(".pdf-slide-content");
+
+      if (!content) {
+        return;
+      }
+
+      content.style.width = "auto";
+      content.style.height = "auto";
+      content.style.transform = "none";
+
+      const availableWidth = shell.clientWidth;
+      const availableHeight = shell.clientHeight;
+      const contentWidth = Math.max(content.scrollWidth, 1);
+      const contentHeight = Math.max(content.scrollHeight, 1);
+      const scale = Math.min(1, availableWidth / contentWidth, availableHeight / contentHeight);
+
+      content.style.width = `${contentWidth}px`;
+      content.style.height = `${contentHeight}px`;
+      content.style.transform = `scale(${scale})`;
+      content.style.setProperty("--pdf-scale", scale.toFixed(4));
+      shell.dataset.scale = scale.toFixed(3);
+    });
+  }
+
+  async function preparePdfExport() {
+    if (!isPdfExport) {
+      return;
+    }
+
+    splitChartsIntoSlideSections();
+    document.body.classList.add("pdf-export");
+
+    await nextFrame();
+    await waitForPresentationImages();
+    await nextFrame();
+    await nextFrame();
+
+    const slides = [document.querySelector(".hero"), ...document.querySelectorAll(".section")].filter(Boolean);
+
+    slides.forEach((slide) => {
+      if (slide.parentElement && slide.parentElement.classList.contains("pdf-slide-content")) {
+        return;
+      }
+
+      const shell = document.createElement("div");
+      shell.className = "pdf-slide-shell";
+
+      const content = document.createElement("div");
+      content.className = "pdf-slide-content";
+
+      slide.parentNode.insertBefore(shell, slide);
+      shell.appendChild(content);
+      content.appendChild(slide);
+    });
+
+    await nextFrame();
+    await nextFrame();
+
+    scalePdfSlides();
+
+    await nextFrame();
+    document.body.dataset.pdfReady = "1";
+  }
+
   function renderError(message) {
     const root = document.getElementById("presentation-root");
     const heroVerdict = document.getElementById("hero-verdict");
@@ -1512,7 +1666,7 @@
   }
 
     Promise.all([readJson(snapshotUrl), readJson(exploratoryUrl), readJson(reportSummaryUrl)])
-    .then(([snapshot, exploratory, reportSummary]) => {
+    .then(async ([snapshot, exploratory, reportSummary]) => {
       renderHero(snapshot, exploratory, reportSummary);
       renderRubricAndScope(snapshot, reportSummary);
       renderProblemCards();
@@ -1524,6 +1678,7 @@
       renderCharts(snapshot);
       renderDemoAndVault(snapshot);
       renderClosingPanels(reportSummary);
+      await preparePdfExport();
     })
     .catch((error) => {
       renderError(error instanceof Error ? error.message : String(error));
@@ -1534,35 +1689,8 @@
     let slides = [];
     let currentIndex = 0;
     let controlsDiv = null;
-    function splitChartsForPPT() {
-      const chartGrid = document.getElementById('chart-grid');
-      if (!chartGrid || chartGrid.dataset.splitDone) return;
-      
-      const charts = Array.from(chartGrid.children);
-      if (charts.length <= 2) return; 
-      const originalSection = chartGrid.closest('.section');
-      chartGrid.innerHTML = '';
-      chartGrid.appendChild(charts[0]);
-      chartGrid.appendChild(charts[1]);
-      chartGrid.dataset.splitDone = "true";
-      let insertReference = originalSection;
- 
-      for (let i = 2; i < charts.length; i += 2) {
-        const newSection = originalSection.cloneNode(true); 
-
-        const title = newSection.querySelector('h2');
-        if (title) title.innerText += " (Cont.)";
-        
-        const newGrid = newSection.querySelector('.chart-grid');
-        newGrid.innerHTML = ''; 
-        newGrid.appendChild(charts[i]);
-        if (charts[i+1]) newGrid.appendChild(charts[i+1]); 
-        insertReference.parentNode.insertBefore(newSection, insertReference.nextSibling);
-        insertReference = newSection; 
-      }
-    }
     function buildSlides() {
-      splitChartsForPPT(); 
+      splitChartsIntoSlideSections();
       slides = [document.querySelector('.hero'), ...document.querySelectorAll('.section')];
     }
     function updateView() {
