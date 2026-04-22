@@ -1017,6 +1017,85 @@ th {
     padding: 16px;
   }
 }
+
+@page {
+  size: A4 landscape;
+  margin: 10mm;
+}
+
+@media print {
+  :root {
+    --surface: #ffffff;
+    --surface-strong: #ffffff;
+    --shadow: none;
+  }
+
+  body {
+    background: #ffffff !important;
+  }
+
+  body::before {
+    display: none !important;
+  }
+
+  .page-shell {
+    max-width: none;
+    padding: 0;
+  }
+
+  .hero,
+  .section {
+    break-after: page;
+    page-break-after: always;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin: 0;
+    box-shadow: none !important;
+  }
+
+  .section:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .hero-actions,
+  .demo-links,
+  .chart-open,
+  #start-ppt-btn,
+  .ppt-controls,
+  .ppt-progress,
+  .ppt-page-count {
+    display: none !important;
+  }
+
+  .hero,
+  .panel,
+  .summary-badge,
+  .rubric-item,
+  .problem-card,
+  .module-card,
+  .micro-card,
+  .link-card,
+  .timeline-item,
+  .responsibility-card,
+  .status-row,
+  .lifecycle-card,
+  .payload-card,
+  .family-item {
+    box-shadow: none !important;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+  }
+
+  .chart-media {
+    min-height: 0;
+    background: #ffffff !important;
+  }
+
+  .chart-media img {
+    max-height: 145mm;
+  }
+}
 .metric-good { color: #0d6e66; font-weight: 700; } 
 .metric-bad { color: #a24d33; font-weight: 700; }  
 .metric-neutral { color: var(--muted); }
