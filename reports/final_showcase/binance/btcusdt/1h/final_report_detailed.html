@@ -1,0 +1,1624 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deep Learning-Based Delta-Neutral Statistical Arbitrage on Perpetual Funding Rates - Final Report</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #17202a;
+  --muted: #52616f;
+  --rule: #d8dee6;
+  --accent: #1f5f8b;
+  --soft: #f5f7fa;
+}
+* { box-sizing: border-box; }
+html { background: #ffffff; }
+body {
+  margin: 0 auto;
+  max-width: 980px;
+  padding: 42px 46px 72px;
+  color: var(--ink);
+  font: 15.5px/1.58 "Segoe UI", Arial, Helvetica, sans-serif;
+}
+h1, h2, h3, h4 { color: #111827; line-height: 1.22; margin: 1.55em 0 0.55em; }
+h1 { font-size: 2.12rem; margin-top: 0; padding-bottom: 0.45em; border-bottom: 2px solid var(--ink); }
+h2 { font-size: 1.42rem; border-bottom: 1px solid var(--rule); padding-bottom: 0.25em; }
+h3 { font-size: 1.08rem; color: var(--accent); }
+p { margin: 0.72em 0; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+strong { font-weight: 700; }
+code { font-family: "Cascadia Mono", Consolas, Menlo, monospace; background: #eef2f7; padding: 0.08em 0.25em; border-radius: 3px; font-size: 0.92em; }
+pre { background: #f2f5f8; border: 1px solid #d7dee8; border-radius: 6px; padding: 12px 14px; overflow-x: auto; }
+pre code { background: transparent; padding: 0; }
+blockquote { margin: 1em 0; padding: 0.65em 1em; border-left: 4px solid var(--accent); background: #f7fbff; color: var(--muted); }
+ul, ol { padding-left: 1.45em; }
+li { margin: 0.28em 0; }
+table { width: 100%; border-collapse: collapse; margin: 1.05em 0 1.35em; font-size: 0.92em; page-break-inside: avoid; }
+th, td { border: 1px solid var(--rule); padding: 6px 8px; vertical-align: top; }
+th { background: var(--soft); text-align: left; font-weight: 700; }
+tr:nth-child(even) td { background: #fbfcfe; }
+img { display: block; max-width: 100%; max-height: 620px; margin: 0.75em auto 1.35em; border: 1px solid #e3e8ef; border-radius: 6px; }
+hr { border: 0; border-top: 1px solid var(--rule); margin: 2em 0; }
+@media print {
+  @page { size: A4; margin: 16mm 14mm 17mm; }
+  body { max-width: none; padding: 0; font-size: 10.3pt; line-height: 1.43; }
+  h1 { font-size: 22pt; page-break-after: avoid; }
+  h2 { font-size: 15pt; page-break-after: avoid; }
+  h3 { font-size: 11.5pt; page-break-after: avoid; }
+  h2, h3, h4 { break-after: avoid; }
+  p, li { orphans: 3; widows: 3; }
+  table, figure, img, pre { break-inside: avoid; }
+  a { color: #111827; text-decoration: none; }
+}
+</style>
+</head>
+<body>
+<h1 id="deep-learning-based-delta-neutral-statistical-arbitrage-on-perpetual-funding-rates">Deep Learning-Based Delta-Neutral Statistical Arbitrage on Perpetual Funding Rates</h1>
+<p><strong>Final Technical Report</strong></p>
+<p><strong>Course:</strong> FTE 4312 Course Project<br />
+<strong>Authors:</strong> Wenjie, Qihang Han, Hongjun Huang<br />
+<strong>Repository:</strong> <a href="https://github.com/MengerWen/Deep-Learning-Based-Delta-Neutral-Statistical-Arbitrage-on-Perpetual-Funding-Rates">https://github.com/MengerWen/Deep-Learning-Based-Delta-Neutral-Statistical-Arbitrage-on-Perpetual-Funding-Rates</a><br />
+<strong>Primary market:</strong> Binance BTCUSDT perpetual and spot, 1-hour frequency<br />
+<strong>Primary sample window:</strong> 2021-01-01 00:00 UTC to 2026-04-07 23:00 UTC<br />
+<strong>Report source artifacts:</strong> <code>reports/final_showcase/binance/btcusdt/1h/summary.json</code> and related project outputs<br />
+<strong>Report prepared:</strong> 2026-04-22</p>
+<h2 id="abstract">Abstract</h2>
+<p>This project studies whether perpetual futures funding-rate dislocations can be converted into a credible delta-neutral statistical arbitrage prototype. The implemented system builds a full research and demonstration pipeline: Binance BTCUSDT market data is fetched and canonicalized into an hourly dataset; interpretable funding, basis, volatility, liquidity, and regime features are constructed without future leakage; supervised labels estimate future post-cost returns for a short-perpetual and long-spot hedge; rule-based baselines, penalized linear models, and compact deep-learning sequence models are trained; standardized signals are backtested with explicit transaction costs, slippage, gas, funding accrual, and mark-to-market accounting; and the selected strategy state is mirrored into a Solidity vault prototype through a trusted off-chain operator workflow.</p>
+<p>The main empirical conclusion is intentionally conservative. Although several models learn measurable structure in the target series, with the best strict baseline reaching test Pearson correlation of 0.677 and the best strict deep-learning model reaching 0.646, the validation and test periods contain no positive tradeable post-cost labels under the configured friction model. The only strict strategy that produces test-period trades, the spread z-score rule, executes 200 trades and loses 6.47 percent, with net PnL of -6,474.85 USD on 100,000 USD starting capital. The official result is therefore: no positive post-cost out-of-sample strategy survives the current single-asset friction model. This negative result is still valuable because the repository demonstrates a coherent, reproducible, and honest end-to-end prototype for off-chain quantitative research, cost-aware evaluation, vault accounting, and classroom presentation.</p>
+<h2 id="executive-summary">Executive Summary</h2>
+<p>The project began with an attractive DeFi research idea: perpetual futures use funding payments to keep contract prices close to spot prices, so abnormal funding and basis regimes may create delta-neutral opportunities. The implemented prototype tests this idea in a disciplined way instead of assuming the edge exists. It asks whether a strategy can identify moments where funding carry and basis behavior remain profitable after transaction costs, and whether the resulting off-chain strategy state can be represented transparently in a smart-contract vault.</p>
+<p>The repository now contains all major layers expected from the proposal:</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Implemented outcome</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Data ingestion</td>
+<td>Binance BTCUSDT perpetual, spot, and funding data are normalized to an hourly canonical table.</td>
+</tr>
+<tr>
+<td>Data quality</td>
+<td>Time coverage, missingness, distributions, correlations, and market charts are generated.</td>
+</tr>
+<tr>
+<td>Feature engineering</td>
+<td>81 primary engineered features are created from funding, basis, volatility, liquidity, and regime groups.</td>
+</tr>
+<tr>
+<td>Label generation</td>
+<td>Future 24-hour post-cost return labels are built with next-bar execution and explicit trading costs.</td>
+</tr>
+<tr>
+<td>Baselines</td>
+<td>Rule-based signals, logistic models, Ridge, and ElasticNet are evaluated with time-series-safe tuning.</td>
+</tr>
+<tr>
+<td>Deep learning</td>
+<td>LSTM, GRU, TCN, and Transformer encoder sequence models are trained and compared.</td>
+</tr>
+<tr>
+<td>Signal layer</td>
+<td>Model and rule outputs are normalized into a single downstream signal schema.</td>
+</tr>
+<tr>
+<td>Backtesting</td>
+<td>Delta-neutral trades are simulated with fees, slippage, gas, funding, and mark-to-market risk.</td>
+</tr>
+<tr>
+<td>Robustness</td>
+<td>Cost, holding-window, threshold, family, and feature-ablation checks are reported.</td>
+</tr>
+<tr>
+<td>Solidity vault</td>
+<td>A single-asset vault supports deposits, withdrawals, shares, NAV/PnL updates, pausing, and operator updates.</td>
+</tr>
+<tr>
+<td>Integration</td>
+<td>A dry-run operator flow converts backtest results into vault update calldata.</td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td>A lightweight Vite dashboard and static report/showcase artifacts support the final demo.</td>
+</tr>
+</tbody>
+</table>
+<p>The official empirical verdict is negative but credible:</p>
+<ul>
+<li>The canonical dataset contains 46,152 hourly rows and 3,092 aligned funding events.</li>
+<li>Funding events are mostly positive, with average realized funding of 1.04 bps and standard deviation of 1.89 bps.</li>
+<li>The average perp-vs-spot spread is -1.53 bps, while the 95th percentile absolute spread is about 10.04 bps.</li>
+<li>The strict 24-hour post-cost labels are extremely sparse. In the model-ready dataset, the train split has a tradeable rate of about 0.193 percent, while validation and test have 0 percent tradeable positive labels.</li>
+<li>The best strict baseline model is ElasticNet regression with test Pearson correlation of 0.677 and RMSE of 1.269 bps, but it produces zero test signals.</li>
+<li>The best strict deep-learning model is the Transformer encoder with test Pearson correlation of 0.646 and RMSE of 1.209 bps, but it also produces zero test signals.</li>
+<li>The only strict traded test strategy is <code>spread_zscore_1p5</code>, which produces 200 trades and loses 6.47 percent.</li>
+<li>Robustness analysis does not overturn the conclusion. Cost changes affect the rule-based loss magnitude, but no model family produces positive strict test performance.</li>
+<li>The Solidity and integration layers work as a prototype accounting and state-management demonstration, not as a live trading or trust-minimized oracle protocol.</li>
+</ul>
+<p>The main contribution of the project is therefore not a profitable trading claim. It is a complete, reproducible, and well-scoped hybrid quant plus smart-contract prototype that shows how such a strategy should be researched, evaluated, and represented before any production claims are made.</p>
+<h2 id="1-introduction">1. Introduction</h2>
+<p>Perpetual futures are central instruments in cryptocurrency derivatives markets. Unlike fixed-maturity futures, perpetual contracts do not expire. Exchanges instead use funding payments to encourage the perpetual price to remain close to an underlying spot or index price. When the perpetual contract trades rich relative to spot, long holders typically pay short holders; when it trades cheap, the sign can reverse. This mechanism creates a natural economic story for delta-neutral strategies: a trader may short the expensive perpetual, buy spot as a hedge, and attempt to earn funding while minimizing first-order price exposure.</p>
+<p>The difficulty is that funding-rate arbitrage is not automatically profitable. A high funding rate can be offset by entry and exit fees, slippage, gas or operational costs, adverse basis movement, margin constraints, and changing market regimes. A strategy that appears attractive before costs can become unprofitable once the full trade lifecycle is modeled. This project was designed around that practical tension.</p>
+<p>The project builds a prototype called <strong>Deep Learning-Based Delta-Neutral Statistical Arbitrage on Perpetual Funding Rates</strong>. The term &ldquo;deep learning&rdquo; in the title is treated as a research question rather than a promise. The system first implements clear rule-based and simple machine-learning benchmarks, then compares compact sequence models against them. The final conclusion is based on cost-aware out-of-sample backtesting, not on headline predictive metrics alone.</p>
+<p>The project also includes a DeFi-style vault component. This is important because funding arbitrage is naturally off-chain: exchange data, model training, signal calculation, and execution simulation are too complex for direct on-chain inference. A realistic prototype therefore separates concerns. The quantitative system runs off-chain, while the smart contract records deposits, shares, NAV, PnL updates, and strategy state. This mirrors the architecture used by many real hybrid systems: computation and data collection occur outside the blockchain, while a contract provides transparent accounting and state updates.</p>
+<h2 id="2-problem-statement">2. Problem Statement</h2>
+<p>The central research question is:</p>
+<p><strong>Can historical funding-rate behavior, basis dislocations, and short-horizon market features identify delta-neutral trades whose expected post-cost return is positive, and can the resulting strategy state be represented in a transparent smart-contract vault?</strong></p>
+<p>This question is decomposed into five technical subproblems:</p>
+<ol>
+<li><strong>Data alignment:</strong> Can perpetual, spot, and funding data be merged into a clean hourly table without timestamp errors or hidden gaps?</li>
+<li><strong>Label design:</strong> Can the supervised learning target reflect the actual trading objective, namely future post-cost return from a delta-neutral position?</li>
+<li><strong>Model comparison:</strong> Do rule-based strategies, penalized linear models, or sequence models produce usable out-of-sample signals?</li>
+<li><strong>Backtest realism:</strong> Do results survive fees, slippage, gas, funding effects, entry delays, holding rules, and test-split evaluation?</li>
+<li><strong>Vault representation:</strong> Can off-chain strategy state be converted into a simple on-chain accounting update without overclaiming production decentralization?</li>
+</ol>
+<p>The project intentionally avoids several production goals. It does not attempt live trading, direct exchange routing, liquidation modeling, order-book simulation, decentralized oracle consensus, multi-chain deployment, or audited vault production readiness. These omissions are documented as prototype boundaries rather than hidden weaknesses.</p>
+<h2 id="3-background">3. Background</h2>
+<h3 id="31-perpetual-futures-and-funding-rates">3.1 Perpetual Futures and Funding Rates</h3>
+<p>A perpetual future tracks an underlying asset without a fixed expiry date. To prevent the contract from drifting permanently away from the spot or index price, exchanges apply funding payments between long and short positions. Funding is usually based on a premium or interest-rate formula and is settled at scheduled intervals. The project uses Binance BTCUSDT data and aligns funding events into the hourly research grid.</p>
+<p>Funding creates two useful signals:</p>
+<ul>
+<li><strong>Carry signal:</strong> If funding is positive, a short perpetual position may receive funding from long positions.</li>
+<li><strong>Crowding signal:</strong> Persistent positive funding can indicate heavy long demand or a crowded leverage regime.</li>
+</ul>
+<p>However, funding cannot be evaluated alone. If the perpetual is rich to spot but then becomes even richer, the basis loss can overwhelm funding income. Likewise, if funding is positive but too small, trading costs can dominate the expected carry.</p>
+<h3 id="32-delta-neutral-arbitrage">3.2 Delta-Neutral Arbitrage</h3>
+<p>The default strategy direction in the project is:</p>
+<pre><code class="language-text">short perpetual + long spot
+</code></pre>
+<p>This position attempts to reduce exposure to the underlying BTC price. The approximate delta relation is:</p>
+<pre><code class="language-text">net_delta ~= delta_perp_leg + delta_spot_leg ~= -1 + 1 ~= 0
+</code></pre>
+<p>The hedge is not perfect. It still carries basis risk, execution risk, funding forecast risk, and exchange-specific risk. In this prototype, the hedge is modeled through equal USD notional on the perpetual and spot legs.</p>
+<p>The reverse direction, long perpetual and short spot, is recognized conceptually but is not the main strict path because shorting spot requires explicit borrow or synthetic-short assumptions. The project keeps this conservative boundary clear.</p>
+<h3 id="33-why-machine-learning-is-relevant">3.3 Why Machine Learning Is Relevant</h3>
+<p>The task is not simple price direction prediction. The target is whether a market state at time <code>t</code> produces a positive post-cost opportunity after a future holding window. Machine learning may help because funding, basis, volatility, and liquidity interact nonlinearly and evolve through regimes. Sequence models may capture multi-hour persistence and reversal patterns that a single-row model misses.</p>
+<p>At the same time, financial labels are noisy and sparse. A strong predictive metric does not automatically translate into a profitable strategy. This project therefore reports both model metrics and trading metrics, and the trading metrics are treated as primary.</p>
+<h3 id="34-hybrid-off-chain-and-on-chain-design">3.4 Hybrid Off-Chain and On-Chain Design</h3>
+<p>Smart contracts cannot directly fetch Binance data or run deep-learning inference. A hybrid design is therefore necessary:</p>
+<pre><code class="language-text">Exchange data -&gt; off-chain research pipeline -&gt; signal and backtest artifacts -&gt; operator update -&gt; vault contract
+</code></pre>
+<p>The contract receives summarized state, not raw market data. This is a trusted operator model in the prototype. It demonstrates the concept without claiming decentralized oracle security.</p>
+<h2 id="4-system-architecture">4. System Architecture</h2>
+<p>The implemented architecture follows one end-to-end data flow:</p>
+<pre><code class="language-text">market data
+  -&gt; canonical hourly dataset
+  -&gt; engineered features
+  -&gt; post-cost labels
+  -&gt; model predictions
+  -&gt; standardized signals
+  -&gt; delta-neutral backtest
+  -&gt; vault update payload
+  -&gt; frontend/report artifacts
+</code></pre>
+<p>The repository is organized around these components:</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Main paths</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Data</td>
+<td><code>src/funding_arb/data/</code>, <code>configs/data/</code></td>
+<td>Fetch, clean, align, validate, and store market data.</td>
+</tr>
+<tr>
+<td>Features</td>
+<td><code>src/funding_arb/features/</code>, <code>configs/features/</code></td>
+<td>Build leakage-safe funding, basis, volatility, liquidity, and state features.</td>
+</tr>
+<tr>
+<td>Labels</td>
+<td><code>src/funding_arb/labels/</code>, <code>configs/labels/</code></td>
+<td>Construct future post-cost return and classification targets.</td>
+</tr>
+<tr>
+<td>Models</td>
+<td><code>src/funding_arb/models/</code>, <code>configs/models/</code>, <code>configs/experiments/</code></td>
+<td>Train baselines and deep-learning sequence models.</td>
+</tr>
+<tr>
+<td>Signals</td>
+<td><code>src/funding_arb/signals/</code>, <code>configs/signals/</code></td>
+<td>Normalize rule, ML, and DL outputs into one signal schema.</td>
+</tr>
+<tr>
+<td>Backtest</td>
+<td><code>src/funding_arb/backtest/</code>, <code>configs/backtests/</code></td>
+<td>Simulate delta-neutral trades and write metrics, logs, and plots.</td>
+</tr>
+<tr>
+<td>Reporting</td>
+<td><code>src/funding_arb/reporting/</code>, <code>configs/reports/</code></td>
+<td>Generate data-quality, robustness, and final reports.</td>
+</tr>
+<tr>
+<td>Integration</td>
+<td><code>src/funding_arb/integration/</code>, <code>configs/integration/</code></td>
+<td>Convert strategy artifacts into vault update plans.</td>
+</tr>
+<tr>
+<td>Contracts</td>
+<td><code>contracts/src/</code>, <code>contracts/test/</code>, <code>contracts/script/</code></td>
+<td>Solidity vault, mock stablecoin, tests, and scripts.</td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td><code>frontend/src/</code>, <code>frontend/public/</code></td>
+<td>Static dashboard and report/showcase presentation.</td>
+</tr>
+</tbody>
+</table>
+<p>This modular structure is important for a course project because it lets each layer be inspected separately while still supporting a one-command demo workflow.</p>
+<h2 id="5-data-pipeline">5. Data Pipeline</h2>
+<h3 id="51-market-scope">5.1 Market Scope</h3>
+<p>The first complete research path uses:</p>
+<ul>
+<li><strong>Provider:</strong> Binance</li>
+<li><strong>Symbol:</strong> BTCUSDT</li>
+<li><strong>Frequency:</strong> 1 hour</li>
+<li><strong>Window:</strong> 2021-01-01 to 2026-04-07 UTC</li>
+<li><strong>Primary datasets:</strong> perpetual bars, spot bars, funding rates</li>
+</ul>
+<p>The project stores raw, interim, processed, and artifact outputs separately. The canonical market data is saved under:</p>
+<pre><code class="language-text">data/processed/binance/btcusdt/1h/hourly_market_data.parquet
+</code></pre>
+<h3 id="52-canonical-schema">5.2 Canonical Schema</h3>
+<p>The canonical table aligns perpetual prices, spot prices, funding events, and optional open interest on a shared hourly UTC grid. Key columns include:</p>
+<table>
+<thead>
+<tr>
+<th>Column group</th>
+<th>Examples</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Metadata</td>
+<td><code>timestamp</code>, <code>symbol</code>, <code>venue</code>, <code>frequency</code></td>
+<td>Identify market and time grid.</td>
+</tr>
+<tr>
+<td>Perpetual bars</td>
+<td><code>perp_open</code>, <code>perp_high</code>, <code>perp_low</code>, <code>perp_close</code>, <code>perp_volume</code></td>
+<td>Perp execution and risk state.</td>
+</tr>
+<tr>
+<td>Spot bars</td>
+<td><code>spot_open</code>, <code>spot_high</code>, <code>spot_low</code>, <code>spot_close</code>, <code>spot_volume</code></td>
+<td>Hedge leg and basis construction.</td>
+</tr>
+<tr>
+<td>Funding</td>
+<td><code>funding_rate</code>, <code>funding_event</code></td>
+<td>Funding carry and settlement markers.</td>
+</tr>
+<tr>
+<td>Missing flags</td>
+<td><code>perp_close_was_missing</code>, <code>spot_close_was_missing</code></td>
+<td>Audit data quality and fill behavior.</td>
+</tr>
+</tbody>
+</table>
+<p>The default implementation fills non-event hours with <code>funding_rate = 0.0</code> and <code>funding_event = 0</code>, so funding settlement events remain explicit while the hourly grid stays regular.</p>
+<h3 id="53-cleaning-and-alignment-rules">5.3 Cleaning and Alignment Rules</h3>
+<p>The data cleaning pipeline applies these rules:</p>
+<ul>
+<li>Normalize all timestamps to UTC.</li>
+<li>Drop duplicate timestamps and keep the last source observation.</li>
+<li>Sort data in ascending time order.</li>
+<li>Forward-fill price columns only up to the configured maximum gap.</li>
+<li>Fill missing volumes with zero.</li>
+<li>Fill non-event funding hours with zero.</li>
+<li>Raise an error if required aligned prices remain missing after the allowed fill.</li>
+</ul>
+<p>These choices are conservative for a prototype. They make downstream rolling features, labels, and backtests deterministic while keeping data assumptions visible.</p>
+<h3 id="54-data-quality-results">5.4 Data Quality Results</h3>
+<p>The data-quality report shows that the final canonical dataset is complete over the observed hourly range:</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Canonical hourly rows</td>
+<td style="text-align: right;">46,152</td>
+</tr>
+<tr>
+<td>Unique timestamps</td>
+<td style="text-align: right;">46,152</td>
+</tr>
+<tr>
+<td>Expected rows in observed range</td>
+<td style="text-align: right;">46,152</td>
+</tr>
+<tr>
+<td>Coverage ratio</td>
+<td style="text-align: right;">100.00 percent</td>
+</tr>
+<tr>
+<td>Duplicate timestamps</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>Missing hours inside observed range</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>Funding event rows</td>
+<td style="text-align: right;">3,092</td>
+</tr>
+<tr>
+<td>Raw perpetual rows</td>
+<td style="text-align: right;">46,152</td>
+</tr>
+<tr>
+<td>Raw spot rows</td>
+<td style="text-align: right;">46,138</td>
+</tr>
+<tr>
+<td>Raw funding rows</td>
+<td style="text-align: right;">5,769</td>
+</tr>
+</tbody>
+</table>
+<p>The main market statistics are:</p>
+<table>
+<thead>
+<tr>
+<th>Statistic</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Average realized funding rate on funding events</td>
+<td style="text-align: right;">1.04 bps</td>
+</tr>
+<tr>
+<td>Funding-rate standard deviation on funding events</td>
+<td style="text-align: right;">1.89 bps</td>
+</tr>
+<tr>
+<td>Funding-rate range</td>
+<td style="text-align: right;">-11.20 to 24.90 bps</td>
+</tr>
+<tr>
+<td>Share of positive funding events</td>
+<td style="text-align: right;">87.87 percent</td>
+</tr>
+<tr>
+<td>Average perp-vs-spot spread</td>
+<td style="text-align: right;">-1.53 bps</td>
+</tr>
+<tr>
+<td>95th percentile absolute spread</td>
+<td style="text-align: right;">10.04 bps</td>
+</tr>
+<tr>
+<td>Mean annualized perp volatility</td>
+<td style="text-align: right;">50.86 percent</td>
+</tr>
+<tr>
+<td>Mean annualized spot volatility</td>
+<td style="text-align: right;">50.92 percent</td>
+</tr>
+</tbody>
+</table>
+<p>The data support the economic motivation: funding is often positive, basis dislocations exist, and volatility regimes vary materially. The same data also warn that the average spread and funding edge are small relative to realistic round-trip costs.</p>
+<p><img alt="Funding Rate Regime Map" src="assets/funding_rate_time_series.png" /></p>
+<p><img alt="Perpetual vs Spot Spread" src="assets/perp_vs_spot_spread.png" /></p>
+<h2 id="6-feature-engineering">6. Feature Engineering</h2>
+<p>The feature pipeline produces an interpretable set of 81 primary engineered features. The design principle is that every feature must use only information available at or before timestamp <code>t</code>. Rolling windows are backward-looking and no future prices, future funding prints, or future labels are used.</p>
+<h3 id="61-feature-groups">6.1 Feature Groups</h3>
+<p>The default feature groups are:</p>
+<table>
+<thead>
+<tr>
+<th>Feature group</th>
+<th>Examples</th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Funding</td>
+<td><code>funding_rate_bps</code>, <code>funding_annualized_proxy</code>, <code>funding_zscore_72h</code>, <code>funding_positive_share_24h</code></td>
+<td>Carry level, abnormality, persistence, and regime direction.</td>
+</tr>
+<tr>
+<td>Basis / spread</td>
+<td><code>spread_bps</code>, <code>spread_change_1h</code>, <code>spread_zscore_72h</code>, <code>spread_reversion_signal_24h</code></td>
+<td>Perp richness or cheapness relative to spot and mean-reversion pressure.</td>
+</tr>
+<tr>
+<td>Volatility / risk</td>
+<td><code>perp_return_1h</code>, <code>spot_return_1h</code>, <code>perp_realized_vol_24h</code>, <code>perp_return_shock_24h</code></td>
+<td>Market risk state and short-term disturbance intensity.</td>
+</tr>
+<tr>
+<td>Liquidity / activity</td>
+<td><code>perp_volume_ratio_24h</code>, <code>spot_volume_ratio_24h</code>, dollar-volume features</td>
+<td>Activity conditions and liquidity proxies.</td>
+</tr>
+<tr>
+<td>Interaction / state</td>
+<td><code>funding_x_spread_bps</code>, <code>funding_x_perp_vol_24h</code>, <code>positive_funding_regime</code>, <code>wide_spread_regime</code></td>
+<td>Nonlinear relationships between carry, basis, and risk regimes.</td>
+</tr>
+</tbody>
+</table>
+<p>The default rolling windows are 8, 24, 72, and 168 hours. These windows were selected because they map naturally to short-term funding cycles, one-day behavior, three-day regimes, and one-week market state.</p>
+<h3 id="62-leakage-control">6.2 Leakage Control</h3>
+<p>Feature leakage is controlled in three ways:</p>
+<ol>
+<li>Rolling statistics use current and past observations only.</li>
+<li>Labels are generated after the feature timestamp with an explicit entry delay.</li>
+<li>Model normalization is fit only on training data, then applied to validation and test.</li>
+</ol>
+<p>This is a key design choice. In time-series trading tasks, small forms of leakage can turn an unprofitable strategy into an apparently profitable one. The report therefore emphasizes time alignment as much as model architecture.</p>
+<h2 id="7-label-generation">7. Label Generation</h2>
+<h3 id="71-core-label-objective">7.1 Core Label Objective</h3>
+<p>The primary label is not raw price direction. It is a post-cost opportunity label for a delta-neutral trade. The default direction is:</p>
+<pre><code class="language-text">short perpetual + long spot
+</code></pre>
+<p>For a holding horizon <code>H</code>, the regression target is:</p>
+<pre><code class="language-text">future_net_return_bps_H
+  = future_perp_leg_return_bps_H
+  + future_spot_leg_return_bps_H
+  + future_funding_return_bps_H
+  - estimated_cost_bps_H
+</code></pre>
+<p>For the default short-perp and long-spot position:</p>
+<ul>
+<li>The perp leg gains when the perpetual price falls after entry.</li>
+<li>The spot leg gains when spot rises after entry.</li>
+<li>Funding PnL is positive when the short receives funding.</li>
+<li>Costs subtract taker fees, slippage, gas, and optional friction.</li>
+</ul>
+<p>The main target used in the strict modeling reports is:</p>
+<pre><code class="language-text">target_future_net_return_bps_24h
+</code></pre>
+<h3 id="72-timing-convention">7.2 Timing Convention</h3>
+<p>The label timing deliberately avoids same-bar lookahead:</p>
+<pre><code class="language-text">feature timestamp: t
+entry timestamp: t + execution_delay_bars
+exit timestamp: t + execution_delay_bars + holding_window
+</code></pre>
+<p>With the default settings:</p>
+<ul>
+<li>Features are observed at the end of hour <code>t</code>.</li>
+<li>Entry uses the next bar open, <code>t + 1</code>.</li>
+<li>A 24-hour label exits at <code>t + 25</code>.</li>
+</ul>
+<p>This aligns with the backtest, where signals are also executed after a configurable delay.</p>
+<h3 id="73-cost-model">7.3 Cost Model</h3>
+<p>The label cost approximation is:</p>
+<pre><code class="language-text">estimated_cost_bps
+  = 4 * (taker_fee_bps + slippage_bps)
+  + gas_cost_bps
+  + other_friction_bps
+  + borrow_cost_bps_if_applicable
+</code></pre>
+<p>The factor of four represents:</p>
+<ol>
+<li>perpetual entry</li>
+<li>perpetual exit</li>
+<li>spot hedge entry</li>
+<li>spot hedge exit</li>
+</ol>
+<p>The current strict prototype does not rely on a borrow-cost model because the primary direction is short perpetual and long spot.</p>
+<h3 id="74-classification-targets">7.4 Classification Targets</h3>
+<p>Two classification labels are derived from the regression target:</p>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Definition</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>target_is_profitable_24h</code></td>
+<td><code>future_net_return_bps_24h &gt; 0</code></td>
+<td>Positive after modeled costs.</td>
+</tr>
+<tr>
+<td><code>target_is_tradeable_24h</code></td>
+<td><code>future_net_return_bps_24h &gt; 5</code></td>
+<td>Clears a practical minimum edge threshold.</td>
+</tr>
+</tbody>
+</table>
+<p>The distinction matters because a barely positive label may not be robust enough for execution.</p>
+<h3 id="75-split-design-and-degenerate-label-diagnostics">7.5 Split Design and Degenerate Label Diagnostics</h3>
+<p>The project uses chronological splits:</p>
+<table>
+<thead>
+<tr>
+<th>Split</th>
+<th>Boundary logic</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Train</td>
+<td>timestamps up to 2024-06-30</td>
+</tr>
+<tr>
+<td>Validation</td>
+<td>after train through 2025-03-31</td>
+</tr>
+<tr>
+<td>Test</td>
+<td>after validation through 2026-04-07</td>
+</tr>
+</tbody>
+</table>
+<p>The strict 24-hour label diagnostics show why the final result is difficult:</p>
+<table>
+<thead>
+<tr>
+<th>Split</th>
+<th style="text-align: right;">Model-ready rows</th>
+<th style="text-align: right;">Tradeable rate</th>
+<th style="text-align: right;">Profitable rate</th>
+<th style="text-align: right;">Tradeable positives</th>
+<th style="text-align: right;">Profitable positives</th>
+<th style="text-align: right;">Mean future net return</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Train</td>
+<td style="text-align: right;">30,090</td>
+<td style="text-align: right;">0.193 percent</td>
+<td style="text-align: right;">0.299 percent</td>
+<td style="text-align: right;">58</td>
+<td style="text-align: right;">90</td>
+<td style="text-align: right;">-32.03 bps</td>
+</tr>
+<tr>
+<td>Validation</td>
+<td style="text-align: right;">6,576</td>
+<td style="text-align: right;">0.000 percent</td>
+<td style="text-align: right;">0.015 percent</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-32.34 bps</td>
+</tr>
+<tr>
+<td>Test</td>
+<td style="text-align: right;">8,822 valid rows</td>
+<td style="text-align: right;">0.000 percent</td>
+<td style="text-align: right;">0.000 percent</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-33.46 bps</td>
+</tr>
+</tbody>
+</table>
+<p>This table is central to the final interpretation. The validation and test periods do not contain tradeable positive labels under the current strict cost model. The correct conclusion is therefore not that the models failed to discover an obvious edge; the stricter conclusion is that the configured single-market post-cost opportunity set is nearly absent out of sample.</p>
+<h2 id="8-modeling-methodology">8. Modeling Methodology</h2>
+<h3 id="81-baseline-philosophy">8.1 Baseline Philosophy</h3>
+<p>The baseline layer answers a disciplined question: before trusting deep learning, how far can interpretable rules and simple supervised models go?</p>
+<p>Implemented baseline families include:</p>
+<table>
+<thead>
+<tr>
+<th>Family</th>
+<th>Examples</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rule-based</td>
+<td><code>funding_threshold_2bps</code>, <code>spread_zscore_1p5</code>, <code>combined_funding_spread</code></td>
+<td>Economic reference strategies.</td>
+</tr>
+<tr>
+<td>Classification</td>
+<td>Logistic regression, L1 logistic regression</td>
+<td>Predict whether future post-cost return is profitable.</td>
+</tr>
+<tr>
+<td>Regression</td>
+<td>Ridge regression, ElasticNet regression</td>
+<td>Predict future net return in basis points.</td>
+</tr>
+</tbody>
+</table>
+<p>The upgraded baseline pipeline includes:</p>
+<ul>
+<li>chronological inner-fold tuning on the train split</li>
+<li>validation-driven threshold selection</li>
+<li>optional probability calibration</li>
+<li>safe missing-data handling</li>
+<li>held-out permutation importance</li>
+<li>explicit degenerate-experiment status fields</li>
+</ul>
+<p>The default prediction mode is static: models are fit on train and scored on the full dataset. Walk-forward hooks exist, but the main report keeps the workflow simple and reproducible.</p>
+<h3 id="82-deep-learning-models">8.2 Deep-Learning Models</h3>
+<p>The deep-learning layer treats each target timestamp as a sequence ending at time <code>t</code>. The default lookback is 48 hourly steps. Four compact architectures are implemented:</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Family</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LSTM</td>
+<td>Recurrent</td>
+<td>Stacked recurrent encoder with gated memory.</td>
+</tr>
+<tr>
+<td>GRU</td>
+<td>Recurrent</td>
+<td>Lighter recurrent model with fewer gates.</td>
+</tr>
+<tr>
+<td>TCN</td>
+<td>Convolutional</td>
+<td>Causal dilated convolutional sequence model.</td>
+</tr>
+<tr>
+<td>Transformer encoder</td>
+<td>Attention</td>
+<td>Causal self-attention over the lookback window.</td>
+</tr>
+</tbody>
+</table>
+<p>The default strict task is regression on <code>target_future_net_return_bps_24h</code>. Training uses robust preprocessing, optional winsorization, Huber loss for regression, and validation-aware checkpoint selection. As with the baseline layer, threshold selection is guarded against degeneracy.</p>
+<h3 id="83-signal-standardization">8.3 Signal Standardization</h3>
+<p>After training, all model and rule outputs are converted into a unified signal schema. This prevents the backtest engine from needing separate logic for every model type.</p>
+<p>Important standardized fields include:</p>
+<ul>
+<li><code>timestamp</code></li>
+<li><code>strategy_name</code></li>
+<li><code>source</code></li>
+<li><code>source_subtype</code></li>
+<li><code>signal_score</code></li>
+<li><code>expected_return_bps</code></li>
+<li><code>signal_threshold</code></li>
+<li><code>suggested_direction</code></li>
+<li><code>should_trade</code></li>
+<li><code>split</code></li>
+<li>model-selection metadata such as calibration method, checkpoint metric, selected loss, and preprocessing scaler</li>
+</ul>
+<p>This layer is valuable because it separates prediction from trading. A future model can be added by writing a new adapter while keeping the backtest and frontend unchanged.</p>
+<h2 id="9-backtesting-methodology">9. Backtesting Methodology</h2>
+<h3 id="91-position-model">9.1 Position Model</h3>
+<p>The backtest simulates one strategy at a time, with at most one open position per strategy. The default direction is:</p>
+<pre><code class="language-text">short_perp_long_spot
+</code></pre>
+<p>For a configured 10,000 USD position notional:</p>
+<ul>
+<li>10,000 USD notional is used on the perpetual leg.</li>
+<li>10,000 USD notional is used on the spot hedge leg.</li>
+<li>The gross exposure is 20,000 USD.</li>
+</ul>
+<p>The starting equity in the strict report is 100,000 USD. The maximum gross leverage observed in the main traded strategy is 0.2x, which is intentionally conservative for the course prototype.</p>
+<h3 id="92-entry-and-exit-rules">9.2 Entry and Exit Rules</h3>
+<p>Entry occurs when:</p>
+<ol>
+<li>A standardized signal says <code>should_trade = 1</code>.</li>
+<li>The suggested direction matches the configured direction.</li>
+<li>Any configured score, confidence, or expected-return filters are satisfied.</li>
+<li>The trade is executed after the configured entry delay using the configured execution price field.</li>
+</ol>
+<p>Exit can occur through:</p>
+<ul>
+<li>signal turning off</li>
+<li>holding-window rule</li>
+<li>maximum holding cap</li>
+<li>optional stop-loss or take-profit checks</li>
+<li>end-of-data closure</li>
+</ul>
+<p>Stops are approximated at hourly bar close and executed on the next configured execution bar. Intrabar order-book behavior is not modeled.</p>
+<h3 id="93-pnl-decomposition">9.3 PnL Decomposition</h3>
+<p>Each trade decomposes PnL into:</p>
+<ul>
+<li>perpetual leg PnL</li>
+<li>spot hedge leg PnL</li>
+<li>funding PnL</li>
+<li>trading fees</li>
+<li>gas cost</li>
+<li>other friction</li>
+<li>embedded slippage cost diagnostic</li>
+</ul>
+<p>The main risk metrics use mark-to-market equity rather than realized-only equity, because realized-only curves can hide drawdown while a trade is open. Realized-only values are retained for auditability.</p>
+<h3 id="94-main-backtest-assumptions">9.4 Main Backtest Assumptions</h3>
+<table>
+<thead>
+<tr>
+<th>Assumption</th>
+<th>Current strict prototype</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Asset universe</td>
+<td>Single asset, BTCUSDT</td>
+</tr>
+<tr>
+<td>Venue</td>
+<td>Binance data path</td>
+</tr>
+<tr>
+<td>Frequency</td>
+<td>1 hour</td>
+</tr>
+<tr>
+<td>Direction</td>
+<td>short perpetual, long spot</td>
+</tr>
+<tr>
+<td>Hedge mode</td>
+<td>equal USD notional hedge</td>
+</tr>
+<tr>
+<td>Open positions</td>
+<td>at most one per strategy</td>
+</tr>
+<tr>
+<td>Entry timing</td>
+<td>next-bar execution after signal</td>
+</tr>
+<tr>
+<td>Primary split</td>
+<td>test</td>
+</tr>
+<tr>
+<td>Equity curve</td>
+<td>mark-to-market primary, realized-only secondary</td>
+</tr>
+<tr>
+<td>Funding mode</td>
+<td>prototype bar sum</td>
+</tr>
+<tr>
+<td>Funding notional</td>
+<td>initial notional</td>
+</tr>
+<tr>
+<td>Slippage</td>
+<td>adverse execution prices, not deducted twice</td>
+</tr>
+<tr>
+<td>Fees</td>
+<td>taker fees on all four round-trip leg transactions</td>
+</tr>
+<tr>
+<td>Gas</td>
+<td>fixed USD demo cost</td>
+</tr>
+</tbody>
+</table>
+<p>These assumptions make the backtest realistic enough for a course prototype while avoiding the false precision of an incomplete exchange microstructure simulator.</p>
+<h2 id="10-empirical-results">10. Empirical Results</h2>
+<h3 id="101-strict-modeling-results">10.1 Strict Modeling Results</h3>
+<p>The strict model comparison shows measurable predictive structure but no tradeable post-cost signals in validation or test.</p>
+<table>
+<thead>
+<tr>
+<th>Model family</th>
+<th>Best model</th>
+<th>Task</th>
+<th>Test metric</th>
+<th style="text-align: right;">Test score</th>
+<th style="text-align: right;">Test RMSE</th>
+<th style="text-align: right;">Test signals</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Simple ML baseline</td>
+<td>ElasticNet regression</td>
+<td>Regression</td>
+<td>Pearson correlation</td>
+<td style="text-align: right;">0.677</td>
+<td style="text-align: right;">1.269 bps</td>
+<td style="text-align: right;">0</td>
+<td>no tradable signals</td>
+</tr>
+<tr>
+<td>Deep learning</td>
+<td>Transformer encoder</td>
+<td>Regression</td>
+<td>Pearson correlation</td>
+<td style="text-align: right;">0.646</td>
+<td style="text-align: right;">1.209 bps</td>
+<td style="text-align: right;">0</td>
+<td>warning / degenerate</td>
+</tr>
+<tr>
+<td>Reference DL</td>
+<td>LSTM</td>
+<td>Regression</td>
+<td>Pearson correlation</td>
+<td style="text-align: right;">0.639</td>
+<td style="text-align: right;">1.239 bps</td>
+<td style="text-align: right;">0</td>
+<td>no tradable signals</td>
+</tr>
+</tbody>
+</table>
+<p>The model-zoo leaderboard is:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">Rank</th>
+<th>Model</th>
+<th>Group</th>
+<th style="text-align: right;">Test Pearson correlation</th>
+<th style="text-align: right;">Test RMSE</th>
+<th style="text-align: right;">Top-decile average strict return</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">1</td>
+<td>Transformer encoder</td>
+<td>Attention</td>
+<td style="text-align: right;">0.646</td>
+<td style="text-align: right;">1.209 bps</td>
+<td style="text-align: right;">-31.59 bps</td>
+</tr>
+<tr>
+<td style="text-align: right;">2</td>
+<td>LSTM</td>
+<td>Recurrent</td>
+<td style="text-align: right;">0.639</td>
+<td style="text-align: right;">1.239 bps</td>
+<td style="text-align: right;">-31.64 bps</td>
+</tr>
+<tr>
+<td style="text-align: right;">3</td>
+<td>GRU</td>
+<td>Recurrent</td>
+<td style="text-align: right;">0.570</td>
+<td style="text-align: right;">1.360 bps</td>
+<td style="text-align: right;">-31.72 bps</td>
+</tr>
+<tr>
+<td style="text-align: right;">4</td>
+<td>TCN</td>
+<td>Convolutional</td>
+<td style="text-align: right;">0.474</td>
+<td style="text-align: right;">1.772 bps</td>
+<td style="text-align: right;">-32.14 bps</td>
+</tr>
+</tbody>
+</table>
+<p>This result is subtle. The models rank the target with nonzero correlation, but the entire out-of-sample target distribution is shifted negative after costs. Even the top predicted strict opportunities are negative on average. Therefore, a good correlation metric is insufficient for a profitable signal.</p>
+<p><img alt="Deep Learning Model Zoo" src="assets/test_metric_comparison.png" /></p>
+<p><img alt="Deep Learning Strategy Lens" src="assets/strategy_metric_comparison.png" /></p>
+<h3 id="102-strict-backtest-results">10.2 Strict Backtest Results</h3>
+<p>The strict backtest leaderboard is test-split-primary. The best traded strategy is the rule-based spread z-score strategy:</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th style="text-align: right;"><code>spread_zscore_1p5</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Status</td>
+<td style="text-align: right;">completed</td>
+</tr>
+<tr>
+<td>Test signals</td>
+<td style="text-align: right;">237</td>
+</tr>
+<tr>
+<td>Executed trades</td>
+<td style="text-align: right;">200</td>
+</tr>
+<tr>
+<td>Cumulative return</td>
+<td style="text-align: right;">-6.47 percent</td>
+</tr>
+<tr>
+<td>Annualized return</td>
+<td style="text-align: right;">-6.34 percent</td>
+</tr>
+<tr>
+<td>Mark-to-market Sharpe</td>
+<td style="text-align: right;">-14.07</td>
+</tr>
+<tr>
+<td>Mark-to-market max drawdown</td>
+<td style="text-align: right;">-6.47 percent</td>
+</tr>
+<tr>
+<td>Win rate</td>
+<td style="text-align: right;">0.00 percent</td>
+</tr>
+<tr>
+<td>Profit factor</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr>
+<td>Average trade return</td>
+<td style="text-align: right;">-32.37 bps</td>
+</tr>
+<tr>
+<td>Median holding time</td>
+<td style="text-align: right;">1 hour</td>
+</tr>
+<tr>
+<td>Exposure time fraction</td>
+<td style="text-align: right;">2.65 percent</td>
+</tr>
+<tr>
+<td>Total funding PnL</td>
+<td style="text-align: right;">7.91 USD</td>
+</tr>
+<tr>
+<td>Embedded slippage diagnostic</td>
+<td style="text-align: right;">2,400.00 USD</td>
+</tr>
+<tr>
+<td>Net PnL</td>
+<td style="text-align: right;">-6,474.85 USD</td>
+</tr>
+<tr>
+<td>Final equity</td>
+<td style="text-align: right;">93,525.15 USD</td>
+</tr>
+</tbody>
+</table>
+<p>All model-based strict strategies either produce zero test signals or no executable trades. Their zero PnL rows are intentionally marked as <code>no_tradable_signals</code>, and Sharpe/drawdown are written as unavailable rather than falsely reported as zero-risk performance.</p>
+<p>The main strict strategy table is:</p>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Source subtype</th>
+<th>Status</th>
+<th style="text-align: right;">Trades</th>
+<th style="text-align: right;">Cumulative return</th>
+<th style="text-align: right;">Sharpe</th>
+<th style="text-align: right;">Net PnL</th>
+<th>Diagnostic</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>spread_zscore_1p5</code></td>
+<td>rule-based</td>
+<td>completed</td>
+<td style="text-align: right;">200</td>
+<td style="text-align: right;">-6.47 percent</td>
+<td style="text-align: right;">-14.07</td>
+<td style="text-align: right;">-6,474.85 USD</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>combined_funding_spread</code></td>
+<td>rule-based</td>
+<td>no tradable signals</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.00 percent</td>
+<td style="text-align: right;">n/a</td>
+<td style="text-align: right;">0.00 USD</td>
+<td>no test signals</td>
+</tr>
+<tr>
+<td><code>elastic_net_regression</code></td>
+<td>baseline linear</td>
+<td>no tradable signals</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.00 percent</td>
+<td style="text-align: right;">n/a</td>
+<td style="text-align: right;">0.00 USD</td>
+<td>no validation/test signals</td>
+</tr>
+<tr>
+<td><code>funding_threshold_2bps</code></td>
+<td>rule-based</td>
+<td>no tradable signals</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.00 percent</td>
+<td style="text-align: right;">n/a</td>
+<td style="text-align: right;">0.00 USD</td>
+<td>no test signals</td>
+</tr>
+<tr>
+<td><code>logistic_l1</code></td>
+<td>baseline linear</td>
+<td>no tradable signals</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.00 percent</td>
+<td style="text-align: right;">n/a</td>
+<td style="text-align: right;">0.00 USD</td>
+<td>no test signals</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="Cumulative Returns by Strategy" src="assets/cumulative_returns.png" /></p>
+<p><img alt="Drawdown Profile" src="assets/drawdowns.png" /></p>
+<h3 id="103-interpretation-of-the-negative-result">10.3 Interpretation of the Negative Result</h3>
+<p>The negative result is economically plausible. The dataset shows that funding is often positive, but the realized net label includes four leg-level transactions, slippage, gas, and basis behavior. The average strict future net return in the model-ready test rows is about -33.46 bps. The spread rule trades during abnormal spread conditions, but those entries still do not overcome the cost and basis movement profile.</p>
+<p>Three lessons follow:</p>
+<ol>
+<li><strong>Funding alone is not enough.</strong> Positive funding can be too small relative to full round-trip costs.</li>
+<li><strong>Prediction is not trading.</strong> A model can rank a negative target distribution and still produce no profitable trades.</li>
+<li><strong>Abstention is meaningful.</strong> A no-trade model is not a profitable strategy, but it is more honest than forcing trades in a degenerate out-of-sample regime.</li>
+</ol>
+<h3 id="104-exploratory-deep-learning-track">10.4 Exploratory Deep-Learning Track</h3>
+<p>The repository also includes an exploratory DL track. It is explicitly supplementary. It changes the target definition toward gross opportunity and direction-aware ranking to demonstrate that the models can learn structure when the opportunity definition is less strict. It does not replace the official strict conclusion.</p>
+<p>The exploratory real-artifact showcase winner is:</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th style="text-align: right;"><code>lstm_gross__rolling_top_decile_abs</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model</td>
+<td style="text-align: right;">LSTM</td>
+</tr>
+<tr>
+<td>Target type</td>
+<td style="text-align: right;">gross opportunity regression</td>
+</tr>
+<tr>
+<td>Signal rule</td>
+<td style="text-align: right;">rolling top decile by absolute score</td>
+</tr>
+<tr>
+<td>Test trades</td>
+<td style="text-align: right;">578</td>
+</tr>
+<tr>
+<td>Cumulative return</td>
+<td style="text-align: right;">-18.79 percent</td>
+</tr>
+<tr>
+<td>Mark-to-market Sharpe</td>
+<td style="text-align: right;">-24.18</td>
+</tr>
+<tr>
+<td>Net PnL</td>
+<td style="text-align: right;">-18,791.33 USD</td>
+</tr>
+<tr>
+<td>Status</td>
+<td style="text-align: right;">completed</td>
+</tr>
+</tbody>
+</table>
+<p>Even this more active exploratory strategy loses money after the strict backtest cost model. However, the exploratory diagnostics show positive ranking behavior in a different lens: top-bucket directional return averages around 2.31 to 2.37 bps for gross-opportunity regressions. This is useful for future research because it suggests that the sequence models capture signed opportunity structure, but the signal-to-trade translation and friction model still prevent a profitable strict strategy.</p>
+<p>The correct use of the exploratory track in the final presentation is:</p>
+<ul>
+<li>Use it to explain model learning behavior and ranking diagnostics.</li>
+<li>Do not present it as evidence of tradable post-cost alpha.</li>
+<li>Keep the strict backtest verdict as the official investment conclusion.</li>
+</ul>
+<h2 id="11-robustness-analysis">11. Robustness Analysis</h2>
+<p>The robustness workflow tests whether the conclusion changes under reasonable variations. It compares rule-based, baseline ML, and deep-learning families under shared backtest logic.</p>
+<h3 id="111-family-comparison">11.1 Family Comparison</h3>
+<p>The base family comparison shows:</p>
+<table>
+<thead>
+<tr>
+<th>Family</th>
+<th>Representative strategy</th>
+<th>Status</th>
+<th style="text-align: right;">Trades</th>
+<th style="text-align: right;">Cumulative return</th>
+<th style="text-align: right;">Net PnL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rule-based</td>
+<td><code>spread_zscore_1p5</code></td>
+<td>completed</td>
+<td style="text-align: right;">200</td>
+<td style="text-align: right;">-6.47 percent</td>
+<td style="text-align: right;">-6,474.85 USD</td>
+</tr>
+<tr>
+<td>Simple ML baseline</td>
+<td><code>elastic_net_regression</code></td>
+<td>no tradable signals</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.00 percent</td>
+<td style="text-align: right;">0.00 USD</td>
+</tr>
+<tr>
+<td>Deep learning</td>
+<td><code>transformer_encoder</code></td>
+<td>no tradable signals</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.00 percent</td>
+<td style="text-align: right;">0.00 USD</td>
+</tr>
+</tbody>
+</table>
+<p>The apparent zero return for ML and deep learning is not positive performance. It reflects abstention caused by no tradeable signals under the strict thresholding path.</p>
+<p><img alt="Robustness Family Comparison" src="assets/family_comparison.png" /></p>
+<h3 id="112-cost-sensitivity">11.2 Cost Sensitivity</h3>
+<p>Cost sensitivity shows that the rule-based strategy remains negative across cost scenarios. The rule-based cumulative return range is approximately:</p>
+<pre><code class="language-text">best case:  -3.07 percent
+worst case: -10.08 percent
+range:       7.00 percentage points
+</code></pre>
+<p>The ML and DL rows remain at zero because they do not trade. The conclusion is therefore cost-sensitive in magnitude for rule-based trades, but not in sign.</p>
+<h3 id="113-holding-window-sensitivity">11.3 Holding Window Sensitivity</h3>
+<p>The best holding-window scenario by family still selects:</p>
+<table>
+<thead>
+<tr>
+<th>Family</th>
+<th>Best holding scenario</th>
+<th>Representative strategy</th>
+<th style="text-align: right;">Cumulative return</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Simple ML baseline</td>
+<td>24h</td>
+<td><code>elastic_net_regression</code></td>
+<td style="text-align: right;">0.00 percent, no trades</td>
+</tr>
+<tr>
+<td>Deep learning</td>
+<td>24h</td>
+<td><code>transformer_encoder</code></td>
+<td style="text-align: right;">0.00 percent, no trades</td>
+</tr>
+<tr>
+<td>Rule-based</td>
+<td>24h</td>
+<td><code>spread_zscore_1p5</code></td>
+<td style="text-align: right;">-6.47 percent</td>
+</tr>
+</tbody>
+</table>
+<p>This does not support a hidden positive edge at a nearby holding horizon.</p>
+<h3 id="114-threshold-and-feature-ablation">11.4 Threshold and Feature Ablation</h3>
+<p>Rule-threshold sensitivity confirms that the active spread z-score rule is fragile and negative. Feature ablation shows that removing basis features is especially damaging for the simple ML baseline in diagnostic runs, which is economically sensible because the strategy depends on the relationship between perp and spot. However, the ablation experiments do not rescue strict profitability.</p>
+<p>Overall, robustness analysis strengthens the honest final conclusion: the prototype is methodologically complete, but the current single-market strategy does not generate positive post-cost out-of-sample alpha.</p>
+<h2 id="12-solidity-vault-prototype">12. Solidity Vault Prototype</h2>
+<h3 id="121-purpose">12.1 Purpose</h3>
+<p>The Solidity vault is not a live trading contract. It is an accounting and state-management prototype for a hybrid off-chain strategy system. It demonstrates how users could deposit a stable asset, receive internal vault shares, and observe strategy NAV/PnL updates that are reported by an authorized off-chain operator.</p>
+<p>The main contract files are:</p>
+<pre><code class="language-text">contracts/src/DeltaNeutralVault.sol
+contracts/src/MockStablecoin.sol
+contracts/test/DeltaNeutralVault.t.sol
+contracts/script/DeployLocal.s.sol
+contracts/script/UpdateVaultState.s.sol
+</code></pre>
+<h3 id="122-vault-capabilities">12.2 Vault Capabilities</h3>
+<p>The vault supports:</p>
+<ul>
+<li>single-asset deposits using a mock stablecoin</li>
+<li>withdrawals based on internal share ownership</li>
+<li>proportional share minting and burning</li>
+<li>owner and operator roles</li>
+<li>strategy state updates</li>
+<li>absolute NAV updates</li>
+<li>incremental PnL updates</li>
+<li>pause and unpause behavior</li>
+<li>event logging for deposits, withdrawals, state updates, NAV updates, PnL updates, operator changes, and ownership changes</li>
+</ul>
+<p>The implementation uses local lightweight helper patterns for ownership, pausing, and reentrancy protection to keep the course workspace self-contained.</p>
+<h3 id="123-share-accounting">12.3 Share Accounting</h3>
+<p>For the first deposit:</p>
+<pre><code class="language-text">shares = assets
+</code></pre>
+<p>For later deposits:</p>
+<pre><code class="language-text">shares = floor(assets * totalShares / reportedNavAssets_before_deposit)
+</code></pre>
+<p>For withdrawals:</p>
+<pre><code class="language-text">sharesBurned = ceil(assets * totalShares / reportedNavAssets_before_withdrawal)
+</code></pre>
+<p>The ceil rule protects remaining vault participants from under-burning shares during withdrawal.</p>
+<h3 id="124-trust-and-security-assumptions">12.4 Trust and Security Assumptions</h3>
+<p>The vault includes reasonable prototype controls:</p>
+<ul>
+<li>owner/operator permission split</li>
+<li>pausable deposit and withdrawal flows</li>
+<li>non-reentrant external accounting functions</li>
+<li>zero-address and nonzero-amount validation</li>
+<li>event-rich state updates</li>
+<li>compact hash references for off-chain reports</li>
+</ul>
+<p>The main trust assumption is explicit: NAV and strategy state are reported by a trusted operator. The contract does not verify Binance data, ML outputs, or backtest results on-chain. In a production system, this would require a stronger oracle, signed update workflow, or multi-party verification model.</p>
+<h2 id="13-off-chain-to-on-chain-integration">13. Off-Chain to On-Chain Integration</h2>
+<p>The integration layer converts Python strategy artifacts into a mock vault update. It reads standardized signals, the backtest leaderboard, and the backtest manifest, then selects a strategy snapshot for reporting.</p>
+<p>The current dry-run integration selected:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Selected strategy</td>
+<td><code>spread_zscore_1p5</code></td>
+</tr>
+<tr>
+<td>Split</td>
+<td>test</td>
+</tr>
+<tr>
+<td>Latest timestamp</td>
+<td>2026-04-07 00:00 UTC</td>
+</tr>
+<tr>
+<td><code>should_trade</code></td>
+<td>false</td>
+</tr>
+<tr>
+<td>Suggested direction</td>
+<td>flat</td>
+</tr>
+<tr>
+<td>Ranking metric</td>
+<td>total net PnL</td>
+</tr>
+<tr>
+<td>Ranking value</td>
+<td>-6,474.85 USD</td>
+</tr>
+</tbody>
+</table>
+<p>The planned vault update was:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Strategy state</td>
+<td style="text-align: right;">idle</td>
+</tr>
+<tr>
+<td>Reported NAV assets</td>
+<td style="text-align: right;">93,525,146,215</td>
+</tr>
+<tr>
+<td>Summary PnL assets</td>
+<td style="text-align: right;">-6,474,853,785</td>
+</tr>
+<tr>
+<td>Summary PnL USD</td>
+<td style="text-align: right;">-6,474.85</td>
+</tr>
+<tr>
+<td>Contract calls prepared</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr>
+<td>Execution mode</td>
+<td style="text-align: right;">dry-run</td>
+</tr>
+</tbody>
+</table>
+<p>The prepared calls are:</p>
+<pre><code class="language-text">updateStrategyState(...)
+updateNav(...)
+</code></pre>
+<p>This flow is intentionally simple. It shows how the off-chain strategy can produce a compact on-chain update without pretending to be a decentralized oracle.</p>
+<h2 id="14-frontend-and-demo-workflow">14. Frontend and Demo Workflow</h2>
+<p>The frontend is a lightweight Vite and TypeScript dashboard. It consumes exported JSON and image assets rather than requiring a backend service. This is appropriate for the project scope because the main goal is presentation and inspection, not live production interaction.</p>
+<p>The dashboard can show:</p>
+<ul>
+<li>market context</li>
+<li>strategy and backtest metrics</li>
+<li>model comparison charts</li>
+<li>vault state summary</li>
+<li>report/showcase links</li>
+<li>demo snapshot artifacts</li>
+</ul>
+<p>The recommended end-to-end command is:</p>
+<pre><code class="language-powershell">&amp; 'd:\MG\anaconda3\python.exe' -m src.main run-demo --config configs/demo/workflow.yaml
+</code></pre>
+<p>The workflow runs or reuses:</p>
+<ol>
+<li>market-data preparation</li>
+<li>data-quality report</li>
+<li>feature generation</li>
+<li>label generation</li>
+<li>baseline training</li>
+<li>optional deep-learning training and comparison</li>
+<li>signal generation</li>
+<li>backtesting</li>
+<li>vault sync dry run</li>
+<li>frontend snapshot export</li>
+</ol>
+<p>The frontend can then be launched with:</p>
+<pre><code class="language-powershell">cd frontend
+npm install
+npm run dev
+</code></pre>
+<p>and opened at:</p>
+<pre><code class="language-text">http://127.0.0.1:5173
+</code></pre>
+<p>The project also contains a separate synthetic showcase mode. That branch is labeled <code>DEMO ONLY</code> and is useful for presentation visuals, but it should not be confused with the strict real-result conclusion in this report.</p>
+<h2 id="15-reproducibility">15. Reproducibility</h2>
+<h3 id="151-python-environment">15.1 Python Environment</h3>
+<p>All Python commands in this repository should use:</p>
+<pre><code class="language-powershell">&amp; 'd:\MG\anaconda3\python.exe'
+</code></pre>
+<p>The core dependencies include pandas, NumPy, PyYAML, scikit-learn, matplotlib, pyarrow, torch, ccxt or direct data utilities, pytest, and web3.</p>
+<h3 id="152-main-pipeline-commands">15.2 Main Pipeline Commands</h3>
+<p>Core data and labels:</p>
+<pre><code class="language-powershell">&amp; 'd:\MG\anaconda3\python.exe' -m src.main fetch-data
+&amp; 'd:\MG\anaconda3\python.exe' -m src.main report-data-quality
+&amp; 'd:\MG\anaconda3\python.exe' -m src.main build-features
+&amp; 'd:\MG\anaconda3\python.exe' -m src.main build-labels
+</code></pre>
+<p>Models and signals:</p>
+<pre><code class="language-powershell">&amp; 'd:\MG\anaconda3\python.exe' -m src.main train-baseline
+&amp; 'd:\MG\anaconda3\python.exe' -m src.main evaluate-baseline
+&amp; 'd:\MG\anaconda3\python.exe' -m src.main train-dl
+&amp; 'd:\MG\anaconda3\python.exe' -m src.main compare-dl --config configs/experiments/dl/regression_all.yaml
+&amp; 'd:\MG\anaconda3\python.exe' -m src.main generate-signals --source baseline
+&amp; 'd:\MG\anaconda3\python.exe' -m src.main generate-signals --source dl
+</code></pre>
+<p>Evaluation, reporting, and integration:</p>
+<pre><code class="language-powershell">&amp; 'd:\MG\anaconda3\python.exe' -m src.main backtest
+&amp; 'd:\MG\anaconda3\python.exe' -m src.main robustness-report
+&amp; 'd:\MG\anaconda3\python.exe' -m src.main generate-final-report --config configs/reports/final_report.yaml
+&amp; 'd:\MG\anaconda3\python.exe' -m src.main sync-vault
+</code></pre>
+<p>Testing:</p>
+<pre><code class="language-powershell">&amp; 'd:\MG\anaconda3\python.exe' -m pytest tests/unit -q
+cd contracts
+forge test -vv
+cd ../frontend
+npm run build
+</code></pre>
+<h3 id="153-important-artifact-locations">15.3 Important Artifact Locations</h3>
+<table>
+<thead>
+<tr>
+<th>Artifact</th>
+<th>Path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Canonical market data</td>
+<td><code>data/processed/binance/btcusdt/1h/</code></td>
+</tr>
+<tr>
+<td>Feature table</td>
+<td><code>data/processed/features/binance/btcusdt/1h/</code></td>
+</tr>
+<tr>
+<td>Supervised dataset</td>
+<td><code>data/processed/supervised/binance/btcusdt/1h/</code></td>
+</tr>
+<tr>
+<td>Baseline artifacts</td>
+<td><code>data/artifacts/models/baselines/binance/btcusdt/1h/btcusdt_24h_default/</code></td>
+</tr>
+<tr>
+<td>Deep-learning artifacts</td>
+<td><code>data/artifacts/models/dl/binance/btcusdt/1h/</code></td>
+</tr>
+<tr>
+<td>DL comparison</td>
+<td><code>data/artifacts/models/dl_comparisons/binance/btcusdt/1h/sequence_regression_all/</code></td>
+</tr>
+<tr>
+<td>Signals</td>
+<td><code>data/artifacts/signals/binance/btcusdt/1h/</code></td>
+</tr>
+<tr>
+<td>Backtests</td>
+<td><code>data/artifacts/backtests/binance/btcusdt/1h/baseline_signals_default/</code></td>
+</tr>
+<tr>
+<td>Robustness</td>
+<td><code>reports/robustness/binance/btcusdt/1h/</code></td>
+</tr>
+<tr>
+<td>Integration</td>
+<td><code>data/artifacts/integration/binance/btcusdt/1h/mock_operator_default/</code></td>
+</tr>
+<tr>
+<td>Final report assets</td>
+<td><code>reports/final_showcase/binance/btcusdt/1h/</code></td>
+</tr>
+<tr>
+<td>Frontend report copy</td>
+<td><code>frontend/public/report/</code> and <code>frontend/public/demo_showcase/</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="16-limitations-and-threats-to-validity">16. Limitations and Threats to Validity</h2>
+<h3 id="161-single-market">16.1 Single Market</h3>
+<p>The main strict experiment uses one venue and one asset: Binance BTCUSDT. Funding-rate arbitrage may be more naturally cross-sectional across assets or cross-venue across exchanges. A single-market time-series setup is easier to explain but may understate opportunities that depend on relative funding dispersion.</p>
+<h3 id="162-simplified-execution">16.2 Simplified Execution</h3>
+<p>The backtest includes fees, slippage, gas, funding, entry delay, and mark-to-market accounting, but it is not an exchange simulator. It does not model:</p>
+<ul>
+<li>order-book depth</li>
+<li>queue priority</li>
+<li>latency</li>
+<li>intrabar fills</li>
+<li>liquidation</li>
+<li>margin calls</li>
+<li>borrow availability</li>
+<li>dynamic hedge rebalancing</li>
+</ul>
+<p>These are acceptable omissions for a course prototype, but they matter for live deployment.</p>
+<h3 id="163-sparse-labels">16.3 Sparse Labels</h3>
+<p>The validation and test periods contain no tradeable positive strict labels under the current cost model. This makes threshold selection degenerate and limits the ability to evaluate classifiers. The repository handles this by surfacing diagnostic fields instead of hiding the problem.</p>
+<h3 id="164-model-risk">16.4 Model Risk</h3>
+<p>The deep-learning models are compact and appropriate for a prototype, but they are not exhaustive. The project does not claim that the selected LSTM, GRU, TCN, or Transformer hyperparameters are globally optimal. More extensive tuning could improve predictive metrics, but it would not automatically solve the core post-cost scarcity.</p>
+<h3 id="165-vault-trust-model">16.5 Vault Trust Model</h3>
+<p>The vault is owner/operator controlled. NAV updates are trusted reports. This is suitable for demonstrating hybrid architecture, but a production DeFi vault would require stronger controls, auditing, oracle design, access management, and user-facing risk disclosure.</p>
+<h3 id="166-synthetic-showcase-artifacts">16.6 Synthetic Showcase Artifacts</h3>
+<p>The repository includes synthetic demo-only artifacts for presentation. They are isolated and labeled, but the final report should not treat them as real empirical evidence. The official conclusion is based on the strict real-artifact path.</p>
+<h2 id="17-future-work">17. Future Work</h2>
+<p>The most valuable next steps are:</p>
+<ol>
+<li><strong>Multi-symbol research:</strong> Extend from BTCUSDT to a basket of liquid perpetuals. This can create a richer ranking problem and allow capital to flow only to the strongest opportunities.</li>
+<li><strong>Multi-venue funding comparison:</strong> Add exchange normalization so funding and basis can be compared across Binance, OKX, Bybit, dYdX, and other venues.</li>
+<li><strong>Better opportunity definitions:</strong> Separate funding carry, basis convergence, and direction-aware opportunity targets more carefully, then test whether each component is tradeable after costs.</li>
+<li><strong>Position sizing:</strong> Replace binary trade/no-trade decisions with calibrated sizing based on expected edge, uncertainty, volatility, and cost.</li>
+<li><strong>Execution realism:</strong> Add order-book snapshots, spread costs, borrow costs, and liquidation stress tests.</li>
+<li><strong>Walk-forward model operation:</strong> Use expanding or rolling model refits in the main strict evaluation, not only as optional hooks.</li>
+<li><strong>Oracle design:</strong> Replace the trusted dry-run operator with signed reports, threshold signatures, or a documented oracle committee for the vault prototype.</li>
+<li><strong>Frontend replay:</strong> Add a time replay mode so the dashboard can step through signals, trades, equity, and vault updates.</li>
+<li><strong>Contract hardening:</strong> Swap local lite helpers for audited OpenZeppelin libraries if the vault evolves beyond prototype scope.</li>
+<li><strong>Formal experiment registry:</strong> Store model configuration, dataset hash, artifact hash, and report hash in one reproducible manifest.</li>
+</ol>
+<h2 id="18-conclusion">18. Conclusion</h2>
+<p>This project delivers a complete course-project prototype for funding-rate statistical arbitrage in a hybrid quant and smart-contract setting. It does not overstate the empirical result. The strict pipeline shows that, for Binance BTCUSDT at 1-hour frequency from 2021 to 2026, the current post-cost opportunity definition is too sparse in validation and test to support a profitable out-of-sample strategy. The only strict traded test strategy loses 6.47 percent after modeled costs, and the predictive models abstain because their strict thresholds produce no tradeable signals.</p>
+<p>That negative result is a strength of the project rather than a failure. It demonstrates that the team built the right kind of research system: one that aligns labels with trading economics, separates train/validation/test chronologically, reports degeneracy explicitly, includes realistic frictions, and connects off-chain results to an on-chain accounting prototype without claiming production readiness.</p>
+<p>The final answer is therefore:</p>
+<pre><code class="language-text">No positive post-cost out-of-sample strategy survives the current friction model,
+but the repository demonstrates a coherent, reproducible, and credible
+research-to-vault prototype.
+</code></pre>
+<p>For a course project, this is a strong outcome. It combines market microstructure, statistical learning, backtesting, Solidity accounting, integration tooling, and frontend presentation into one inspectable system. It also leaves clear future paths for richer multi-asset research, stronger execution modeling, and more robust on-chain trust design.</p>
+<h2 id="references">References</h2>
+<p>[1] Project proposal, <code>Proposal.md</code>, &ldquo;Deep Learning-Based Delta-Neutral Statistical Arbitrage on Perpetual Funding Rates.&rdquo;<br />
+[2] Repository README, <code>README.md</code>, project overview, commands, limitations, and artifact map.<br />
+[3] Technical architecture design, <code>docs/architecture.md</code>.<br />
+[4] Data schema documentation, <code>docs/data_schema.md</code>.<br />
+[5] Feature engineering specification, <code>docs/features.md</code>.<br />
+[6] Label generation specification, <code>docs/labels.md</code>.<br />
+[7] Baseline strategies and predictive models documentation, <code>docs/baselines.md</code>.<br />
+[8] Deep learning models documentation, <code>docs/models.md</code>.<br />
+[9] Unified signal layer documentation, <code>docs/signals.md</code>.<br />
+[10] Backtesting engine documentation, <code>docs/backtest.md</code>.<br />
+[11] Robustness analysis workflow, <code>docs/robustness.md</code>.<br />
+[12] Solidity vault prototype specification, <code>docs/contracts.md</code>.<br />
+[13] Mock off-chain to on-chain integration documentation, <code>docs/integration.md</code>.<br />
+[14] End-to-end demo workflow, <code>docs/demo.md</code>.<br />
+[15] Binance API documentation for futures and spot market data, public exchange documentation.<br />
+[16] dYdX documentation on perpetual funding rates, public protocol documentation.<br />
+[17] Chainlink education materials on the blockchain oracle problem, public documentation.<br />
+[18] PyTorch documentation, sequence-model implementation framework.<br />
+[19] scikit-learn documentation, linear models, calibration, and model evaluation utilities.<br />
+[20] Foundry Book, Solidity testing and scripting framework documentation.</p>
+<h2 id="appendix-a-key-formulas">Appendix A. Key Formulas</h2>
+<h3 id="a1-basis">A.1 Basis</h3>
+<pre><code class="language-text">spread_bps = ((perp_close / spot_close) - 1) * 10000
+</code></pre>
+<h3 id="a2-funding-annualization-proxy">A.2 Funding Annualization Proxy</h3>
+<pre><code class="language-text">funding_annualized_proxy = funding_rate * (24 / funding_interval_hours) * 365
+</code></pre>
+<h3 id="a3-future-net-return-label">A.3 Future Net Return Label</h3>
+<pre><code class="language-text">future_net_return_bps
+  = future_perp_leg_return_bps
+  + future_spot_leg_return_bps
+  + future_funding_return_bps
+  - estimated_cost_bps
+</code></pre>
+<h3 id="a4-estimated-round-trip-cost">A.4 Estimated Round-Trip Cost</h3>
+<pre><code class="language-text">estimated_cost_bps
+  = 4 * (taker_fee_bps + slippage_bps)
+  + gas_cost_bps
+  + other_friction_bps
+  + borrow_cost_bps_if_applicable
+</code></pre>
+<h3 id="a5-share-conversion">A.5 Share Conversion</h3>
+<pre><code class="language-text">deposit shares = floor(assets * totalShares / reportedNavAssets_before_deposit)
+withdraw shares = ceil(assets * totalShares / reportedNavAssets_before_withdrawal)
+</code></pre>
+<h2 id="appendix-b-glossary">Appendix B. Glossary</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning in this project</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Basis</td>
+<td>Difference between perpetual and spot price, usually expressed in bps.</td>
+</tr>
+<tr>
+<td>Funding rate</td>
+<td>Periodic payment rate between long and short perpetual holders.</td>
+</tr>
+<tr>
+<td>Delta-neutral</td>
+<td>A hedged position whose first-order BTC price exposure is approximately zero.</td>
+</tr>
+<tr>
+<td>Post-cost label</td>
+<td>Future trade outcome after fees, slippage, gas, and funding effects.</td>
+</tr>
+<tr>
+<td>Tradeable label</td>
+<td>A positive label that clears the configured minimum expected edge threshold.</td>
+</tr>
+<tr>
+<td>Degenerate experiment</td>
+<td>A run where validation or test cannot support meaningful threshold selection or signals.</td>
+</tr>
+<tr>
+<td>Signal layer</td>
+<td>Standardized table converting predictions or rules into backtest-ready actions.</td>
+</tr>
+<tr>
+<td>Mark-to-market equity</td>
+<td>Equity curve that values open positions using current market prices.</td>
+</tr>
+<tr>
+<td>Reported NAV</td>
+<td>Vault accounting value submitted by the trusted operator.</td>
+</tr>
+<tr>
+<td>Operator</td>
+<td>Trusted account that reports off-chain strategy state into the vault prototype.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="appendix-c-what-was-intentionally-left-out">Appendix C. What Was Intentionally Left Out</h2>
+<p>The following items were intentionally left out to keep the project scoped as a credible prototype:</p>
+<ul>
+<li>production exchange execution</li>
+<li>live market-data streaming</li>
+<li>order-book and latency simulation</li>
+<li>liquidation and maintenance-margin modeling</li>
+<li>decentralized oracle consensus</li>
+<li>audited vault deployment</li>
+<li>multi-asset portfolio optimization</li>
+<li>wallet-connected production dApp behavior</li>
+<li>database, message queue, or cloud orchestration infrastructure</li>
+</ul>
+<p>These are natural next steps only if the project evolves beyond a course demonstration.</p>
+</body>
+</html>
