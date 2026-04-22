@@ -11,7 +11,7 @@ Showcase results for pipeline, reporting, and dashboard presentation.
 - Repository: `https://github.com/MengerWen/Deep-Learning-Based-Delta-Neutral-Statistical-Arbitrage-on-Perpetual-Funding-Rates`
 - Market: `BTCUSDT` on `binance` at `1h`
 - Sample window: `2021-01-01` to `2026-04-08`
-- Generated at: `2026-04-22T12:35:55.424836+00:00`
+- Generated at: `2026-04-22T13:09:33.698303+00:00`
 
 ## Executive Summary
 

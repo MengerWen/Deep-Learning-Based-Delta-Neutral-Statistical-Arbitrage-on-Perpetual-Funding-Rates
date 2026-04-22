@@ -39,6 +39,14 @@ PLOT_COLORS = {
     "deep_learning_showcase": "#b91c1c",
 }
 
+MODEL_PLOT_COLORS = {
+    "spread_zscore_1p5": "#b45309",
+    "elastic_net_regression": "#0f766e",
+    "lstm": "#2563eb",
+    "gru": "#dc2626",
+    "transformer_encoder": "#7c3aed",
+}
+
 
 class ShowcaseSettingsBase(BaseModel):
     """Permissive config base for the presentation showcase."""
@@ -882,8 +890,13 @@ def _plot_equity(curve_frame: pd.DataFrame, metrics: pd.DataFrame, path: Path, s
         frame = curve_frame.loc[curve_frame["strategy_name"] == strategy_name].copy()
         if frame.empty:
             continue
-        subtype = str(frame["source_subtype"].iloc[0])
-        color = PLOT_COLORS.get(subtype, "#334155")
+        metric_row = metrics.loc[metrics["strategy_name"] == strategy_name].iloc[0]
+        model_name = str(metric_row.get("model_name", ""))
+        subtype = str(metric_row.get("source_subtype", frame["source_subtype"].iloc[0]))
+        color = MODEL_PLOT_COLORS.get(
+            model_name,
+            MODEL_PLOT_COLORS.get(strategy_name, PLOT_COLORS.get(subtype, "#334155")),
+        )
         label = str(frame["display_name"].iloc[0])
         ax.plot(frame["timestamp"], frame[field], linewidth=1.9, label=label, color=color)
     ax.set_title(title)
